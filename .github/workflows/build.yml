@@ -1,0 +1,24 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Build
+        run: dotnet build src/EditorXSL/EditorXSL.csproj -c Release
+      - name: Smoke test
+        shell: pwsh
+        run: pwsh tests/smoke.ps1 src/EditorXSL/bin/Release/net48/EditorXSL.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EditorXSL
+          path: src/EditorXSL/bin/Release/net48/EditorXSL.exe
