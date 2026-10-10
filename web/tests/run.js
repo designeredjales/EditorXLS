@@ -175,6 +175,34 @@ function chromiumPath() {
     assert((await page.$$(".aurow")).length >= 1, "nenhuma linha");
   });
 
+  console.log("\nIA na página (Claude simulado)");
+  await test("pergunta, proposta comparável e aplicação com versão no Histórico", async () => {
+    const p2 = await ctx.newPage();
+    await p2.addInitScript(() => {
+      // Simula o recurso "sample" do claude.ai: devolve o arquivo com o título alterado, em partes.
+      const fake = async (input, opts = {}) => {
+        window.__prompt = input;
+        const m = input.match(/Arquivo atual \([^)]*\):\n([\s\S]*)$/), src = m ? m[1] : "";
+        const out = /Pergunta:/.test(input) ? "Resposta de teste." : "```xml\n" + src.replace("<title>", "<title>IA ") + "\n```\n\nMudanças:\n- Título";
+        let acc = ""; for (const part of out.match(/[\s\S]{1,500}/g)) { await new Promise(r => setTimeout(r, 2)); acc += part; opts.onText && opts.onText({ text: acc, delta: part }); }
+        return { text: acc, truncated: false, modelTierApplied: "default" };
+      };
+      window.claude = { use: async n => (n === "sample" ? fake : null) };
+    });
+    if (fs.existsSync(cmDir)) await p2.route("https://cdnjs.cloudflare.com/**", r => r.fulfill({ path: path.join(cmDir, r.request().url().endsWith("xml.min.js") ? "mode/xml/xml.js" : "lib/codemirror.js"), contentType: "application/javascript" }));
+    await p2.route("https://fonts.**", r => r.abort());
+    await p2.goto("file://" + DIST); await p2.waitForFunction(() => window.EditorXSL);
+    await p2.setInputFiles("#inFiles", path.join(FIX, "limpo.xsl")); await p2.waitForTimeout(400);
+    await p2.click("#btnAI"); await p2.waitForSelector("#aiRun");
+    await p2.fill("#aiAsk", "mudar o título");
+    await p2.click("#aiQ"); await p2.waitForFunction(() => /Resposta de teste/.test(document.querySelector("#aiOut").textContent));
+    await p2.click("#aiRun"); await p2.waitForSelector('[data-ai="apply"]', { timeout: 8000 });
+    assert(await p2.evaluate(() => /Auditoria|Dados do cliente|Referências/.test(window.__prompt)), "o pedido não leva o contexto");
+    await p2.click('[data-ai="apply"]'); await p2.waitForTimeout(300);
+    assert(await p2.evaluate(() => /<title>IA Limpo<\/title>/.test(document.querySelector(".CodeMirror").CodeMirror.getValue())), "a proposta não entrou no editor");
+    await p2.close();
+  });
+
   // Acervo completo: só quando a pasta web/modelos existe (fica fora do git).
   const nModels = await page.evaluate(() => window.EditorXSL.models().length);
   if (nModels) {

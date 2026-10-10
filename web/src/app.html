@@ -289,6 +289,11 @@ pre.diff .add{background:var(--ok-soft);color:var(--ok)} pre.diff .del{backgroun
 .aurow>header .sp{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
 #auRules .fchip{display:inline-flex;align-items:center}
 
+/* ---------- IA ---------- */
+.aiout:empty{display:none}
+.airesult{display:flex;flex-direction:column;gap:7px;border:1px solid var(--line);border-radius:7px;padding:8px 10px;background:var(--sunk);font-size:12.5px}
+.ainotes{white-space:pre-wrap;font-size:12.5px;line-height:1.45;max-height:320px;overflow:auto;overflow-wrap:anywhere}
+
 /* ---------- Dados reais ---------- */
 .xhint{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 12px 8px;padding:7px 10px;border-radius:7px;background:var(--wood-soft);font-size:12.5px}
 .xguide{flex-direction:column;align-items:stretch;gap:8px}
@@ -1472,35 +1477,122 @@ function renderLib() {
 
 /* ---------- Pedido para IA ---------- */
 function aiBlock() {
-  return `<div class="sec ai" id="aiBox" ${aiOpen ? "" : "hidden"}><header><b>Pedir à IA</b></header><div style="padding:9px;display:grid;gap:8px">
-    <p class="note" style="margin:0">Descreva a mudança. O editor monta um pedido completo (regras do Promob, campos disponíveis e o XSL atual) para você colar no Claude.</p>
+  const can = AI.ns && !AI.off;
+  return `<div class="sec ai" id="aiBox" ${aiOpen ? "" : "hidden"}><header><b>Pedir à IA</b><span class="mono">${can ? "Claude nesta página" : "copiar e colar"}</span></header><div style="padding:9px;display:grid;gap:8px">
+    <p class="note" style="margin:0">${can ? "Descreva a mudança ou faça uma pergunta. O Claude recebe as regras do Promob, os campos dos dados, o resultado da Auditoria e o XSL atual. Nenhuma mudança entra no arquivo sem você comparar e aplicar." : "Descreva a mudança. O editor monta um pedido completo (regras do Promob, campos disponíveis, Auditoria e o XSL atual) para você colar no Claude."}</p>
     <textarea id="aiAsk" placeholder="Ex.: adicionar uma coluna Peso (kg) na tabela de itens usando a referência PESO, e mostrar o peso total no fim de cada categoria.">${esc(aiDraft)}</textarea>
-    <button class="btn small primary" type="button" id="aiGo">Copiar pedido para o Claude</button></div></div>`;
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${can ? `<button class="btn small primary" type="button" id="aiRun" ${AI.busy ? "disabled" : ""}>Alterar o arquivo</button><button class="btn small" type="button" id="aiQ" ${AI.busy ? "disabled" : ""}>Só perguntar</button>` : ""}
+      ${AI.busy ? '<button class="btn small ghost" type="button" id="aiStop">Parar</button>' : ""}
+      <button class="btn small ${can ? "ghost" : "primary"}" type="button" id="aiGo">Copiar pedido</button>
+    </div>
+    <div class="aiout" id="aiOut">${aiOutHtml()}</div></div></div>`;
 }
 let aiOpen = false, aiDraft = "";
+const AI = { ns: null, off: false, busy: "", text: "", result: null, err: "", mode: "", ctl: null, truncated: false };
+async function initAi() {
+  try { AI.ns = window.claude && window.claude.use ? await window.claude.use("sample") : null; } catch { AI.ns = null; }
+  if (AI.ns && aiOpen) analyze();
+}
 function bindAi() {
   const ta = $("#aiAsk"); if (ta) ta.addEventListener("input", () => { aiDraft = ta.value; });
   const go = $("#aiGo"); if (go) go.addEventListener("click", copyAiPrompt);
+  const run = $("#aiRun"); if (run) run.addEventListener("click", () => aiRun("change"));
+  const q = $("#aiQ"); if (q) q.addEventListener("click", () => aiRun("ask"));
+  const st = $("#aiStop"); if (st) st.addEventListener("click", () => { if (AI.ctl) AI.ctl.abort(); });
+  const out = $("#aiOut"); if (out) out.addEventListener("click", aiOutClick);
+}
+function aiFields() {
+  if (!state.xml || !state.xml.text) return "";
+  const { doc, error } = parseXml(state.xml.text); if (error) return "";
+  const refs = [...new Set([...doc.querySelectorAll("REFERENCES > *")].map(n => n.nodeName))], dados = [...new Set([...doc.querySelectorAll("CUSTOMERSDATA > DATA")].map(n => n.getAttribute("ID")))];
+  const extra = [...new Set([...doc.querySelectorAll("EXTRAINFORMATION[ID]")].map(n => n.getAttribute("ID")))], d = xmlDecimal(state.xml.text);
+  return [refs.length ? "- Referências do item presentes nos dados: " + refs.join(", ") : "", dados.length ? "- Dados do cliente (CUSTOMERSDATA/DATA/@ID): " + dados.join(", ") : "", extra.length ? "- Informações extras da tabela de preço: " + extra.join(", ") : "",
+    d.virgula || d.ponto ? `- Neste XML os valores usam ${d.virgula >= d.ponto ? "vírgula" : "ponto"} decimal (ex.: ${d.ex}).` : ""].filter(Boolean).join("\n");
+}
+function aiPrompt(ask, mode) {
+  const f = state.xsl, text = cm.getValue(), aud = auditXsl(text, f ? f.name : "", fileCtx(f)).filter(x => x.sev !== "info");
+  const fields = aiFields();
+  return `Você é especialista em XSLT 1.0 para os layouts do Promob (orçamento, listagem, pedido e integração ERP).
+Regras:
+- O Promob aplica o XSL ao XML de orçamento cuja raiz é LISTING. Hierarquia: LISTING/AMBIENTS/AMBIENT/CATEGORIES/CATEGORY/ITEMS/ITEM (ITEM é recursivo em ITEMS/ITEM).
+- Dados do cliente: CUSTOMERSDATA/DATA[@ID='...']/@VALUE. Referências do item: REFERENCES/<NOME>/@REFERENCE. Preço: PRICE/@TABLE e PRICE/MARGINS/ORDER|BUDGET/@TOTAL. Peso e NCM: PRICE/EXTRAINFORMATIONS/EXTRAINFORMATION[@ID='...']/@TOTALVALUE. Totais: TOTALPRICES/MARGINS/BUDGET/@VALUE.
+- Valores do Promob podem vir com vírgula decimal: use translate(valor, ',', '.') antes de format-number ou de contas. Para somar, não use sum() direto: use um template recursivo que traduz cada valor (SomarDecimal).
+- Mantenha as marcações de seção que o arquivo já tem (thead id="HEADER", tr id="CUSTOMERDATA", tr id="BODY", tr id="TOTALS", tfoot id="FOOTER") e html generator="ProMob.Cadastro".
+- Use só XSLT 1.0 compatível com MSXML, sem extensões. Mantenha a codificação e o estilo do arquivo.
+${fields ? fields + "\n" : ""}${aud.length ? "Problemas que a Auditoria já encontrou neste arquivo:\n" + aud.map(x => `- ${x.title}${x.line ? " (linha " + x.line + ")" : ""}`).join("\n") + "\n" : ""}
+${mode === "ask" ? `Pergunta: ${ask}
+
+Responda em português, direto ao ponto, em até 15 linhas. Cite trechos curtos do XSL quando ajudar. Não reescreva o arquivo inteiro.`
+  : `Pedido: ${ask}
+
+Devolva o arquivo XSL COMPLETO dentro de um único bloco \`\`\`xml … \`\`\`, sem omitir partes e sem usar "..." para encurtar. Depois do bloco, escreva "Mudanças:" e uma lista curta (até 6 itens) do que mudou, em português.`}
+
+Arquivo atual (${f ? f.name : "sem nome"}):
+${text}`;
 }
 async function copyAiPrompt() {
   const ask = aiDraft.trim();
   if (!ask) { toast("Escreva o que você quer mudar."); return; }
-  const found = state.xml ? (() => { const { doc } = parseXml(state.xml.text || ""); return [...new Set([...doc.querySelectorAll("REFERENCES > *")].map(n => n.nodeName))].join(", "); })() : "";
-  const prompt = `Você é especialista em XSLT 1.0 para os layouts do Promob (orçamento, listagem e integração ERP).
-Regras:
-- O Promob aplica o XSL ao XML de orçamento cuja raiz é LISTING. Hierarquia: LISTING/AMBIENTS/AMBIENT/CATEGORIES/CATEGORY/ITEMS/ITEM (ITEM é recursivo em ITEMS/ITEM).
-- Dados do cliente: CUSTOMERSDATA/DATA[@ID='...']/@VALUE. Referências do item: REFERENCES/<NOME>/@REFERENCE. Preço: PRICE/@TABLE e PRICE/MARGINS/ORDER|BUDGET/@TOTAL. Totais: TOTALPRICES/MARGINS/BUDGET/@VALUE.
-- Valores do Promob usam vírgula decimal: use translate(valor, ',', '.') antes de format-number ou de contas.
-- Mantenha as marcações de seção (thead id="HEADER", tr id="CUSTOMERDATA", tr id="BODY" templatetext, tr id="TOTALS", tfoot id="FOOTER") e html generator="ProMob.Cadastro" para o editor do Promob continuar abrindo o layout.
-- Use só XSLT 1.0 compatível com MSXML. Não use extensões.
-${found ? "- Referências presentes nos dados: " + found + "\n" : ""}
-Pedido: ${ask}
-
-Devolva o arquivo XSL completo, pronto para salvar, e depois uma lista curta do que mudou.
-
-Arquivo atual (${state.xsl ? state.xsl.name : "sem nome"}):
-${cm.getValue()}`;
-  await copy(prompt, "Pedido copiado. Cole no Claude e traga a resposta para o editor.");
+  await copy(aiPrompt(ask, "change"), "Pedido copiado. Cole no Claude e traga a resposta para o editor.");
+}
+const AI_ERR = { not_granted: "O uso do Claude nesta página não foi liberado. Use Copiar pedido.", sampling_disabled: "O Claude não está disponível para esta conta. Use Copiar pedido.", not_declared: "Esta versão da página não pode chamar o Claude. Use Copiar pedido.",
+  capability_disabled: "O Claude não está disponível nesta visualização. Use Copiar pedido.", capability_removed: "O Claude não está disponível nesta visualização. Use Copiar pedido.",
+  rate_limited: "Muitos pedidos seguidos ou limite de uso atingido. Tente de novo daqui a alguns minutos.", prompt_too_large: "O arquivo é grande demais para um pedido. Use Copiar pedido com um trecho.",
+  refused: "O Claude não aceitou este pedido. Reformule.", session_expired: "Sua sessão expirou. Entre de novo no claude.ai.", empty_completion: "O Claude não respondeu. Peça algo menor.", cancelled: "Interrompido." };
+async function aiRun(mode) {
+  const ask = aiDraft.trim(); if (!ask) { toast(mode === "ask" ? "Escreva a pergunta." : "Escreva o que você quer mudar."); return; }
+  if (!AI.ns || AI.busy) return;
+  Object.assign(AI, { busy: mode, mode, text: "", result: null, err: "", truncated: false, ctl: new AbortController(), base: cm.getValue(), file: state.xsl });
+  analyze();
+  try {
+    const r = await AI.ns(aiPrompt(ask, mode), { signal: AI.ctl.signal, cache: false, onText: ({ text }) => { AI.text = text; aiPaint(); } });
+    AI.text = r.text; AI.truncated = r.truncated;
+    if (mode === "change") AI.result = aiParse(r.text);
+  } catch (e) {
+    AI.err = AI_ERR[e && e.code] || "Falha de comunicação com o Claude. Tente de novo."; AI.text = (e && e.text) || "";
+    if (e && /^(not_granted|sampling_disabled|not_declared|capability_disabled|capability_removed)$/.test(e.code)) AI.off = true;
+  }
+  AI.busy = ""; analyze();
+}
+function aiParse(text) {
+  const m = text.match(/```(?:xml|xsl|xslt)?[^\n]*\n([\s\S]*?)```/i); if (!m) return null;
+  const xsl = m[1].replace(/\s+$/, "") + (/\n$/.test(AI.base || "") ? "\n" : ""), notes = text.slice(m.index + m[0].length).trim();
+  const f = AI.file, aud = auditCount(auditXsl(xsl, f ? f.name : "", fileCtx(f))), d = lineDiff(AI.base || "", xsl);
+  return { xsl, notes, aud, add: d.add, del: d.del, valid: !parseXml(xsl).error };
+}
+function aiOutHtml() {
+  if (!AI.busy && !AI.text && !AI.err) return "";
+  if (AI.busy && !AI.text) return '<p class="note">Pensando… o Claude lê o arquivo antes de responder (pode levar até um minuto).</p>';
+  if (AI.busy === "change") { const n = (AI.text.match(/\n/g) || []).length; return `<p class="note">Escrevendo a proposta: ${n} linha(s)…</p>`; }
+  let h = AI.err ? `<div class="errbox">${esc(AI.err)}</div>` : "";
+  if (AI.mode === "change" && AI.result) {
+    const r = AI.result;
+    h += `<div class="airesult"><b>Proposta do Claude</b> <span class="note">+${r.add} / −${r.del} linhas</span> ${r.valid ? sevChip(r.aud) : '<span class="sevc erro">XML inválido</span>'}
+      ${r.notes ? `<div class="ainotes">${esc(r.notes)}</div>` : ""}
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" type="button" data-ai="cmp">Comparar com o atual</button>${r.valid ? '<button class="btn small primary" type="button" data-ai="apply">Aplicar no editor</button>' : ""}<button class="btn small ghost" type="button" data-ai="clear">Descartar</button></div></div>`;
+  } else if (AI.text) h += `<div class="ainotes">${esc(AI.mode === "change" && !AI.result ? "A resposta não trouxe o arquivo completo" + (AI.truncated ? " (foi cortada por ser longa demais: peça uma mudança menor)" : "") + ".\n\n" + AI.text : AI.text)}</div>${AI.busy ? "" : '<button class="btn small ghost" type="button" data-ai="clear">Limpar</button>'}`;
+  return h;
+}
+function aiPaint() { const o = $("#aiOut"); if (o) o.innerHTML = aiOutHtml(); }
+async function aiOutClick(e) {
+  const b = e.target.closest("[data-ai]"); if (!b) return;
+  const act = b.dataset.ai, r = AI.result;
+  if (act === "clear") { Object.assign(AI, { text: "", result: null, err: "" }); aiPaint(); return; }
+  if (!r) return;
+  if (act === "cmp") {
+    const base = (AI.file ? AI.file.name : "layout.xsl").replace(/(\.xslt?)?$/i, "_IA$1");
+    let nf = state.files.find(x => x.aiDraft && x.name === base);
+    if (nf) nf.text = r.xsl; else nf = addFile({ name: base, path: base, text: r.xsl, orig: null, enc: "utf-8", origin: "import", aiDraft: true, dirty: true });
+    renderTree(); await openCompare("editor", "file:" + nf.id); toast("Esquerda: o arquivo no editor. Direita: a proposta do Claude. Copie blocos ou aplique.");
+    return;
+  }
+  if (act === "apply") {
+    if (state.xsl !== AI.file) { toast("Abra de novo o arquivo para o qual a proposta foi feita."); return; }
+    await histAdd(state.xsl, "antes", cm.getValue(), "antes da proposta da IA");
+    editorReplaceAll(r.xsl); Object.assign(AI, { text: "", result: null, err: "" }); analyze();
+    toast("Proposta aplicada. A versão anterior ficou no Histórico. Confira em Visualizar e clique em Salvar.");
+  }
 }
 
 /* ---------- Utilidades de interface ---------- */
@@ -3546,6 +3638,7 @@ async function start() {
   bindModels();
   bindAudit();
   bindPartners();
+  initAi();
   bindCompare();
   builderInit();
   showTab(savedTab);
