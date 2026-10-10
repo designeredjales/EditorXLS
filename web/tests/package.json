@@ -1,0 +1,10 @@
+{
+  "name": "editor-xsl-promob-tests",
+  "private": true,
+  "description": "Testes do Editor XSL Promob (auditoria, construtor visual e interface).",
+  "scripts": { "test": "node run.js" },
+  "devDependencies": {
+    "codemirror": "5.65.16",
+    "playwright": "1.47.2"
+  }
+}

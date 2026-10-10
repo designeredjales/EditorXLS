@@ -2,3 +2,4 @@ dist/
 modelos/
 private/
 __pycache__/
+tests/node_modules/

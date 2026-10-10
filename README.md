@@ -16,9 +16,13 @@ Editor de layouts XSL do Promob (orçamento, listagem e integração ERP), em um
 - **+ Código nas seções:** insere um trecho da biblioteca ou um campo direto na seção escolhida do layout.
 - **Comparar (estilo WinMerge):** dois arquivos lado a lado com linhas alinhadas, destaque do trecho alterado, navegação entre diferenças, cópia de blocos (→ ←), ignorar espaços, só diferenças, e aplicar o resultado no arquivo. Modo Pacotes compara dois conjuntos de modelos arquivo por arquivo.
 
+- **Auditoria:** confere cada layout antes de ele chegar ao Promob: erro de estrutura, template, variável, chave ou formato que faltam, teste sem `$`, `sum()` que dá NaN com vírgula, `parent::node()` fixo, senha em texto aberto e arquivo citado que não existe. Correções seguras com um clique, em lote (.zip) e relatório (.csv). O Salvar pede confirmação quando o arquivo tem erro.
+
 Os modelos ficam em `web/modelos/<pacote>/` (fora do git) e são catalogados por `web/catalogar_modelos.py` durante o build.
 
-Gerar: `python3 web/build.py` → `web/dist/EditorXSL-Promob.html` (abrir no navegador). Layouts reais podem ficar em `web/private/` (fora do git) para virem embutidos como exemplo.
+Gerar: `python3 web/build.py` → `web/dist/EditorXSL-Promob.html` (abrir no navegador). Layouts reais podem ficar em `web/private/` (fora do git) para virem embutidos como exemplo. `--sem-modelos` gera sem o acervo.
+
+Testar: `cd web/tests && npm ci && npx playwright install chromium && node run.js`. Os testes cobrem a auditoria (com os arquivos de `web/tests/fixtures`), o construtor visual e a interface; quando o acervo está embutido, também abrem e renderizam todos os modelos. Rodam a cada push no GitHub Actions (`.github/workflows/web.yml`).
 
 ---
 

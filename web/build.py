@@ -4,6 +4,7 @@ Saídas em web/dist/:
   editor-xsl-promob.html  -> versão para publicar como Artifact (sem <html>/<head>)
   EditorXSL-Promob.html   -> versão para abrir direto no Chrome/Edge do computador
 Os exemplos embutidos vêm de web/samples/ e, se existir, de web/private/ (fora do git).
+Os modelos vêm de web/modelos/ (fora do git). Use --sem-modelos para gerar sem eles.
 """
 import json, pathlib, sys
 
@@ -29,7 +30,7 @@ if libdir.is_dir():
         libs.append(json.loads(f.read_text(encoding="utf-8")))
 libblob = json.dumps(libs, ensure_ascii=False).replace("</", "<\\/")
 import catalogar_modelos
-models = catalogar_modelos.catalogar(base / "modelos")
+models = {"modelos": [], "assets": []} if "--sem-modelos" in sys.argv else catalogar_modelos.catalogar(base / "modelos")
 modelblob = json.dumps(models, ensure_ascii=False).replace("</", "<\\/")
 page = src.replace("__SAMPLES__", blob).replace("__LIBRARY__", libblob).replace("__MODELS__", modelblob)
 out = base / "dist"

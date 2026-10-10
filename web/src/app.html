@@ -3173,7 +3173,7 @@ function bindAudit() {
 }
 
 /* Ganchos para os testes automáticos (web/tests). */
-window.EditorXSL = { audit: auditXsl, applyFixes, interpretXsl, generate, models: () => MODELS };
+window.EditorXSL = { audit: auditXsl, applyFixes, interpretXsl, generate, models: () => MODELS, builtin: () => BUILTIN };
 
 /* ---------- Início ---------- */
 async function start() {

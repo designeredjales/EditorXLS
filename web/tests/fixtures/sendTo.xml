@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SENDTOCOLLECTION>
+  <SENDTOFILE ID="txt" DESCRIPTION="Arquivo texto" CATEGORIES="pedido" XSLLAYOUT="%PastaBudget%\SendTo\limpo.xsl" FILENAME="pedido" FILEEXTENSION=".txt" />
+  <SENDTOEMAIL ID="mail" DESCRIPTION="E-mail para a fábrica" CATEGORIES="pedido" XSLLAYOUT="%PastaBudget%\SendTo\Fabrica.xsl" />
+</SENDTOCOLLECTION>
