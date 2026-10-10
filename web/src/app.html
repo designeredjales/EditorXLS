@@ -181,6 +181,50 @@ span.CodeMirror-selectedtext{background:none}
 .cm-comment{color:var(--muted);font-style:italic}.cm-bracket{color:var(--muted)}.cm-error{color:var(--err)}
 .cm-jump{background:var(--hl)}
 
+/* ---------- Inserir código numa seção ---------- */
+.addsec{margin-left:6px;border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:1px 7px;font-size:11.5px;cursor:pointer;color:var(--accent);font-weight:600;white-space:nowrap}
+.addsec:hover{border-color:var(--accent)}
+.picker{border-top:1px solid var(--line);padding:8px;display:grid;gap:6px;background:var(--sunk)}
+.picker input{border:1px solid var(--line);border-radius:6px;padding:5px 7px;background:var(--panel);width:100%}
+.picker .hint{font-size:11.5px;color:var(--muted)}
+.pick{display:grid;gap:1px;text-align:left;border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:var(--panel);cursor:pointer;width:100%}
+.pick:hover{border-color:var(--accent);background:var(--accent-soft)}
+.pick b{font-size:12.5px;font-weight:600}
+.pick small{font-size:11px;color:var(--muted)}
+.pick .pc{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--wood);font-weight:600}
+
+/* ---------- Histórico ---------- */
+.hver{border:1px solid var(--line);border-radius:7px;padding:7px 9px;display:grid;gap:4px}
+.hver.cur{border-color:var(--accent)}
+.hver .top{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.hver .top b{font-size:13px}
+.hver .top span{font-size:11.5px;color:var(--muted)}
+.hver .k{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--wood);font-weight:600}
+.hver .row{display:flex;gap:4px;flex-wrap:wrap}
+.dstat{font-family:var(--mono);font-size:11px}
+.dstat .a{color:var(--ok)} .dstat .d{color:var(--err)}
+pre.diff{margin:0;max-height:none;overflow:auto;background:var(--code-bg);border:1px solid var(--line);border-radius:6px;font-size:11.5px;line-height:1.45}
+pre.diff span{display:block;padding:0 8px;white-space:pre}
+pre.diff .add{background:var(--ok-soft);color:var(--ok)} pre.diff .del{background:var(--err-soft);color:var(--err)} pre.diff .gap{color:var(--muted);font-style:italic}
+.hnote{background:var(--wood-soft);border-radius:7px;padding:8px 10px;font-size:12.5px}
+
+/* ---------- Modelos ---------- */
+.mhead{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline}
+.mhead h3{font-family:var(--display);font-weight:600;font-size:20px;margin:0}
+.mtools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.mtools .search{flex:1 1 220px;width:auto}
+.mcat{font-family:var(--display);font-weight:600;font-size:18px;margin:14px 0 8px;display:flex;gap:8px;align-items:baseline}
+.mcat small{font-family:var(--sans);font-size:12px;color:var(--muted);font-weight:400}
+.mcard .chips{display:flex;flex-wrap:wrap;gap:4px}
+.mcard .rec{margin:0;padding-left:16px;font-size:11.5px;color:var(--muted)}
+.mcard .rec li{overflow-wrap:anywhere}
+.mcard .alert{font-size:12px;color:var(--err);background:var(--err-soft);border-radius:5px;padding:4px 7px;margin:0}
+.mcard details{font-size:11.5px;color:var(--muted)}
+.mcard details ul{margin:4px 0 0;padding-left:16px}
+.mcard select{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:3px 6px;font-size:12.5px;max-width:100%}
+.chip.txt{background:var(--sunk)}
+.chip.cfg{background:var(--wood-soft);color:var(--wood);border-color:transparent}
+
 /* ---------- Construtor visual ---------- */
 .bwrap{flex:1;min-height:0;display:grid;grid-template-columns:200px minmax(0,1fr) 320px}
 .palette{border-right:1px solid var(--line);overflow:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
@@ -276,6 +320,7 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
     <main class="main">
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" aria-selected="true" data-tab="builder" type="button">Construtor visual</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="models" type="button">Modelos</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="editor" type="button">Editor de código</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="preview" type="button">Visualizar</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="fields" type="button">Campos</button>
@@ -308,10 +353,26 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
         </div>
       </section>
 
+      <section class="pane" data-pane="models" hidden>
+        <div class="lib">
+          <div class="mhead"><h3>Modelos prontos</h3><span class="note" id="mdSummary"></span></div>
+          <div class="filters" id="mdCats"></div>
+          <div class="mtools">
+            <select class="sel" id="mdPacote" aria-label="Pacote"><option value="">Todos os pacotes</option></select>
+            <select class="sel" id="mdTipo" aria-label="Tipo"><option value="">Todos os tipos</option><option>HTML</option><option>XML</option><option>TXT</option><option>Config</option></select>
+            <input class="search" id="mdSearch" type="search" placeholder="Buscar por nome, parceiro, campo ou referência">
+          </div>
+          <div id="mdList"></div>
+        </div>
+      </section>
+
       <section class="pane" data-pane="editor" hidden>
         <div class="bar">
           <span class="title" id="edTitle">Nenhum XSL aberto</span>
           <span class="status wait" id="edStatus">—</span>
+          <button class="btn small" id="btnUndo" type="button" title="Desfazer (Ctrl+Z)">↶ Desfazer</button>
+          <button class="btn small" id="btnRedo" type="button" title="Refazer (Ctrl+Y)">↷ Refazer</button>
+          <button class="btn small" id="btnHist" type="button" title="Versões, comparar e restaurar">Histórico</button>
           <button class="btn small" id="btnAI" type="button">Pedir à IA</button>
           <button class="btn small" id="btnSaveAs" type="button">Salvar como</button>
           <button class="btn small primary" id="btnSave" type="button">Salvar</button>
@@ -384,6 +445,7 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
 
 <script id="samples" type="application/json">__SAMPLES__</script>
 <script id="library" type="application/json">__LIBRARY__</script>
+<script id="models" type="application/json">__MODELS__</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
 <script>
@@ -460,7 +522,7 @@ const CATALOG = [
     ["PAYMENTTERMS/PAYMENTTERMCOLLECTION/PAYMENTTERM[@SELECTED='Y']/@DESCRIPTION", "Condição selecionada"],
     ["PAYMENTTERMS/ADITIONALENTRYCOLLECTION/ADITIONALENTRY/@VALUE", "Entrada diferenciada: valor"]]}
 ];
-const SECTION_NAMES = { HEADER: "Cabeçalho", CUSTOMERDATA: "Dados do cliente", STOREDATA: "Dados da loja", BODY: "Corpo (itens)", PAYMENTENTRIES: "Entradas diferenciadas",
+const SECTION_NAMES = { HEADER: "Cabeçalho", CUSTOMERDATA: "Dados do cliente", COMPANYDATA: "Dados da loja", STOREDATA: "Dados da loja", BODY: "Corpo (itens)", PAYMENTENTRIES: "Entradas diferenciadas",
   PAYMENTTERMS: "Condições de pagamento", TOTALS: "Totais", OBSERVATIONS: "Observações", SIGNATURES: "Assinaturas", FOOTER: "Rodapé" };
 
 /* ---------- Rótulos legíveis para expressões XPath ---------- */
@@ -729,7 +791,7 @@ function renderTree() {
   for (const f of state.files) {
     if (!/^(xslt?|xml)$/.test(f.ext)) continue;
     if (q && !f.path.toLowerCase().includes(q)) continue;
-    const g = f.origin === "exemplo" ? "Exemplos" : f.origin === "import" ? "Importados" : (f.path.includes("/") ? f.path.slice(0, f.path.lastIndexOf("/")) : "(raiz)");
+    const g = f.origin === "exemplo" ? "Exemplos" : f.origin === "import" ? "Importados" : f.origin === "modelo" ? "Modelos abertos" : (f.path.includes("/") ? f.path.slice(0, f.path.lastIndexOf("/")) : "(raiz)");
     if (!groups.has(g)) groups.set(g, []);
     groups.get(g).push(f);
   }
@@ -764,10 +826,14 @@ async function openXsl(f) {
   state.xsl = f;
   cm._loading = true; cm.setValue(f.text); cm._loading = false;
   if (cm.clearHistory) cm.clearHistory();
-  $("#edTitle").innerHTML = `${esc(f.name)}<small>${esc(f.origin === "sistema" ? state.sysName + "/" + f.path : f.origin === "exemplo" ? "exemplo" : "importado")}</small>`;
+  $("#edTitle").innerHTML = `${esc(f.name)}<small>${esc(f.origin === "sistema" ? state.sysName + "/" + f.path : f.origin === "exemplo" ? "exemplo" : f.origin === "modelo" ? "modelo · " + f.path.split("/")[1] : "importado")}</small>`;
   $("#pvTitle").textContent = "Visualização: " + f.name;
   renderTree(); analyze(); showTab("editor");
   setTimeout(() => cm.refresh && cm.refresh(), 0);
+  histList(f).then(l => {
+    if (!l.length && (f.orig ?? f.text) != null) histAdd(f, "original", f.orig ?? f.text);
+    else { const d = l.find(v => v.kind === "rascunho"), r = l.find(v => v.kind !== "rascunho"); if (d && (!r || d.t > r.t) && d.text !== cm.getValue()) toast(`Há um rascunho não salvo de ${fmtTime(d.t)}. Abra o Histórico para recuperar.`); }
+  });
 }
 async function openXml(f) {
   await readText(f);
@@ -781,9 +847,20 @@ function parseXml(text) {
 }
 const XSLNS = "http://www.w3.org/1999/XSL/Transform";
 function analyze() {
-  const box = $("#inspect"), st = $("#edStatus");
+  if (HIST.open) { const real = $("#inspect"); analyzeInto(document.createElement("div")); renderHistory(); return real; }
+  analyzeInto($("#inspect"));
+}
+function analyzeInto(box) {
+  const st = $("#edStatus");
   if (!state.xsl) { box.innerHTML = '<p class="note">Abra um XSL na lista de arquivos.</p>'; return; }
   const { doc, error } = parseXml(cm.getValue());
+  if (!error && doc.documentElement && doc.documentElement.namespaceURI !== XSLNS) {
+    st.className = "status wait"; st.textContent = "Arquivo de configuração";
+    const n = doc.getElementsByTagName("*").length;
+    box.innerHTML = `<p class="note">Este arquivo não é um layout XSL: é ${doc.documentElement.nodeName === "SENDTOCOLLECTION" ? "a configuração do menu <b>Enviar Para</b> do Promob (pasta Budget\\SendTo)" : "um XML de dados"}. Ele pode ser editado e salvo aqui, mas não tem pré-visualização.</p>` +
+      (doc.documentElement.nodeName === "SENDTOCOLLECTION" ? `<div class="sec"><header><b>Opções configuradas</b></header>${[...doc.getElementsByTagName("*")].filter(e => /^SENDTO(FILE|EMAIL|FTP|PACKAGE)$/.test(e.nodeName)).map(e => `<div class="frow" style="cursor:default"><span class="lb"><b>${esc(e.getAttribute("DESCRIPTION") || e.getAttribute("ID"))}</b> · ${esc(e.nodeName.replace("SENDTO", "").toLowerCase())}</span><code>${esc(e.getAttribute("XSLLAYOUT") || "(sem layout: XML bruto do orçamento)")}</code></div>`).join("")}</div>` : "") + aiBlock();
+    bindAi(); return;
+  }
   if (error) { st.className = "status err"; st.textContent = "Erro de estrutura"; box.innerHTML = `<div class="errbox">${esc(error)}</div>` + aiBlock(); bindAi(); return; }
   let compiled = true;
   if (window.XSLTProcessor) { try { new XSLTProcessor().importStylesheet(doc); } catch { compiled = false; } }
@@ -803,14 +880,14 @@ function analyze() {
       const id = s.getAttribute("id");
       const inner = rows.filter(r => s.contains(r.el) && !used.has(r)); inner.forEach(r => used.add(r));
       const cols = id === "BODY" ? [...s.getElementsByTagName("th")].map(th => th.textContent.replace(/\s+/g, " ").trim()).filter(Boolean) : [];
-      html += `<div class="sec"><header><b>${esc(SECTION_NAMES[id] || id)}</b><span class="mono">${esc(id)}</span></header>
+      html += `<div class="sec" data-target="id:${esc(id)}"><header><b>${esc(SECTION_NAMES[id] || id)}</b><span class="mono">${esc(id)}</span><button class="addsec" type="button" data-addsec="id:${esc(id)}" title="Inserir um código da biblioteca nesta seção">+ Código</button></header>${pickerHtml("id:" + id)}
         ${cols.length ? `<div class="frow" style="cursor:default"><span class="lb">Colunas: ${esc(cols.join(" · "))}</span></div>` : ""}
         ${inner.map(row).join("") || '<div class="frow" style="cursor:default"><span class="note">Sem campos diretos</span></div>'}</div>`;
     }
     const tpls = [...doc.getElementsByTagNameNS(XSLNS, "template")].filter(t => t.getAttribute("name"));
     for (const t of tpls) {
       const inner = rows.filter(r => t.contains(r.el) && !used.has(r)); inner.forEach(r => used.add(r));
-      if (inner.length) html += `<div class="sec"><header><b>Template ${esc(t.getAttribute("name"))}</b><span class="mono">por item</span></header>${inner.map(row).join("")}</div>`;
+      if (inner.length) html += `<div class="sec" data-target="tpl:${esc(t.getAttribute("name"))}"><header><b>Template ${esc(t.getAttribute("name"))}</b><span class="mono">por item</span><button class="addsec" type="button" data-addsec="tpl:${esc(t.getAttribute("name"))}" title="Inserir um código da biblioteca neste template">+ Código</button></header>${pickerHtml("tpl:" + t.getAttribute("name"))}${inner.map(row).join("")}</div>`;
     }
     const rest = rows.filter(r => !used.has(r));
     if (rest.length) html += `<div class="sec"><header><b>Outros campos</b></header>${rest.map(row).join("")}</div>`;
@@ -826,7 +903,7 @@ function analyze() {
       if (!byTpl.has(owner)) byTpl.set(owner, []);
       byTpl.get(owner).push(`<button class="frow" type="button" data-sel="${esc(r.sel)}" data-n="${r.n}"><span class="lb"><b>${esc(a.getAttribute("name"))}</b> ← ${esc(labelFor(r.sel))}</span><code>${esc(r.sel)}</code></button>`);
     }
-    for (const [k, list] of byTpl) html += `<div class="sec"><header><b>${esc(k)}</b><span class="mono">atributo ← campo</span></header>${list.join("")}</div>`;
+    for (const [k, list] of byTpl) { const tg = k.startsWith("Template ") ? "tpl:" + k.slice(9) : "tpl:#main"; html += `<div class="sec" data-target="${esc(tg)}"><header><b>${esc(k)}</b><span class="mono">atributo ← campo</span><button class="addsec" type="button" data-addsec="${esc(tg)}" title="Inserir um código da biblioteca aqui">+ Código</button></header>${pickerHtml(tg)}${list.join("")}</div>`; }
   }
   box.innerHTML = html + aiBlock();
   bindAi();
@@ -915,6 +992,7 @@ async function exportCurrent() {
   const f = state.xsl; if (!f) { toast("Abra um XSL antes de exportar."); return; }
   f.text = cm.getValue();
   const ok = await exportFiles([{ name: f.name, bytes: encodeLike(f, f.text) }], f.name.replace(/\.xslt?$/i, "") + ".zip");
+  if (ok) histAdd(f, "exportado", f.text);
   if (ok && !f.handle) { f.dirty = false; renderTree(); }
 }
 async function exportAll() {
@@ -960,7 +1038,7 @@ function closeAll() {
     return;
   }
   closeAllArmed = false; $("#btnCloseAll").textContent = "Fechar todos"; $("#btnCloseAll").classList.remove("warn");
-  state.files = []; state.xml = null; state.root = null; state.sysName = "Nenhum"; state.assetCache.clear(); BD.out = null;
+  state.files = state.files.filter(f => f.origin === "asset"); state.xml = null; state.root = null; state.sysName = "Nenhum"; state.assetCache.clear(); BD.out = null;
   $("#sysName").textContent = "nenhum"; prog("");
   clearEditor(); fillXmlSelect(); renderFound(); renderTree(); if (BD.model) renderCanvas();
   toast("Todos os arquivos foram fechados.");
@@ -986,11 +1064,21 @@ async function save() {
         const w = await bh.createWritable(); await w.write(encodeLike(f, f.orig)); await w.close(); f.backedUp = true;
       }
       const w = await f.handle.createWritable(); await w.write(bytes); await w.close();
-      f.dirty = false; renderTree(); toast(`Salvo em ${f.path}. O original está em ${f.name}.bak`); return;
+      let dated = "";
+      if (prefDatedCopy()) {
+        try {
+          const dir = await f.parent.getDirectoryHandle("_historico_editorxsl", { create: true });
+          const nm = f.name.replace(/(\.(xslt?|xml))$/i, `_${stamp(Date.now())}$1`);
+          const hw = await (await dir.getFileHandle(nm, { create: true })).createWritable(); await hw.write(bytes); await hw.close();
+          dated = ` Cópia datada em _historico_editorxsl/${nm}.`;
+        } catch {}
+      }
+      f.dirty = false; renderTree(); histAdd(f, "salvo", f.text);
+      toast(`Salvo em ${f.path}.${f.orig != null ? ` O original está em ${f.name}.bak.` : ""}${dated}`); return;
     } catch (e) { toast("Não foi possível gravar na pasta: " + e.message); }
   }
   const ok = await exportFiles([{ name: f.name, bytes }], f.name.replace(/\.xslt?$/i, "") + ".zip");
-  if (ok) { f.dirty = false; renderTree(); }
+  if (ok) { f.dirty = false; renderTree(); histAdd(f, "exportado", f.text); }
 }
 async function saveAs(name) {
   const src = state.xsl; if (!src) return;
@@ -1020,7 +1108,9 @@ function findAsset(rel) {
 }
 async function assetData(f) {
   if (state.assetCache.has(f.id)) return state.assetCache.get(f.id);
+  if (f.ext === "css" && f.text != null) { state.assetCache.set(f.id, f.text); return f.text; }
   const blob = f.handle ? await f.handle.getFile() : f.file;
+  if (!blob) return f.ext === "css" ? "" : PLACEHOLDER;
   let v;
   if (f.ext === "css") v = await blob.text();
   else v = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob); });
@@ -1066,7 +1156,11 @@ async function runPreview() {
   }
   const out = xsl.doc.getElementsByTagNameNS(XSLNS, "output")[0];
   const method = (out && out.getAttribute("method")) || (res.documentElement.nodeName.toLowerCase() === "html" ? "html" : "xml");
-  if (method === "xml") {
+  if (method === "text") {
+    let t = "";
+    try { const p2 = new XSLTProcessor(); p2.importStylesheet(xsl.doc); t = p2.transformToFragment(xml.doc, document).textContent; } catch { t = res.documentElement ? res.documentElement.textContent : ""; }
+    box.innerHTML = `<pre>${esc(t.replace(/\r\n/g, "\n"))}</pre>`;
+  } else if (method === "xml") {
     const s = new XMLSerializer().serializeToString(res);
     box.innerHTML = `<pre>${esc(prettyXml(s))}</pre>`;
   } else {
@@ -1210,6 +1304,18 @@ function bind() {
 
   $("#inspect").addEventListener("click", e => { const r = e.target.closest(".frow[data-sel]"); if (r) jumpTo(r.dataset.sel, +r.dataset.n); });
   $("#btnSave").addEventListener("click", save);
+  $("#btnUndo").addEventListener("click", () => { if (cm.undo) { cm.undo(); cm.focus(); } else document.execCommand("undo"); });
+  $("#btnRedo").addEventListener("click", () => { if (cm.redo) { cm.redo(); cm.focus(); } else document.execCommand("redo"); });
+  $("#btnHist").addEventListener("click", () => { HIST.open = !HIST.open; HIST.view = -1; HIST.confirm = -1; $("#btnHist").classList.toggle("primary", HIST.open); HIST.open ? renderHistory() : analyze(); });
+  $("#inspect").addEventListener("click", onHistClick);
+  $("#inspect").addEventListener("click", e => {
+    const a = e.target.closest("[data-addsec]");
+    if (a) { PICK.target = PICK.target === a.dataset.addsec ? null : a.dataset.addsec; PICK.q = ""; analyze(); if (PICK.target) { renderPickList(); const q = $("#pickQ"); if (q) q.focus(); } return; }
+    const k = e.target.closest("[data-pick]");
+    if (k && PICK.items) { const it = PICK.items[+k.dataset.pick]; insertAt(PICK.target, it.c); }
+  });
+  $("#inspect").addEventListener("input", e => { if (e.target.id === "pickQ") { PICK.q = e.target.value; renderPickList(); } });
+  $("#inspect").addEventListener("change", e => { if (e.target.id === "hDated") { lsSet("exsl.datedCopy", e.target.checked); toast(e.target.checked ? "Cópias datadas ligadas." : "Cópias datadas desligadas (o .bak do original continua)."); } });
   $("#btnCopy").addEventListener("click", () => copy(cm.getValue(), "Código copiado."));
   $("#btnSaveAs").addEventListener("click", () => { $("#saveAsBox").hidden = false; $("#saveAsName").value = state.xsl ? state.xsl.name.replace(/(\.xslt?)$/i, "_novo$1") : "MeuLayout.xsl"; $("#saveAsName").focus(); });
   $("#saveAsCancel").addEventListener("click", () => { $("#saveAsBox").hidden = true; });
@@ -1265,7 +1371,7 @@ function bind() {
 const BT = {
   header: { name: "Cabeçalho", sec: "HEADER", desc: "Logo, título, data e hora", single: true },
   customer: { name: "Dados do cliente", sec: "CUSTOMERDATA", desc: "Nome, CPF, endereço…" },
-  store: { name: "Dados da loja", sec: "STOREDATA", desc: "Dados da sua empresa" },
+  store: { name: "Dados da loja", sec: "COMPANYDATA", desc: "Dados da sua empresa" },
   items: { name: "Tabela de itens", sec: "BODY", desc: "Ambientes, categorias, itens" },
   payments: { name: "Condições de pagamento", sec: "PAYMENTTERMS", desc: "Parcelas e totais" },
   entries: { name: "Entradas diferenciadas", sec: "PAYMENTENTRIES", desc: "Sinal e entradas" },
@@ -1621,8 +1727,8 @@ function interpretXsl(text, name) {
       Object.assign(b, { logo: imgs[0] || "", logo2: imgs[1] || "", title: model.title, showDate: v.includes("@DATE"), showHour: v.includes("@HOUR"), showNumber: v.includes("@CUSTOMERNUMBER") });
       model.blocks.push(b);
       if (el.getElementsByTagName("script").length || el.getElementsByTagName("a").length) notes.push("Cabeçalho: o link/script do original (ex.: \"Cinex do Meu Jeito\") não foi recriado. Use um bloco de Código XSL se precisar.");
-    } else if (id === "CUSTOMERDATA" || id === "STOREDATA") {
-      const b = newBlock(id === "CUSTOMERDATA" ? "customer" : "store"); const f = custFields(el, id === "STOREDATA");
+    } else if (id === "CUSTOMERDATA" || id === "STOREDATA" || id === "COMPANYDATA") {
+      const b = newBlock(id === "CUSTOMERDATA" ? "customer" : "store"); const f = custFields(el, id !== "CUSTOMERDATA");
       if (f.length) b.fields = f; const t = el.getElementsByTagName("b")[0]; if (t && textOnly(t)) b.title = textOnly(t).replace(/[:\s-]+$/, "");
       model.blocks.push(b);
     } else if (id === "BODY") {
@@ -2039,16 +2145,277 @@ async function builderToEditor() {
     BD.out = f;
   }
   f.text = text;
-  await openXsl(f); f.dirty = true; renderTree();
+  await openXsl(f); f.dirty = true; renderTree(); histAdd(f, "construtor", text);
   toast(`XSL gerado em ${f.name}. Confira no Editor e clique em Salvar.`);
 }
 function builderInit() {
   bindBuilder();
   const saved = lsGet("exsl.builder", null);
   if (saved && saved.blocks) { bdLoad(saved, [], null); return; }
-  const cinex = state.files.find(f => /^Parceiro_Cinex_Orcamento/i.test(f.name));
-  if (cinex && cinex.text) { try { const r = interpretXsl(cinex.text, cinex.name); bdLoad(r.model, r.notes, cinex); return; } catch {} }
+  const cinex = MODELS.find(m => /^Parceiro_Cinex_Orcamento/i.test(m.name));
+  if (cinex) { try { const r = interpretXsl(cinex.text, cinex.name); bdLoad(r.model, r.notes, null); return; } catch {} }
   bdLoad(starterModel("orcamento"), [], null);
+}
+
+/* ---------- Inserir código da biblioteca numa seção ---------- */
+const PICK = { target: null, q: "" };
+const SECTION_CATS = {
+  HEADER: ["Cabeçalho", "Campos", "Formatação"], CUSTOMERDATA: ["Campos"], COMPANYDATA: ["Campos"], STOREDATA: ["Campos"],
+  BODY: ["Itens", "Campos", "Cálculos", "Preços", "Seções", "Formatação"], PAYMENTTERMS: ["Seções", "Preços"], PAYMENTENTRIES: ["Seções", "Preços"],
+  TOTALS: ["Cálculos", "Preços", "Seções"], FOOTER: ["Seções", "Campos", "Cabeçalho"]
+};
+function pickCats(target) {
+  if (target.startsWith("id:")) return SECTION_CATS[target.slice(3)] || ["Campos", "Seções"];
+  const xmlOut = /method="xml"/.test(cm.getValue().slice(0, 2000));
+  return xmlOut ? ["Integração XML", "Campos", "Pedidos"] : ["Itens", "Campos", "Cálculos", "Preços", "Formatação"];
+}
+function pickerHtml(target) {
+  if (PICK.target !== target) return "";
+  return `<div class="picker" data-picker="${esc(target)}"><input type="search" id="pickQ" value="${esc(PICK.q)}" placeholder="Buscar na biblioteca e nos campos (ex.: peso, moeda, total)">
+    <div class="hint">Sugestões para esta seção: ${esc(pickCats(target).join(", "))}. O código entra no fim da seção, no ponto mostrado em destaque.</div><div id="pickList"></div></div>`;
+}
+function pickItems(target, q) {
+  q = q.trim().toLowerCase();
+  const cats = pickCats(target);
+  const snips = allSnips().map(sn => ({ kind: "snip", cat: sn.cat, t: sn.t, d: sn.d || "", c: sn.c, score: cats.indexOf(sn.cat) }));
+  const fields = CATALOG.flatMap(g => g.f.map(([pth, d]) => ({ kind: "field", cat: "Campo · " + g.g, t: labelFor(pth), d: pth, c: `<xsl:value-of select="${pth}" />`, score: cats.includes("Campos") ? cats.indexOf("Campos") : 9 })));
+  let all = snips.concat(fields);
+  const rank = x => (q && x.t.toLowerCase().includes(q) ? 0 : 100) + (x.score < 0 ? 50 : x.score);
+  if (q) all = all.filter(x => (x.t + " " + x.d + " " + x.cat + " " + x.c).toLowerCase().includes(q));
+  else all = all.filter(x => x.score >= 0 && x.kind === "snip");
+  return all.sort((a, b) => rank(a) - rank(b)).slice(0, 14);
+}
+function renderPickList() {
+  const box = $("#pickList"); if (!box || !PICK.target) return;
+  PICK.items = pickItems(PICK.target, PICK.q);
+  box.innerHTML = PICK.items.map((x, i) => `<button class="pick" type="button" data-pick="${i}"><span class="pc">${esc(x.cat)}</span><b>${esc(x.t)}</b><small>${esc(x.d)}</small></button>`).join("") || '<p class="note">Nada encontrado.</p>';
+}
+function findRange(text, target) {
+  if (target === "tpl:#main") {
+    const m = /<xsl:template[^>]*match="[^"]*"[^>]*>/.exec(text); if (!m) return null;
+    const end = text.indexOf("</xsl:template>", m.index); return end < 0 ? null : { start: m.index + m[0].length, end, tpl: true };
+  }
+  if (target.startsWith("tpl:")) {
+    const nm = target.slice(4).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const m = new RegExp(`<xsl:template[^>]*name="${nm}"[^>]*>`).exec(text); if (!m) return null;
+    const end = text.indexOf("</xsl:template>", m.index); return end < 0 ? null : { start: m.index + m[0].length, end, tpl: true };
+  }
+  const id = target.slice(3);
+  const m = new RegExp(`<([A-Za-z][\\w:]*)\\b[^>]*\\bid="${id}"[^>]*>`).exec(text); if (!m) return null;
+  const tag = m[1], re = new RegExp(`<(/?)${tag}\\b[^>]*?(/?)>`, "g"); re.lastIndex = m.index + m[0].length;
+  let depth = 1, mm;
+  while ((mm = re.exec(text))) { if (mm[1]) { if (--depth === 0) return { start: m.index + m[0].length, end: mm.index }; } else if (!mm[2]) depth++; }
+  return null;
+}
+function insertAt(target, code) {
+  const text = cm.getValue(), r = findRange(text, target);
+  const isHtml = !/<xsl:output[^>]*method="(xml|text)"/.test(text);
+  if (!r) { toast("Não encontrei essa seção no código. O código foi inserido no cursor."); insertCode(code); return; }
+  const inner = text.slice(r.start, r.end);
+  let idx;
+  if (r.tpl) {
+    const rowEnd = Math.max(inner.lastIndexOf("</tr>"), inner.lastIndexOf("</tbody>"));
+    if (rowEnd >= 0) { idx = r.start + rowEnd; r.tpl = false; r.row = true; } else idx = r.end;
+  } else {
+    const rowEnd = inner.lastIndexOf("</tr>");
+    if (target === "id:BODY" && /^\s*<td[\s>]/.test(code) && rowEnd >= 0) { idx = r.start + rowEnd; r.row = true; }
+  }
+  if (idx == null) {
+    const vals = [...inner.matchAll(/<xsl:value-of\b[^>]*\/>/g)];
+    if (vals.length) { const v = vals[vals.length - 1]; idx = r.start + v.index + v[0].length; }
+    else { const td = inner.lastIndexOf("</td>"); idx = td >= 0 ? r.start + td : r.end; }
+  }
+  if (r.row && isHtml && !/<t[dhr][\s>]/.test(code) && !/^\s*<(tbody|xsl:call-template|xsl:template|!--)/.test(code)) code = `<td align="right">\n  ${code.split("\n").join("\n  ")}\n</td>`;
+  const lineStart = text.lastIndexOf("\n", idx - 1) + 1, baseIndent = (text.slice(lineStart).match(/^[ \t]*/) || [""])[0];
+  const atLineStart = /^[ \t]*$/.test(text.slice(lineStart, idx)), indent = baseIndent + (r.tpl || r.row ? "  " : "");
+  const block = (atLineStart ? "" : "\n") + code.split("\n").map((l, k) => (atLineStart && k === 0 ? (r.tpl || r.row ? "  " : "") : indent) + l).join("\n") + (atLineStart ? "\n" + baseIndent : "");
+  if (cm.posFromIndex) {
+    const from = cm.posFromIndex(idx); cm.replaceRange(block, from);
+    const to = cm.posFromIndex(idx + block.length);
+    if (jumpMark) jumpMark.clear(); jumpMark = cm.markText(from, to, { className: "cm-jump" });
+    cm.scrollIntoView({ from, to }, 120); cm.setCursor(to);
+  } else { cm.setValue(text.slice(0, idx) + block + text.slice(idx)); }
+  PICK.target = null; PICK.q = "";
+  toast("Código inserido na seção. Confira o trecho em destaque; Desfazer (Ctrl+Z) volta.");
+}
+
+/* ---------- Histórico, backups e restauração ---------- */
+const HIST = { open: false, view: -1, confirm: -1 };
+const KIND = { original: "Original (ao abrir)", salvo: "Salvo na pasta", exportado: "Exportado", manual: "Ponto de restauração", antes: "Antes de restaurar", construtor: "Gerado pelo construtor", rascunho: "Rascunho automático" };
+const fileKey = f => f.modelId ? "modelo:" + f.modelId : `${f.origin}:${f.origin === "sistema" ? state.sysName + "/" : ""}${f.path}`;
+const fmtTime = t => new Date(t).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+const stamp = t => { const d = new Date(t), z = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}_${z(d.getHours())}-${z(d.getMinutes())}-${z(d.getSeconds())}`; };
+let histMem = {};
+async function histList(f) { const k = "hist:" + fileKey(f); if (histMem[k]) return histMem[k]; const l = (await idbGet(k)) || []; histMem[k] = l; return l; }
+async function histAdd(f, kind, text, label) {
+  if (!f) return;
+  if (text == null) text = f === state.xsl ? cm.getValue() : f.text;
+  if (text == null) return;
+  const list = await histList(f);
+  if (list.length && list[0].text === text && kind !== "manual") { if (kind !== "rascunho" && list[0].kind === "rascunho") { list[0].kind = kind; } else return; }
+  else list.unshift({ t: Date.now(), kind, label: label || "", text });
+  let drafts = 0; const out = [];
+  for (const v of list) { if (v.kind === "rascunho" && ++drafts > 5) continue; out.push(v); }
+  const keep = out.slice(0, 40), k = "hist:" + fileKey(f);
+  histMem[k] = keep; idbSet(k, keep);
+  if (HIST.open && f === state.xsl) renderHistory();
+}
+function lineDiff(a, b) {
+  const A = a.split(/\r?\n/), B = b.split(/\r?\n/);
+  let s = 0; while (s < A.length && s < B.length && A[s] === B[s]) s++;
+  let e = 0; while (e < A.length - s && e < B.length - s && A[A.length - 1 - e] === B[B.length - 1 - e]) e++;
+  const a2 = A.slice(s, A.length - e), b2 = B.slice(s, B.length - e), n = a2.length, m = b2.length;
+  let ops = [];
+  if (n * m > 3e6) ops = [...a2.map(l => ["-", l]), ...b2.map(l => ["+", l])];
+  else {
+    const dp = new Int32Array((n + 1) * (m + 1));
+    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i * (m + 1) + j] = a2[i] === b2[j] ? dp[(i + 1) * (m + 1) + j + 1] + 1 : Math.max(dp[(i + 1) * (m + 1) + j], dp[i * (m + 1) + j + 1]);
+    let i = 0, j = 0;
+    while (i < n && j < m) { if (a2[i] === b2[j]) { ops.push([" ", a2[i]]); i++; j++; } else if (dp[(i + 1) * (m + 1) + j] >= dp[i * (m + 1) + j + 1]) ops.push(["-", a2[i++]]); else ops.push(["+", b2[j++]]); }
+    while (i < n) ops.push(["-", a2[i++]]); while (j < m) ops.push(["+", b2[j++]]);
+  }
+  return { pre: A.slice(Math.max(0, s - 3), s), start: Math.max(0, s - 3), ops, post: A.slice(A.length - e, A.length - e + 3), add: ops.filter(o => o[0] === "+").length, del: ops.filter(o => o[0] === "-").length };
+}
+function diffHtml(d) {
+  const L = (c, t) => `<span class="${c}">${esc(t) || " "}</span>`;
+  let h = d.start > 0 ? L("gap", `… ${d.start} linha(s) iguais acima`) : "";
+  h += d.pre.map(t => L("ctx", "  " + t)).join("");
+  let run = [];
+  const flush = () => { if (run.length > 6) h += run.slice(0, 3).map(t => L("ctx", "  " + t)).join("") + L("gap", `… ${run.length - 6} linha(s) iguais`) + run.slice(-3).map(t => L("ctx", "  " + t)).join(""); else h += run.map(t => L("ctx", "  " + t)).join(""); run = []; };
+  for (const [o, t] of d.ops) { if (o === " ") { run.push(t); continue; } flush(); h += L(o === "+" ? "add" : "del", o + " " + t); }
+  flush();
+  h += d.post.map(t => L("ctx", "  " + t)).join("");
+  return `<pre class="diff">${h}</pre>`;
+}
+const prefDatedCopy = () => lsGet("exsl.datedCopy", true);
+async function renderHistory() {
+  const box = $("#inspect"), f = state.xsl;
+  if (!f) { box.innerHTML = '<p class="note">Abra um arquivo para ver o histórico.</p>'; return; }
+  const list = await histList(f), cur = cm.getValue();
+  if (!HIST.open || f !== state.xsl) return;
+  let h = `<div class="btnrow" style="justify-content:space-between;align-items:center"><h3>Histórico de ${esc(f.name)}</h3><button class="btn small ghost" type="button" data-h="close">Voltar ao mapa</button></div>`;
+  if (HIST.view >= 0 && list[HIST.view]) {
+    const v = list[HIST.view], d = lineDiff(v.text, cur);
+    h += `<div class="hnote">Comparando <b>${esc(KIND[v.kind] || v.kind)}${v.label ? " · " + esc(v.label) : ""}</b> (${fmtTime(v.t)}) com o texto atual do editor.<br><span class="dstat"><span class="a">+${d.add}</span> linhas no atual · <span class="d">−${d.del}</span> linhas na versão</span></div>
+      <div class="btnrow"><button class="btn small primary" type="button" data-h="restore" data-i="${HIST.view}">Restaurar esta versão</button><button class="btn small ghost" type="button" data-h="back">Voltar à lista</button></div>
+      ${d.add + d.del ? diffHtml(d) : '<p class="note">Sem diferenças: o editor está igual a esta versão.</p>'}`;
+    box.innerHTML = h; return;
+  }
+  const drafted = list.find(v => v.kind === "rascunho"), lastReal = list.find(v => v.kind !== "rascunho");
+  if (drafted && lastReal && drafted.t > lastReal.t && drafted.text !== cur) h += `<div class="hnote">Existe um <b>rascunho automático de ${fmtTime(drafted.t)}</b> diferente do texto atual. Use Comparar ou Restaurar abaixo para recuperá-lo.</div>`;
+  h += `<div class="pgroup"><span class="label">Proteção</span>
+      <div class="btnrow"><input type="text" id="hLabel" placeholder="Nome do ponto (opcional)" style="flex:1 1 140px;border:1px solid var(--line);border-radius:6px;padding:5px 7px;background:var(--panel)"><button class="btn small primary" type="button" data-h="mark">Criar ponto de restauração</button></div>
+      <div class="btnrow"><button class="btn small" type="button" data-h="orig" ${f.orig == null ? "disabled" : ""}>Voltar ao original</button><button class="btn small" type="button" data-h="zip" ${list.length ? "" : "disabled"}>Baixar todas as versões</button></div>
+      <label class="ck"><input type="checkbox" id="hDated" ${prefDatedCopy() ? "checked" : ""}> Ao salvar na pasta do Promob, guardar também uma cópia datada em <code>_historico_editorxsl</code></label>
+      <p class="note" style="margin:0">Desfazer e Refazer (Ctrl+Z / Ctrl+Y) voltam passo a passo. O histórico guarda versões inteiras neste navegador: ao abrir, ao salvar, ao exportar, ao gerar pelo construtor, antes de cada restauração e um rascunho automático a cada minuto com alterações.</p></div>`;
+  h += list.length ? list.map((v, i) => {
+    const d = lineDiff(v.text, cur), same = !d.add && !d.del;
+    return `<div class="hver${same ? " cur" : ""}"><div class="top"><span class="k">${esc(KIND[v.kind] || v.kind)}</span><b>${fmtTime(v.t)}</b>${v.label ? `<span>${esc(v.label)}</span>` : ""}</div>
+      <span class="dstat">${same ? "igual ao editor" : `<span class="a">+${d.add}</span> / <span class="d">−${d.del}</span> linhas em relação ao editor`} · ${v.text.split("\n").length} linhas</span>
+      <div class="row"><button class="btn small" type="button" data-h="view" data-i="${i}" ${same ? "disabled" : ""}>Comparar</button>
+      <button class="btn small ${HIST.confirm === i ? "primary" : ""}" type="button" data-h="restore" data-i="${i}" ${same ? "disabled" : ""}>${HIST.confirm === i ? "Confirmar restauração" : "Restaurar"}</button>
+      <button class="btn small ghost" type="button" data-h="dl" data-i="${i}">Baixar</button></div></div>`;
+  }).join("") : '<p class="note">Nenhuma versão guardada ainda.</p>';
+  box.innerHTML = h;
+}
+async function restoreVersion(text, label) {
+  const f = state.xsl; if (!f) return;
+  await histAdd(f, "antes", cm.getValue());
+  cm.setValue(text); f.text = text; f.dirty = true; renderTree();
+  HIST.view = -1; HIST.confirm = -1; renderHistory();
+  toast(`${label} restaurado no editor. Confira e clique em Salvar para gravar. Para voltar, use Desfazer ou a versão "Antes de restaurar".`);
+}
+async function onHistClick(e) {
+  const b = e.target.closest("[data-h]"); if (!b || !HIST.open) return;
+  const f = state.xsl, list = f ? await histList(f) : [], i = +b.dataset.i, act = b.dataset.h;
+  if (act === "close") { HIST.open = false; HIST.view = -1; $("#btnHist").classList.remove("primary"); analyze(); return; }
+  if (act === "back") { HIST.view = -1; renderHistory(); return; }
+  if (act === "view") { HIST.view = i; renderHistory(); return; }
+  if (act === "mark") { await histAdd(f, "manual", cm.getValue(), ($("#hLabel").value || "").trim()); toast("Ponto de restauração criado."); return; }
+  if (act === "orig") { if (f.orig != null) restoreVersion(f.orig, "Original"); return; }
+  if (act === "restore") {
+    if (HIST.view < 0 && HIST.confirm !== i) { HIST.confirm = i; renderHistory(); setTimeout(() => { if (HIST.confirm === i) { HIST.confirm = -1; if (HIST.open) renderHistory(); } }, 5000); return; }
+    restoreVersion(list[i].text, `A versão de ${fmtTime(list[i].t)}`); return;
+  }
+  const base = f.name.replace(/(\.(xslt?|xml))$/i, ""), ext = (f.name.match(/\.(xslt?|xml)$/i) || [".xsl"])[0];
+  if (act === "dl") { const v = list[i]; await exportFiles([{ name: `${base}_${stamp(v.t)}${ext}`, bytes: encodeLike(f, v.text) }], `${base}_${stamp(v.t)}.zip`); return; }
+  if (act === "zip") { await exportFiles(list.map(v => ({ name: `${base}_${stamp(v.t)}_${v.kind}${ext}`, bytes: encodeLike(f, v.text) })).concat([{ name: "", bytes: null }]).filter(x => x.bytes), `${base}_historico.zip`); }
+}
+setInterval(() => { const f = state.xsl; if (f && f.dirty) histAdd(f, "rascunho", cm.getValue()); }, 60000);
+
+/* ---------- Modelos prontos ---------- */
+let MODELS = [];
+try { const m = JSON.parse(document.getElementById("models").textContent); MODELS = m.modelos || []; (m.assets || []).forEach(a => addFile({ name: a.name, path: a.path, text: a.text, orig: a.text, enc: "utf-8", origin: "asset" })); } catch {}
+const MD = { cat: "Todas" };
+const CAT_ORDER = ["Orçamentos", "Pedidos", "Listagens", "Parceiros e fornecedores", "Integração ERP (XML)", "Arquivos texto (TXT/CSV)", "Enviar Para (configuração)", "Outros relatórios", "Testes"];
+function modelGroups() {
+  const by = new Map();
+  for (const m of MODELS) { const k = m.cat + "|" + m.base.toLowerCase(); if (!by.has(k)) by.set(k, []); by.get(k).push(m); }
+  return [...by.values()].map(v => v.sort((a, b) => (b.idiomas.includes("PT") - a.idiomas.includes("PT")) || (a.idiomas.length - b.idiomas.length)));
+}
+function variantLabel(m) { return [m.idiomas.join("/") || "sem idioma", m.pacote].join(" · "); }
+function renderModels() {
+  const q = $("#mdSearch").value.trim().toLowerCase(), pac = $("#mdPacote").value, tipo = $("#mdTipo").value;
+  const groups = modelGroups();
+  const match = g => g.some(m => (!pac || m.pacote === pac || m.tambem.some(t => t.startsWith(pac + " /"))) && (!tipo || m.tipo === tipo) &&
+    (!q || (m.name + " " + m.base + " " + m.desc + " " + m.recursos.join(" ") + " " + m.pacote + " " + m.tambem.join(" ")).toLowerCase().includes(q)));
+  const vis = groups.filter(match);
+  const counts = {}; vis.forEach(g => { counts[g[0].cat] = (counts[g[0].cat] || 0) + 1; });
+  const cats = CAT_ORDER.filter(c => counts[c]).concat(Object.keys(counts).filter(c => !CAT_ORDER.includes(c)));
+  $("#mdCats").innerHTML = `<button class="fchip" type="button" data-mcat="Todas" aria-pressed="${MD.cat === "Todas"}">Todas · ${vis.length}</button>` +
+    cats.map(c => `<button class="fchip" type="button" data-mcat="${esc(c)}" aria-pressed="${MD.cat === c}">${esc(c)} · ${counts[c]}</button>`).join("");
+  const shown = cats.filter(c => MD.cat === "Todas" || MD.cat === c);
+  $("#mdList").innerHTML = shown.map(c => `<h3 class="mcat">${esc(c)} <small>${counts[c]} modelo(s)</small></h3><div class="cards">${vis.filter(g => g[0].cat === c).map(cardModel).join("")}</div>`).join("") ||
+    '<p class="empty">Nenhum modelo com esses filtros.</p>';
+}
+function cardModel(g) {
+  const m = g[0], key = esc(m.id);
+  const tipoCls = { HTML: "xsl", XML: "xml", TXT: "txt", Config: "cfg" }[m.tipo] || "";
+  const langs = [...new Set(g.flatMap(x => x.idiomas))];
+  const outros = g.flatMap(x => x.tambem);
+  return `<article class="card mcard" data-mgroup="${key}">
+    <span class="cat">${esc(m.pacote)}</span>
+    <h4>${esc(m.base)}</h4>
+    <div class="chips"><span class="chip ${tipoCls}">${esc(m.tipo)}</span>${langs.map(l => `<span class="chip">${esc(l)}</span>`).join("")}<span class="chip">${m.linhas} linhas</span></div>
+    <p>${esc(m.desc)}</p>
+    ${m.recursos.length ? `<ul class="rec">${m.recursos.map(r => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}
+    ${m.alertas.map(a => `<p class="alert">Atenção: ${esc(a)}</p>`).join("")}
+    ${g.length > 1 ? `<label class="note">Versão: <select data-mvar>${g.map(x => `<option value="${esc(x.id)}">${esc(x.name)} · ${esc(variantLabel(x))}</option>`).join("")}</select></label>` : `<input type="hidden" data-mvar value="${key}">`}
+    <div class="row">
+      <button class="btn small primary" type="button" data-mact="open">Abrir</button>
+      ${m.tipo !== "Config" ? '<button class="btn small" type="button" data-mact="view">Visualizar</button>' : ""}
+      ${m.tipo === "HTML" ? '<button class="btn small" type="button" data-mact="build">Construtor</button>' : ""}
+      <button class="btn small ghost" type="button" data-mact="export">Exportar</button>
+    </div>
+    ${outros.length ? `<details><summary>Cópias idênticas em ${outros.length} arquivo(s)</summary><ul>${outros.map(o => `<li>${esc(o)}</li>`).join("")}</ul></details>` : ""}
+  </article>`;
+}
+async function openModel(m) {
+  let f = state.files.find(x => x.modelId === m.id);
+  if (!f) f = addFile({ name: m.name, path: `Modelos/${m.pacote}/${m.name}`, text: m.text, orig: m.text, enc: "utf-8", origin: "modelo", modelId: m.id });
+  await openXsl(f);
+  return f;
+}
+async function modelAction(card, act) {
+  const id = card.querySelector("[data-mvar]").value, m = MODELS.find(x => x.id === id); if (!m) return;
+  if (act === "export") { await exportFiles([{ name: m.name, bytes: new TextEncoder().encode(m.text) }], m.name.replace(/\.(xslt?|xml)$/i, "") + ".zip"); return; }
+  const f = await openModel(m);
+  if (act === "view") { if (!state.xml) state.xml = state.files.find(x => x.ext === "xml") || null; fillXmlSelect(); showTab("preview"); }
+  else if (act === "build") {
+    try { const r = interpretXsl(m.text, m.name); bdLoad(r.model, r.notes, f); showTab("builder"); toast(`"${m.name}" aberto no construtor em ${r.model.blocks.length} blocos.`); }
+    catch (e) { toast(e.message); }
+  } else toast(`"${m.name}" aberto no editor. Use Salvar como para gravar uma cópia na sua pasta.`);
+}
+function bindModels() {
+  const pacs = [...new Set(MODELS.map(m => m.pacote))];
+  $("#mdPacote").innerHTML = '<option value="">Todos os pacotes</option>' + pacs.map(p => `<option>${esc(p)}</option>`).join("");
+  const total = MODELS.length, grupos = modelGroups().length, copias = MODELS.reduce((n, m) => n + m.tambem.length, 0);
+  $("#mdSummary").textContent = total ? `${grupos} modelos (${total} versões distintas; ${copias} cópias idênticas agrupadas) em ${pacs.length} pacotes` : "Nenhum modelo embutido nesta versão.";
+  $("#mdCats").addEventListener("click", e => { const b = e.target.closest("[data-mcat]"); if (b) { MD.cat = b.dataset.mcat; renderModels(); } });
+  ["#mdPacote", "#mdTipo"].forEach(k => $(k).addEventListener("change", renderModels));
+  $("#mdSearch").addEventListener("input", renderModels);
+  $("#mdList").addEventListener("click", e => { const b = e.target.closest("[data-mact]"); if (b) modelAction(b.closest(".mcard"), b.dataset.mact); });
+  renderModels();
 }
 
 /* ---------- Início ---------- */
@@ -2066,6 +2433,7 @@ async function start() {
   if (!window.showDirectoryPicker) $("#btnMap").title = "Seu navegador abre a pasta em modo leitura. Para salvar direto nela, use Chrome ou Edge.";
   const saved = await idbGet("root");
   if (saved && saved.name) { const b = $("#btnReopen"); b.hidden = false; b.textContent = "Reabrir " + saved.name; }
+  bindModels();
   builderInit();
   showTab(savedTab);
 }

@@ -11,6 +11,11 @@ Editor de layouts XSL do Promob (orçamento, listagem e integração ERP), em um
 - **Campos:** catálogo do XML de orçamento e os campos que existem de fato no XML carregado (referências, metadados, integração).
 - **Biblioteca de códigos:** trechos prontos (peso pela referência, moeda, somas, colunas, integração) e os seus, com exportação.
 - **Pedir à IA:** monta um pedido completo para colar no Claude.
+- **Modelos:** os layouts recebidos, sem duplicados, organizados por tipo (orçamento, pedido, listagem, parceiros, integração, TXT, Enviar Para), com idiomas e pacotes como versões. Abrir, visualizar, levar ao construtor ou exportar.
+- **Histórico e backups:** desfazer/refazer, versões por arquivo (ao abrir, salvar, exportar, gerar, antes de restaurar e rascunho automático), comparar, restaurar, voltar ao original, `.bak` e cópia datada em `_historico_editorxsl` a cada salvamento na pasta.
+- **+ Código nas seções:** insere um trecho da biblioteca ou um campo direto na seção escolhida do layout.
+
+Os modelos ficam em `web/modelos/<pacote>/` (fora do git) e são catalogados por `web/catalogar_modelos.py` durante o build.
 
 Gerar: `python3 web/build.py` → `web/dist/EditorXSL-Promob.html` (abrir no navegador). Layouts reais podem ficar em `web/private/` (fora do git) para virem embutidos como exemplo.
 
