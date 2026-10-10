@@ -1790,7 +1790,7 @@ function generate(model, pv) {
 ${meta}<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <xsl:decimal-format name="formato" decimal-separator="," grouping-separator="." />
   <xsl:output method="html" />
-  <xsl:template match="LISTING">
+${model.extraTop || ""}  <xsl:template match="${X(model.match || "LISTING")}">${model.rootVars || ""}
     <html generator="ProMob.Cadastro">
       <head>
         <title>${X(model.title)}</title>
@@ -1806,7 +1806,7 @@ ${foot}
         </table>
       </body>
     </html>
-  </xsl:template>${tpls}
+  </xsl:template>${tpls}${model.extra || ""}
 </xsl:stylesheet>
 `;
 }
@@ -1876,9 +1876,69 @@ function interpretXsl(text, name) {
   }
   const h = model.blocks.findIndex(b => b.type === "header"); if (h > 0) model.blocks.unshift(...model.blocks.splice(h, 1));
   const f = model.blocks.findIndex(b => b.type === "footer"); if (f >= 0 && f !== model.blocks.length - 1) model.blocks.push(...model.blocks.splice(f, 1));
+  if (!secs.length) interpretByTemplates(doc, model, notes, custFields);
   if (!model.blocks.length) throw new Error("Não encontrei seções do Promob (HEADER, CUSTOMERDATA, BODY…) neste XSL.");
   notes.push("O visual (cores, fontes e bordas) é refeito no padrão do construtor. O arquivo original não é alterado: o resultado é salvo com outro nome.");
   return { model, notes };
+}
+/* Layouts sem ids de seção: a estrutura vem dos templates nomeados chamados pelo template principal. */
+function interpretByTemplates(doc, model, notes, custFields) {
+  const ser = n => new XMLSerializer().serializeToString(n).replace(/ xmlns(:xsl)?="[^"]*"/g, "");
+  const top = [...doc.documentElement.children];
+  const tpls = top.filter(e => e.namespaceURI === XSLNS && e.localName === "template");
+  const root = tpls.find(t => /^(\/?LISTING|\/)$/.test(t.getAttribute("match") || "")) || tpls.find(t => t.getAttribute("match"));
+  if (!root) return;
+  const byName = n => tpls.find(t => t.getAttribute("name") === n);
+  model.match = root.getAttribute("match");
+  // Tudo que não é o template principal segue junto, intacto: templates auxiliares, variáveis globais, chaves.
+  model.extra = tpls.filter(t => t !== root).map(t => "\n  " + ser(t)).join("");
+  model.extraTop = top.filter(e => e.namespaceURI === XSLNS && !["template", "output"].includes(e.localName) && !(e.localName === "decimal-format" && e.getAttribute("name") === "formato")).map(e => "  " + ser(e) + "\n").join("");
+  const isX = (n, ln) => n.nodeType === 1 && n.namespaceURI === XSLNS && (!ln || n.localName === ln);
+  const body = root.getElementsByTagName("body")[0] || root;
+  // Variáveis do template principal fora do corpo continuam valendo para os blocos.
+  model.rootVars = [...root.getElementsByTagNameNS(XSLNS, "variable"), ...root.getElementsByTagNameNS(XSLNS, "param")].filter(v => !body.contains(v) || v.parentNode === body).map(v => "\n    " + ser(v)).join("");
+  const kids = h => [...h.childNodes].filter(n => n.nodeType === 1 || (n.nodeType === 3 && n.nodeValue.trim()));
+  // Desce pela tabela-página: body > table > (thead|tbody|tfoot) > linhas.
+  let host = body;
+  for (let g = 0; g < 3; g++) { const k = kids(host).filter(n => !isX(n, "variable")); if (k.length === 1 && k[0].nodeType === 1 && k[0].namespaceURI !== XSLNS && /^(table|div|center|form)$/i.test(k[0].localName)) host = k[0]; else break; }
+  const units = [];
+  const onlyCalls = t => { const inner = []; let ok = true;
+    const walk = el => { for (const c of kids(el)) { if (isX(c, "call-template")) inner.push(c); else if (c.nodeType === 1 && c.namespaceURI !== XSLNS && /^(thead|tbody|tfoot|tr|td)$/i.test(c.localName)) walk(c); else ok = false; } };
+    walk(t); return ok && inner.length >= 2 ? inner : null; };
+  const flat = (nodes, depth) => {
+    for (const n of nodes) {
+      if (n.nodeType !== 1) { units.push({ xml: n.nodeValue.trim() }); continue; }
+      if (isX(n, "variable") || isX(n, "param")) continue;
+      if (n.namespaceURI !== XSLNS && /^(thead|tbody|tfoot)$/i.test(n.localName)) { flat(kids(n), depth); continue; }
+      if (isX(n, "call-template")) {
+        const name = n.getAttribute("name"), t = byName(name);
+        // Template "container" (só chama outros, sem parâmetros) é aberto; os demais viram um bloco.
+        const inner = t && depth < 3 && !n.getElementsByTagNameNS(XSLNS, "with-param").length && !t.getElementsByTagNameNS(XSLNS, "param").length ? onlyCalls(t) : null;
+        if (inner) { flat(inner, depth + 1); continue; }
+        units.push({ name, tpl: t, xml: ser(n) }); continue;
+      }
+      units.push({ xml: ser(n), el: n });
+    }
+  };
+  flat(kids(host), 0);
+  const kind = u => {
+    const nm = (u.name || "").toLowerCase(), el = u.tpl || u.el;
+    if (/cliente|customer/.test(nm)) return "customer";
+    if (/loja|empresa|store|company/.test(nm)) return "store";
+    if (!nm && el && /dados do cliente/i.test(textOnly(el))) return "customer";
+    return "code";
+  };
+  for (const u of units) {
+    const k = kind(u), el = u.tpl || u.el;
+    if (k !== "code" && el) {
+      const f = custFields(el, k === "store");
+      if (f.length >= 2) { const b = newBlock(k); b.fields = f; const t = el.getElementsByTagName("b")[0]; if (t && textOnly(t) && textOnly(t).length < 40) b.title = textOnly(t).replace(/[:\s-]+$/, ""); if (u.name) b.label = u.name.replace(/^Gerar/, ""); model.blocks.push(b); continue; }
+    }
+    if (!u.xml.trim()) continue;
+    const b = newBlock("code"); b.xsl = u.xml; if (u.name) b.label = u.name.replace(/^Gerar/, "");
+    model.blocks.push(b);
+  }
+  if (model.blocks.length) notes.push("Este layout não usa os ids de seção do Promob: cada parte chamada pelo template principal virou um bloco (dados do cliente e da loja como blocos editáveis; o resto como Código XSL). Os templates originais seguem preservados no arquivo gerado.");
 }
 function interpretItems(doc, body, notes) {
   const b = newBlock("items");
@@ -2012,7 +2072,7 @@ async function renderCanvas() {
   box.innerHTML = bl.map((b, i) => {
     const fixed = b.type === "header" || b.type === "footer";
     return `<article class="bcard${i === BD.sel ? " on" : ""}" data-i="${i}">
-      <header>${fixed ? '<span class="grip" title="Posição fixa">•</span>' : '<span class="grip" title="Arraste para mover" data-grip>⋮⋮</span>'}<b>${esc(BT[b.type].name)}</b>${BT[b.type].sec ? `<span class="mono">${BT[b.type].sec}</span>` : ""}
+      <header>${fixed ? '<span class="grip" title="Posição fixa">•</span>' : '<span class="grip" title="Arraste para mover" data-grip>⋮⋮</span>'}<b>${esc(BT[b.type].name)}${b.label ? " · " + esc(b.label) : ""}</b>${BT[b.type].sec ? `<span class="mono">${BT[b.type].sec}</span>` : ""}
         <span class="sp">${fixed ? "" : `<button class="ibtn" type="button" data-up="${i}" title="Subir">↑</button><button class="ibtn" type="button" data-down="${i}" title="Descer">↓</button><button class="ibtn" type="button" data-dup="${i}" title="Duplicar">⧉</button>`}<button class="ibtn" type="button" data-del="${i}" title="Remover">✕</button></span></header>
       ${b.type === "code" && !codeOk(b.xsl) ? '<div class="bwarn">O código deste bloco tem erro de estrutura.</div>' : ""}
       <div class="paper" data-paper="${i}"></div></article>`;
