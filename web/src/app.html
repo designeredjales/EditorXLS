@@ -271,6 +271,23 @@ pre.diff .add{background:var(--ok-soft);color:var(--ok)} pre.diff .del{backgroun
 .chip.txt{background:var(--sunk)}
 .chip.cfg{background:var(--wood-soft);color:var(--wood);border-color:transparent}
 
+/* ---------- Auditoria ---------- */
+.sevc{font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;flex:none;white-space:nowrap}
+.sevc.erro{background:var(--err-soft);color:var(--err)} .sevc.alerta{background:var(--wood-soft);color:var(--wood)} .sevc.ok{background:var(--ok-soft);color:var(--ok)}
+.sevd{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none;margin-right:5px;vertical-align:middle}
+.sevd.erro,.fnd.erro .sevd{background:var(--err)} .sevd.alerta,.fnd.alerta .sevd{background:var(--wood)} .sevd.info,.fnd.info .sevd{background:var(--muted)}
+.fnds{list-style:none;margin:0;padding:0}
+.fnd{display:flex;gap:8px;align-items:flex-start;padding:7px 10px;border-top:1px solid var(--line);font-size:12.5px;line-height:1.4}
+.fnd>div{min-width:0;overflow-wrap:anywhere}
+.fnd .sevd{margin-top:5px}
+.fnd .facts{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap}
+.health>header .addsec{margin-left:auto}
+.aurow{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:10px;background:var(--panel)}
+.aurow>header{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 10px;background:var(--sunk)}
+.aurow>header b{overflow-wrap:anywhere}
+.aurow>header .sp{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+#auRules .fchip{display:inline-flex;align-items:center}
+
 /* ---------- Construtor visual ---------- */
 .bwrap{flex:1;min-height:0;display:grid;grid-template-columns:200px minmax(0,1fr) 320px}
 .palette{border-right:1px solid var(--line);overflow:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
@@ -370,6 +387,7 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
         <button class="tab" role="tab" aria-selected="false" data-tab="models" type="button">Modelos</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="editor" type="button">Editor de código</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="compare" type="button">Comparar</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="audit" type="button">Auditoria</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="preview" type="button">Visualizar</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="fields" type="button">Campos</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="lib" type="button">Biblioteca de códigos</button>
@@ -408,6 +426,7 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
           <div class="mtools">
             <select class="sel" id="mdPacote" aria-label="Pacote"><option value="">Todos os pacotes</option></select>
             <select class="sel" id="mdTipo" aria-label="Tipo"><option value="">Todos os tipos</option><option>HTML</option><option>XML</option><option>TXT</option><option>Config</option></select>
+            <select class="sel" id="mdSaude" aria-label="Saúde"><option value="">Qualquer saúde</option><option value="erro">Com erro</option><option value="alerta">Com erro ou alerta</option><option value="ok">Sem erro</option></select>
             <input class="search" id="mdSearch" type="search" placeholder="Buscar por nome, parceiro, campo ou referência">
           </div>
           <div id="mdList"></div>
@@ -462,6 +481,22 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
             <span class="grp"><b>Esquerda:</b><button class="btn small" type="button" data-cout="L:apply">Aplicar no arquivo</button><button class="btn small" type="button" data-cout="L:new">Abrir no editor</button><button class="btn small ghost" type="button" data-cout="L:export">Exportar</button></span>
             <span class="grp"><b>Direita:</b><button class="btn small" type="button" data-cout="R:apply">Aplicar no arquivo</button><button class="btn small" type="button" data-cout="R:new">Abrir no editor</button><button class="btn small ghost" type="button" data-cout="R:export">Exportar</button></span>
           </div>
+        </div>
+      </section>
+
+      <section class="pane" data-pane="audit" hidden>
+        <div class="lib">
+          <div class="mhead"><h3>Auditoria dos layouts</h3><span class="note" id="auSummary"></span></div>
+          <p class="note">Confere cada arquivo antes de ele chegar ao Promob: estrutura, templates, variáveis e formatos que faltam, somas que quebram com vírgula, caminhos frágeis e arquivos citados que não existem. Nada é alterado sem você pedir.</p>
+          <div class="mtools">
+            <select class="sel" id="auScope" aria-label="O que auditar"><option value="models">Modelos embutidos</option><option value="files">Arquivos abertos e pasta do sistema</option></select>
+            <select class="sel" id="auSev" aria-label="Nível"><option value="erro">Só erros</option><option value="alerta" selected>Erros e alertas</option><option value="">Tudo, inclusive avisos</option></select>
+            <input class="search" id="auSearch" type="search" placeholder="Filtrar por nome ou pacote">
+            <button class="btn small primary" id="auFixAll" type="button" title="Aplica as correções automáticas em cópias e baixa um .zip. Os originais não mudam.">Corrigir o que for seguro (.zip)</button>
+            <button class="btn small" id="auReport" type="button">Relatório (.csv)</button>
+          </div>
+          <div class="filters" id="auRules"></div>
+          <div id="auList"></div>
         </div>
       </section>
 
@@ -964,18 +999,23 @@ function analyze() {
 function analyzeInto(box) {
   const st = $("#edStatus");
   if (!state.xsl) { box.innerHTML = '<p class="note">Abra um XSL na lista de arquivos.</p>'; return; }
+  const AUDL = auditXsl(cm.getValue(), state.xsl.name, fileCtx(state.xsl)), HH = healthHtml(AUDL), AC = auditCount(AUDL);
+  state.audit = AUDL;
   const { doc, error } = parseXml(cm.getValue());
   if (!error && doc.documentElement && doc.documentElement.namespaceURI !== XSLNS) {
     st.className = "status wait"; st.textContent = "Arquivo de configuração";
     const n = doc.getElementsByTagName("*").length;
-    box.innerHTML = `<p class="note">Este arquivo não é um layout XSL: é ${doc.documentElement.nodeName === "SENDTOCOLLECTION" ? "a configuração do menu <b>Enviar Para</b> do Promob (pasta Budget\\SendTo)" : "um XML de dados"}. Ele pode ser editado e salvo aqui, mas não tem pré-visualização.</p>` +
+    if (AC.erro || AC.alerta) { st.className = "status " + (AC.erro ? "err" : "wait"); st.textContent += ` · ${AC.erro + AC.alerta} problema(s)`; }
+    box.innerHTML = HH + `<p class="note">Este arquivo não é um layout XSL: é ${doc.documentElement.nodeName === "SENDTOCOLLECTION" ? "a configuração do menu <b>Enviar Para</b> do Promob (pasta Budget\\SendTo)" : "um XML de dados"}. Ele pode ser editado e salvo aqui, mas não tem pré-visualização.</p>` +
       (doc.documentElement.nodeName === "SENDTOCOLLECTION" ? `<div class="sec"><header><b>Opções configuradas</b></header>${[...doc.getElementsByTagName("*")].filter(e => /^SENDTO(FILE|EMAIL|FTP|PACKAGE)$/.test(e.nodeName)).map(e => `<div class="frow" style="cursor:default"><span class="lb"><b>${esc(e.getAttribute("DESCRIPTION") || e.getAttribute("ID"))}</b> · ${esc(e.nodeName.replace("SENDTO", "").toLowerCase())}</span><code>${esc(e.getAttribute("XSLLAYOUT") || "(sem layout: XML bruto do orçamento)")}</code></div>`).join("")}</div>` : "") + aiBlock();
     bindAi(); return;
   }
-  if (error) { st.className = "status err"; st.textContent = "Erro de estrutura"; box.innerHTML = `<div class="errbox">${esc(error)}</div>` + aiBlock(); bindAi(); return; }
+  if (error) { st.className = "status err"; st.textContent = "Erro de estrutura"; box.innerHTML = HH + `<div class="errbox">${esc(error)}</div>` + aiBlock(); bindAi(); return; }
   let compiled = true;
   if (window.XSLTProcessor) { try { new XSLTProcessor().importStylesheet(doc); } catch { compiled = false; } }
   st.className = "status " + (compiled ? "ok" : "err"); st.textContent = compiled ? "XSL válido" : "XSL com erro";
+  if (AC.erro) { st.className = "status err"; st.textContent = `${AC.erro} erro(s): veja Saúde do arquivo`; }
+  else if (AC.alerta) st.textContent += ` · ${AC.alerta} alerta(s)`;
   const out = doc.getElementsByTagNameNS(XSLNS, "output")[0];
   const method = (out && out.getAttribute("method")) || "html";
   const valueOfs = [...doc.getElementsByTagNameNS(XSLNS, "value-of")];
@@ -1016,7 +1056,7 @@ function analyzeInto(box) {
     }
     for (const [k, list] of byTpl) { const tg = k.startsWith("Template ") ? "tpl:" + k.slice(9) : "tpl:#main"; html += `<div class="sec" data-target="${esc(tg)}"><header><b>${esc(k)}</b><span class="mono">atributo ← campo</span><button class="addsec" type="button" data-addsec="${esc(tg)}" title="Inserir um código da biblioteca aqui">+ Código</button></header>${pickerHtml(tg)}${list.join("")}</div>`; }
   }
-  box.innerHTML = html + aiBlock();
+  box.innerHTML = HH + html + aiBlock();
   bindAi();
 }
 function jumpTo(sel, n) {
@@ -1164,6 +1204,13 @@ function download(name, bytes) {
 async function save() {
   const f = state.xsl; if (!f) return;
   f.text = cm.getValue();
+  const ac = auditCount(auditXsl(f.text, f.name, fileCtx(f)));
+  if (ac.erro && !(f.saveArmed && Date.now() - f.saveArmed < 10000)) {
+    f.saveArmed = Date.now(); $("#btnSave").textContent = "Salvar assim mesmo";
+    setTimeout(() => { $("#btnSave").textContent = "Salvar"; }, 10000);
+    toast(`Este arquivo tem ${ac.erro} erro(s) que impedem o Promob de abrir (veja Saúde do arquivo, à direita). Para gravar mesmo assim, clique em "Salvar assim mesmo".`); return;
+  }
+  f.saveArmed = 0; $("#btnSave").textContent = "Salvar";
   const bytes = encodeLike(f, f.text);
   if (!f.handle && f.parent && await ensurePerm(f.parent)) {
     try { f.handle = await f.parent.getFileHandle(f.name, { create: true }); } catch {}
@@ -1385,6 +1432,7 @@ function showTab(name) {
   if (name === "preview") runPreview();
   if (name === "lib") renderLib();
   if (name === "builder" && BD.model) renderCanvas();
+  if (name === "audit") renderAudit();
   if (name === "compare") fillCmpSelects().then(() => CMP.mode === "packs" ? renderPacks() : runCompare());
 }
 
@@ -2768,9 +2816,10 @@ function modelGroups() {
 }
 function variantLabel(m) { return [m.idiomas.join("/") || "sem idioma", m.pacote].join(" · "); }
 function renderModels() {
-  const q = $("#mdSearch").value.trim().toLowerCase(), pac = $("#mdPacote").value, tipo = $("#mdTipo").value;
+  const q = $("#mdSearch").value.trim().toLowerCase(), pac = $("#mdPacote").value, tipo = $("#mdTipo").value, saude = $("#mdSaude").value;
+  const okSaude = m => { if (!saude) return true; const c = auditCount(auditModel(m)); return saude === "erro" ? c.erro > 0 : saude === "alerta" ? c.erro + c.alerta > 0 : !c.erro; };
   const groups = modelGroups();
-  const match = g => g.some(m => (!pac || m.pacote === pac || m.tambem.some(t => t.startsWith(pac + " /"))) && (!tipo || m.tipo === tipo) &&
+  const match = g => g.some(m => (!pac || m.pacote === pac || m.tambem.some(t => t.startsWith(pac + " /"))) && (!tipo || m.tipo === tipo) && okSaude(m) &&
     (!q || (m.name + " " + m.base + " " + m.desc + " " + m.recursos.join(" ") + " " + m.pacote + " " + m.tambem.join(" ")).toLowerCase().includes(q)));
   const vis = groups.filter(match);
   const counts = {}; vis.forEach(g => { counts[g[0].cat] = (counts[g[0].cat] || 0) + 1; });
@@ -2789,7 +2838,7 @@ function cardModel(g) {
   return `<article class="card mcard" data-mgroup="${key}">
     <span class="cat">${esc(m.pacote)}</span>
     <h4>${esc(m.base)}</h4>
-    <div class="chips"><span class="chip ${tipoCls}">${esc(m.tipo)}</span>${langs.map(l => `<span class="chip">${esc(l)}</span>`).join("")}<span class="chip">${m.linhas} linhas</span></div>
+    <div class="chips"><span class="chip ${tipoCls}">${esc(m.tipo)}</span>${langs.map(l => `<span class="chip">${esc(l)}</span>`).join("")}<span class="chip">${m.linhas} linhas</span>${sevChip(auditCount(auditModel(m)))}</div>
     <p>${esc(m.desc)}</p>
     ${m.recursos.length ? `<ul class="rec">${m.recursos.map(r => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}
     ${m.alertas.map(a => `<p class="alert">Atenção: ${esc(a)}</p>`).join("")}
@@ -2818,7 +2867,7 @@ async function modelAction(card, act) {
   if (act === "view") { if (!state.xml) state.xml = state.files.find(x => x.ext === "xml") || null; fillXmlSelect(); showTab("preview"); }
   else if (act === "build") {
     try { const r = interpretXsl(m.text, m.name); bdLoad(r.model, r.notes, f); showTab("builder"); toast(`"${m.name}" aberto no construtor em ${r.model.blocks.length} blocos.`); }
-    catch (e) { toast(e.message); }
+    catch (e) { toast(e.message + (/estrutura/.test(e.message) ? " Veja Saúde do arquivo, no editor: alguns casos têm correção automática." : "")); }
   } else toast(`"${m.name}" aberto no editor. Use Salvar como para gravar uma cópia na sua pasta.`);
 }
 function bindModels() {
@@ -2827,11 +2876,304 @@ function bindModels() {
   const total = MODELS.length, grupos = modelGroups().length, copias = MODELS.reduce((n, m) => n + m.tambem.length, 0);
   $("#mdSummary").textContent = total ? `${grupos} modelos (${total} versões distintas; ${copias} cópias idênticas agrupadas) em ${pacs.length} pacotes` : "Nenhum modelo embutido nesta versão.";
   $("#mdCats").addEventListener("click", e => { const b = e.target.closest("[data-mcat]"); if (b) { MD.cat = b.dataset.mcat; renderModels(); } });
-  ["#mdPacote", "#mdTipo"].forEach(k => $(k).addEventListener("change", renderModels));
+  ["#mdPacote", "#mdTipo", "#mdSaude"].forEach(k => $(k).addEventListener("change", renderModels));
   $("#mdSearch").addEventListener("input", renderModels);
   $("#mdList").addEventListener("click", e => { const b = e.target.closest("[data-mact]"); if (b) modelAction(b.closest(".mcard"), b.dataset.mact); });
   renderModels();
 }
+
+/* ---------- Auditoria: saúde dos layouts ---------- */
+const SEVS = { erro: "Erro", alerta: "Alerta", info: "Aviso" };
+const SEV_RANK = { erro: 0, alerta: 1, info: 2 };
+const AUD = { scope: "models", sev: "alerta", rule: "", q: "", cache: new Map() };
+const RULES = { xml: "Erro de estrutura", vazio: "Arquivo vazio", "tpl-duplo": "Template duplicado", "tpl-falta": "Template que não existe", "arquivo-falta": "Arquivo citado que não existe",
+  "var-falta": "Variável não declarada", "var-sem-cifrao": "Teste sem o $", "key-falta": "key() sem declarar", "formato-falta": "Formato numérico não declarado", "sum-virgula": "sum() com vírgula",
+  "parent-fixo": "parent::node() fixo", senha: "Senha em texto aberto", "sem-secoes": "Sem marcações de seção", doe: "disable-output-escaping", "css-falta": "Estilo CSS ausente" };
+const lineAt = (text, idx) => idx < 0 ? 0 : text.slice(0, idx).split("\n").length;
+function idxOfLine(text, ln) { let i = 0; for (let k = 1; k < ln; k++) { const j = text.indexOf("\n", i); if (j < 0) break; i = j + 1; } return i; }
+const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function xmlErrPt(msg) {
+  let m;
+  if ((m = msg.match(/Attribute (\S+) redefined/))) return `o atributo "${m[1]}" aparece duas vezes na mesma marcação`;
+  if ((m = msg.match(/Opening and ending tag mismatch: (\S+) line (\d+) and (\S+)/))) return `a marcação <${m[1]}> aberta na linha ${m[2]} é fechada como </${m[3]}>`;
+  if (/Extra content at the end/.test(msg)) return "há conteúdo depois do fim do arquivo";
+  if (/Document is empty|Start tag expected/.test(msg)) return "o arquivo está vazio ou não começa com uma marcação";
+  if (/Premature end|EndTag: '<\/' not found|expected '>'/.test(msg)) return "o arquivo termina antes de fechar todas as marcações (pode ter vindo cortado)";
+  if (/EntityRef|xmlParseEntityRef/.test(msg)) return "há um & solto no texto (escreva &amp;amp;)";
+  if (/StartTag: invalid element name/.test(msg)) return "há um < solto no texto (escreva &amp;lt;)";
+  return msg;
+}
+// Remove repetições de um atributo nas marcações da linha indicada (mantém a primeira, como o navegador faz).
+function fixDupAttr(text, ln, attr) {
+  const start = idxOfLine(text, ln);
+  const lineEnd = text.indexOf("\n", start) < 0 ? text.length : text.indexOf("\n", start);
+  const from = Math.max(0, text.lastIndexOf("<", start)), to = text.indexOf(">", lineEnd) < 0 ? text.length : text.indexOf(">", lineEnd) + 1;
+  const re = new RegExp(`\\s${reEsc(attr)}\\s*=\\s*("[^"]*"|'[^']*')`, "g");
+  const region = text.slice(from, to).replace(/<[^<>]*>/g, tag => { let seen = false; return tag.replace(re, m => { if (seen) return ""; seen = true; return m; }); });
+  return text.slice(0, from) + region + text.slice(to);
+}
+// Tira um </img> (ou outra marcação vazia) que sobrou depois de um <img ... /> já fechado.
+function fixStrayClose(text, ln, tag) {
+  const start = idxOfLine(text, ln), end = text.indexOf("\n", start) < 0 ? text.length : text.indexOf("\n", start);
+  const line = text.slice(start, end), re = new RegExp(`</${reEsc(tag)}\\s*>`, "i");
+  return re.test(line) ? text.slice(0, start) + line.replace(re, "") + text.slice(end) : text;
+}
+function fnArgs(e, i) {
+  const args = []; let d = 0, q = "", cur = "";
+  for (let k = i + 1; k < e.length; k++) {
+    const c = e[k];
+    if (q) { cur += c; if (c === q) q = ""; continue; }
+    if (c === "'" || c === '"') { q = c; cur += c; continue; }
+    if (c === "(") d++;
+    if (c === ")") { if (!d) { args.push(cur.trim()); return args; } d--; }
+    if (c === "," && !d) { args.push(cur.trim()); cur = ""; continue; }
+    cur += c;
+  }
+  return args;
+}
+const SOMAR_TPL = () => (BUILTIN.find(s => s.t === "Somar valores com vírgula decimal") || {}).c || "";
+function fixSums(text) {
+  let n = 0;
+  const out = text.replace(/<xsl:variable\b([^>]*?)\sselect\s*=\s*"sum\(((?:[^"()]|\([^"()]*\))*)\)"([^>]*?)(\/>|>\s*<\/xsl:variable>)/g, (all, a, path, b) => {
+    if (!/(PRICE|@TOTAL|@VALUE|@UNIT|REFERENCE|EXTRAINFORMATION)/.test(path)) return all;
+    n++;
+    return `<xsl:variable${a}${b.replace(/\s+$/, "")}><xsl:call-template name="SomarDecimal"><xsl:with-param name="nos" select="${path}" /></xsl:call-template></xsl:variable>`;
+  });
+  if (!n) return text;
+  if (/name\s*=\s*"SomarDecimal"\s*>/.test(out.replace(/call-template name="SomarDecimal"/g, ""))) return out;
+  const k = out.lastIndexOf("</xsl:stylesheet>");
+  return k < 0 ? out : out.slice(0, k) + "\n  " + SOMAR_TPL().replace(/\n/g, "\n  ") + "\n" + out.slice(k);
+}
+function addDecimalFormat(text, name, comma) {
+  const m = text.match(/<xsl:stylesheet\b[^>]*>/); if (!m) return text;
+  const k = m.index + m[0].length;
+  return text.slice(0, k) + `\n  <xsl:decimal-format name="${name}" decimal-separator="${comma ? "," : "."}" grouping-separator="${comma ? "." : ","}" />` + text.slice(k);
+}
+function auditSendTo(doc, text, add, ctx) {
+  for (const e of doc.getElementsByTagName("*")) {
+    if (!/^SENDTO(FILE|EMAIL|FTP|PACKAGE)$/.test(e.nodeName)) continue;
+    const lay = e.getAttribute("XSLLAYOUT") || ""; if (!lay) continue;
+    const base = lay.split(/[\\/]/).pop().toLowerCase();
+    if (ctx.names && ctx.names.size && !ctx.names.has(base)) add("alerta", "arquivo-falta", `A opção "${e.getAttribute("DESCRIPTION") || e.getAttribute("ID")}" usa ${lay.split(/[\\/]/).pop()}, que não está ${ctx.where || "na pasta"}`, "Ao escolher essa opção no Enviar Para, o Promob não encontra o layout.", text.indexOf(lay));
+  }
+}
+function auditXsl(text, name, ctx = {}) {
+  const out = [];
+  const add = (sev, code, title, detail, idx, fix) => out.push({ sev, code, title, detail, line: lineAt(text, idx ?? -1), fix });
+  if (text == null || !text.trim()) { add("erro", "vazio", "Arquivo vazio", "O arquivo não tem conteúdo (comum quando chega danificado num .rar). Peça o arquivo de novo."); return out; }
+  const { doc, error } = parseXml(text);
+  if (error) {
+    const m = error.match(/line (\d+) at column (\d+): (.*?)(?:Below is a rendering|$)/);
+    const ln = m ? +m[1] : 0, msg = m ? m[3].trim() : error, dup = msg.match(/Attribute (\S+) redefined/);
+    const f = { sev: "erro", code: "xml", title: "Erro de estrutura: o arquivo não abre", detail: `Na linha ${ln || "?"}, ${xmlErrPt(msg)}. O Promob não carrega um layout assim.`, line: ln };
+    const stray = msg.match(/Opening and ending tag mismatch: \S+ line \d+ and (img|br|hr|input|meta|link)\b/i);
+    if (dup && ln) f.fix = { label: `Remover o ${dup[1]} repetido`, run: t => fixDupAttr(t, ln, dup[1]) };
+    else if (stray && ln) f.fix = { label: `Remover o </${stray[1]}> que sobrou`, run: t => fixStrayClose(t, ln, stray[1]) };
+    out.push(f); return out;
+  }
+  const root = doc.documentElement;
+  if (root.namespaceURI !== XSLNS) { if (root.nodeName === "SENDTOCOLLECTION") auditSendTo(doc, text, add, ctx); return out; }
+  const X = n => [...doc.getElementsByTagNameNS(XSLNS, n)];
+  const tplNames = X("template").map(t => t.getAttribute("name")).filter(Boolean);
+  const dupT = tplNames.filter((n, i) => tplNames.indexOf(n) !== i);
+  for (const n of new Set(dupT)) add("erro", "tpl-duplo", `O template "${n}" está declarado duas vezes`, "O Promob recusa o arquivo. Apague ou renomeie uma das cópias.", text.indexOf(`name="${n}"`, text.indexOf(`name="${n}"`) + 1));
+  for (const n of new Set(X("call-template").map(c => c.getAttribute("name")))) {
+    if (!tplNames.includes(n)) add("erro", "tpl-falta", `Chama o template "${n}", que não existe no arquivo`, "O Promob mostra erro ao abrir o layout. Copie o template que falta de outro layout ou remova a chamada.", text.indexOf(`name="${n}"`));
+  }
+  for (const i of X("include").concat(X("import"))) {
+    const h = (i.getAttribute("href") || "").split(/[\\/]/).pop().toLowerCase();
+    if (ctx.names && ctx.names.size && h && !ctx.names.has(h)) add("erro", "arquivo-falta", `Inclui ${i.getAttribute("href")}, que não está ${ctx.where || "na pasta"}`, "Sem esse arquivo o layout não abre.", text.indexOf(i.getAttribute("href")));
+  }
+  // Expressões XPath (select, test… e {…} dentro de atributos), já sem comentários.
+  const exprs = [];
+  for (const el of doc.getElementsByTagName("*")) for (const a of el.attributes) {
+    if (el.namespaceURI === XSLNS) { if (["select", "test", "use", "value", "count", "from", "match"].includes(a.name)) exprs.push({ e: a.value, el, at: a.name }); else if (["name", "namespace", "href"].includes(a.name)) for (const m of a.value.matchAll(/\{([^{}]*)\}/g)) exprs.push({ e: m[1], el, at: a.name }); }
+    else if (!/^xmlns/.test(a.name)) for (const m of a.value.matchAll(/\{([^{}]*)\}/g)) exprs.push({ e: m[1], el, at: a.name });
+  }
+  const noLit = s => s.replace(/'[^']*'|"[^"]*"/g, "''");
+  const decl = new Set(X("variable").concat(X("param")).map(v => v.getAttribute("name")));
+  const missV = new Set();
+  for (const x of exprs) for (const m of noLit(x.e).matchAll(/\$([A-Za-z_][\w.-]*)/g)) if (!decl.has(m[1])) missV.add(m[1]);
+  for (const v of missV) add("erro", "var-falta", `Usa a variável $${v}, que não foi declarada`, "O Promob mostra erro ao abrir. Declare a variável (xsl:variable) antes de usar, no mesmo template.", text.indexOf("$" + v));
+  // Teste com o nome da variável sem o $ (o teste nunca é verdadeiro).
+  const bare = new Set();
+  for (const x of exprs) { if (x.at !== "test") continue; for (const m of noLit(x.e).matchAll(/(?:^|[\s(=!<>,|])([A-Za-z_][\w.-]*)\s*(?=!?=|<|>)/g)) if (decl.has(m[1])) bare.add(m[1]); }
+  for (const v of bare) {
+    const re = new RegExp(`(test\\s*=\\s*"(?:[^"]*?[\\s(=!,|])?)${reEsc(v)}(?=\\s*(?:!?=|&lt;|&gt;|<|>))`, "g");
+    add("alerta", "var-sem-cifrao", `Teste escrito com "${v}" sem o $`, `Sem o $, o teste procura um campo chamado ${v} no XML e nunca é verdadeiro. O certo é $${v}.`, text.search(new RegExp(`test\\s*=\\s*"[^"]*${reEsc(v)}`)), { label: `Trocar por $${v}`, run: t => t.replace(re, "$1$$" + v) });
+  }
+  // key() sem xsl:key
+  const keys = new Set(X("key").map(k => k.getAttribute("name")));
+  const missK = new Set(); for (const x of exprs) for (const m of x.e.matchAll(/key\(\s*'([^']+)'/g)) if (!keys.has(m[1])) missK.add(m[1]);
+  for (const k of missK) add("erro", "key-falta", `Usa key('${k}') sem declarar a chave`, `Falta <xsl:key name="${k}" …/> no topo do arquivo. A Biblioteca tem um exemplo em Agrupamento.`, text.indexOf(`key('${k}'`));
+  // format-number com formato não declarado
+  const fmts = new Set(X("decimal-format").map(d => d.getAttribute("name")).filter(Boolean));
+  const missF = new Map();
+  for (const x of exprs) { let i = 0; while ((i = x.e.indexOf("format-number(", i)) >= 0) { const a = fnArgs(x.e, i + 13); i += 14; const nm = a[2] && a[2].match(/^'([^']*)'$/); if (nm && !fmts.has(nm[1]) && !missF.has(nm[1])) { const p = (a[1] || "").replace(/'/g, ""); missF.set(nm[1], /,[^.]*$/.test(p.replace(/[^.,]/g, "")) ); } } }
+  for (const [nm, comma] of missF) add("erro", "formato-falta", `Usa o formato numérico '${nm}' sem declarar`, `Falta <xsl:decimal-format name="${nm}" …/>. O Promob mostra erro ao formatar valores.`, text.indexOf(`'${nm}'`), { label: `Declarar o formato '${nm}'`, run: t => addDecimalFormat(t, nm, comma) });
+  // sum() em valores que podem vir com vírgula
+  const sums = [...text.matchAll(/(?:select|test)\s*=\s*"([^"]*\bsum\(([^"]*))"/g)].filter(m => /(PRICE|@TOTAL|@VALUE|@UNIT|REFERENCE|EXTRAINFORMATION)/.test(m[2]));
+  if (sums.length) {
+    const fixed = fixSums(text);
+    add("alerta", "sum-virgula", `Soma com sum() em ${sums.length} ponto(s)`, "sum() não entende vírgula decimal: se o Promob gravar 1234,50, o total sai NaN. SomarDecimal (Biblioteca › Cálculos) soma nos dois formatos." + (fixed === text ? " Este caso precisa de ajuste manual." : ""), sums[0].index, fixed === text ? null : { label: "Trocar por SomarDecimal", run: fixSums });
+  }
+  const up = [...text.matchAll(/(?:parent::node\(\)\/){2,}parent::node\(\)|(?:\.\.\/){2,}\.\./g)];
+  if (up.length) add("alerta", "parent-fixo", `Sobe ${up.length} vez(es) na estrutura com parent::node() repetido`, "Funciona só quando o item está no primeiro nível. Num subitem, o caminho aponta para o lugar errado. Use ancestor::AMBIENT (ou ancestor::CATEGORY).", up[0].index);
+  if (/<(SENHA|PASSWORD)\b|select\s*=\s*"[^"]*(PASSWORD|SENHA)/i.test(text)) add("alerta", "senha", "O arquivo gerado leva usuário e senha em texto aberto", "Confirme se o destino exige isso e quem recebe o arquivo.", text.search(/<(SENHA|PASSWORD)\b|PASSWORD|SENHA/i));
+  const out1 = X("output")[0], method = (out1 && out1.getAttribute("method")) || (/<html\b/i.test(text) ? "html" : "");
+  if (method === "html" && /<html\b/i.test(text) && !/\bid\s*=\s*"(HEADER|BODY|CUSTOMERDATA|TOTALS|FOOTER)"/.test(text)) add("info", "sem-secoes", "Relatório sem as marcações de seção do Promob", "O editor de layouts do Promob não mostra as seções (cabeçalho, corpo, totais). O construtor deste editor interpreta pelos templates.", -1);
+  const doe = (text.match(/disable-output-escaping\s*=\s*"yes"/g) || []).length;
+  if (doe) add("info", "doe", `Usa disable-output-escaping (${doe}x)`, "Funciona no Promob, mas outros visualizadores ignoram. Geralmente serve para recuar subitens: o padding do construtor faz o mesmo sem depender disso.", text.indexOf("disable-output-escaping"));
+  if (ctx.css && ctx.names && ctx.names.size) for (const m of text.matchAll(/href\s*=\s*"([^"]+\.css)"/gi)) { const b = m[1].split(/[\\/]/).pop().toLowerCase(); if (!ctx.names.has(b)) { add("info", "css-falta", `Usa o estilo ${m[1].split(/[\\/]/).pop()}, que não está ${ctx.where || "na pasta"}`, "O relatório abre, mas sem esse visual.", m.index); break; } }
+  return out.sort((a, b) => SEV_RANK[a.sev] - SEV_RANK[b.sev]);
+}
+function auditCount(list) { const c = { erro: 0, alerta: 0, info: 0 }; list.forEach(f => c[f.sev]++); return c; }
+function applyFixes(text, name, ctx) {
+  const applied = [];
+  for (let k = 0; k < 40; k++) {
+    const f = auditXsl(text, name, ctx).find(x => x.fix); if (!f) break;
+    const t2 = f.fix.run(text); if (t2 === text) break;
+    applied.push(f.fix.label); text = t2;
+  }
+  return { text, applied };
+}
+function modelCtx(m) {
+  const names = new Set();
+  for (const x of MODELS) { if (x.pacote === m.pacote) names.add(x.name.toLowerCase()); for (const t of x.tambem) if (t.startsWith(m.pacote + " /")) names.add(t.split("/").pop().trim().toLowerCase()); }
+  state.files.filter(f => f.origin === "asset").forEach(f => names.add(f.name.toLowerCase()));
+  return { names, where: `no pacote ${m.pacote}` };
+}
+function fileCtx(f) {
+  if (!f) return {};
+  if (f.modelId) { const m = MODELS.find(x => x.id === f.modelId); if (m) return modelCtx(m); }
+  if (f.origin === "sistema") return { names: new Set(state.files.filter(x => x.origin === "sistema" || x.origin === "asset").map(x => x.name.toLowerCase())), where: "na pasta do sistema", css: true };
+  return {};
+}
+function auditModel(m) { if (!AUD.cache.has(m.id)) AUD.cache.set(m.id, auditXsl(m.text, m.name, modelCtx(m))); return AUD.cache.get(m.id); }
+function sevChip(c) {
+  if (c.erro) return `<span class="sevc erro">${c.erro} erro${c.erro > 1 ? "s" : ""}</span>`;
+  if (c.alerta) return `<span class="sevc alerta">${c.alerta} alerta${c.alerta > 1 ? "s" : ""}</span>`;
+  return '<span class="sevc ok">Sem problemas</span>';
+}
+function findingHtml(f, i, withActs) {
+  return `<li class="fnd ${f.sev}"><span class="sevd" title="${SEVS[f.sev]}"></span><div><b>${esc(f.title)}</b>${f.line ? ` <span class="note">· linha ${f.line}</span>` : ""}<br><span class="note">${esc(f.detail)}</span>
+    ${withActs ? `<span class="facts">${f.line ? `<button class="btn small ghost" type="button" data-hgo="${f.line}">Ir até</button>` : ""}${f.fix ? `<button class="btn small" type="button" data-hfix="${i}">${esc(f.fix.label)}</button>` : ""}</span>` : ""}</div></li>`;
+}
+// Bloco "Saúde do arquivo" no painel do editor.
+function healthHtml(list) {
+  const c = auditCount(list), fixable = list.filter(f => f.fix).length;
+  return `<div class="sec health"><header><b>Saúde do arquivo</b>${sevChip(c)}${fixable > 1 ? '<button class="addsec" type="button" data-hfixall>Corrigir tudo que for seguro</button>' : ""}</header>
+    ${list.length ? `<ul class="fnds">${list.map((f, i) => findingHtml(f, i, true)).join("")}</ul>` : '<div class="frow" style="cursor:default"><span class="note">Nenhum problema encontrado pelas verificações automáticas.</span></div>'}</div>`;
+}
+function editorReplaceAll(text) {
+  if (cm.replaceRange && cm.lastLine) { const last = cm.lastLine(); cm.replaceRange(text, { line: 0, ch: 0 }, { line: last, ch: cm.getLine(last).length }); }
+  else { cm.setValue(text); if (state.xsl) { state.xsl.text = text; state.xsl.dirty = true; renderTree(); } }
+  analyze();
+}
+function goLine(ln) {
+  showTab("editor");
+  if (cm.setCursor) {
+    const l = Math.max(0, ln - 1);
+    if (jumpMark) jumpMark.clear();
+    jumpMark = cm.markText({ line: l, ch: 0 }, { line: l, ch: cm.getLine(l) ? cm.getLine(l).length : 0 }, { className: "cm-jump" });
+    cm.scrollIntoView({ line: l, ch: 0 }, 120); cm.setCursor({ line: l, ch: 0 }); cm.focus();
+  } else cm.jumpTo(idxOfLine(cm.getValue(), ln));
+}
+async function fixCurrent(which) {
+  const f = state.xsl; if (!f) return;
+  const before = cm.getValue(), ctx = fileCtx(f);
+  let r;
+  if (which === "all") r = applyFixes(before, f.name, ctx);
+  else { const it = auditXsl(before, f.name, ctx)[which]; if (!it || !it.fix) return; r = { text: it.fix.run(before), applied: [it.fix.label] }; }
+  if (r.text === before) { toast("Nada a corrigir automaticamente."); return; }
+  await histAdd(f, "antes", before, "antes da correção automática");
+  editorReplaceAll(r.text);
+  toast(`Corrigido: ${r.applied.join("; ")}. A versão anterior ficou no Histórico. Clique em Salvar para gravar.`);
+}
+
+/* Aba Auditoria */
+function audItems() {
+  if (AUD.scope === "models") return MODELS.map(m => ({ key: "m:" + m.id, name: m.name, where: m.pacote, list: auditModel(m), model: m }));
+  return state.files.filter(f => /^(xslt?|xml)$/.test(f.ext) && f.origin !== "modelo" && f.text != null).map(f => ({ key: "f:" + f.id, name: f.name, where: f.origin === "sistema" ? f.path : f.origin === "exemplo" ? "exemplo" : "importado", list: auditXsl(f === state.xsl ? cm.getValue() : f.text, f.name, fileCtx(f)), file: f }));
+}
+async function loadScopeTexts() {
+  if (AUD.scope !== "files") return;
+  const fs = state.files.filter(f => /^(xslt?|xml)$/.test(f.ext) && f.origin !== "modelo" && f.text == null);
+  for (let i = 0; i < fs.length; i++) { try { await readText(fs[i]); } catch {} if (i % 20 === 0) $("#auSummary").textContent = `Lendo ${i + 1} de ${fs.length} arquivos…`; }
+}
+async function renderAudit() {
+  await loadScopeTexts();
+  const items = audItems();
+  const lim = AUD.sev ? SEV_RANK[AUD.sev] : 2, q = AUD.q.toLowerCase();
+  const tot = { erro: 0, alerta: 0, ok: 0 }, rules = new Map();
+  for (const it of items) {
+    const c = auditCount(it.list); if (c.erro) tot.erro++; else if (c.alerta) tot.alerta++; else tot.ok++;
+    for (const f of it.list) { if (SEV_RANK[f.sev] > lim) continue; const r = rules.get(f.code) || { n: 0, sev: f.sev, title: RULES[f.code] || f.code }; r.n++; rules.set(f.code, r); }
+  }
+  const fixable = items.filter(it => it.list.some(f => f.fix)).length;
+  $("#auSummary").textContent = `${items.length} arquivo(s): ${tot.erro} com erro, ${tot.alerta} com alerta, ${tot.ok} sem erro nem alerta · ${fixable} com correção automática`;
+  $("#auRules").innerHTML = `<button class="fchip" type="button" data-arule="" aria-pressed="${!AUD.rule}">Todas as regras</button>` +
+    [...rules].sort((a, b) => SEV_RANK[a[1].sev] - SEV_RANK[b[1].sev] || b[1].n - a[1].n).map(([k, r]) => `<button class="fchip" type="button" data-arule="${esc(k)}" aria-pressed="${AUD.rule === k}"><span class="sevd ${r.sev}"></span>${esc(r.title)} · ${r.n}</button>`).join("");
+  const vis = items.map(it => ({ ...it, show: it.list.map((f, i) => ({ f, i })).filter(x => SEV_RANK[x.f.sev] <= lim && (!AUD.rule || x.f.code === AUD.rule)) }))
+    .filter(it => it.show.length && (!q || (it.name + " " + it.where).toLowerCase().includes(q)))
+    .sort((a, b) => SEV_RANK[a.show[0].f.sev] - SEV_RANK[b.show[0].f.sev] || a.name.localeCompare(b.name));
+  AUD.vis = vis;
+  $("#auList").innerHTML = vis.length ? vis.slice(0, 300).map(it => `<article class="aurow" data-akey="${esc(it.key)}">
+      <header>${sevChip(auditCount(it.list))}<b>${esc(it.name)}</b><span class="note">${esc(it.where)}</span>
+        <span class="sp"><button class="btn small" type="button" data-aact="open">Abrir</button>${it.list.some(f => f.fix) ? '<button class="btn small primary" type="button" data-aact="fix">Corrigir no editor</button>' : ""}</span></header>
+      <ul class="fnds">${it.show.map(x => findingHtml(x.f, x.i, false)).join("")}</ul></article>`).join("") + (vis.length > 300 ? `<p class="note">Mostrando 300 de ${vis.length}. Use os filtros.</p>` : "")
+    : `<p class="empty">${items.length ? "Nenhum problema com esses filtros." : AUD.scope === "files" ? "Nenhum arquivo aberto. Mapeie a pasta do sistema ou importe arquivos." : "Nenhum modelo embutido."}</p>`;
+}
+async function audAction(key, act) {
+  const it = (AUD.vis || []).find(x => x.key === key); if (!it) return;
+  if (it.model) await openModel(it.model); else await openXsl(it.file);
+  const first = it.list.find(f => f.line);
+  if (act === "fix") await fixCurrent("all");
+  else if (first) goLine(first.line);
+}
+async function audFixAll() {
+  await loadScopeTexts();
+  const items = audItems().filter(it => it.list.some(f => f.fix));
+  if (!items.length) { toast("Nenhum arquivo com correção automática neste conjunto."); return; }
+  const entries = [], rel = ["Correções automáticas do Editor XSL Promob", ""], used = new Set();
+  for (const it of items) {
+    const src = it.model ? it.model.text : (it.file === state.xsl ? cm.getValue() : it.file.text);
+    const r = applyFixes(src, it.name, it.model ? modelCtx(it.model) : fileCtx(it.file));
+    if (r.text === src) continue;
+    let nm = it.name; if (used.has(nm.toLowerCase())) nm = (it.where.replace(/[\\/:*?"<>|]+/g, "_") + "_" + it.name); used.add(nm.toLowerCase());
+    entries.push({ name: nm, bytes: it.file ? encodeLike(it.file, r.text) : new TextEncoder().encode(r.text) });
+    const rest = auditCount(auditXsl(r.text, it.name, it.model ? modelCtx(it.model) : fileCtx(it.file))).erro;
+    rel.push(`${nm} (${it.where}): ${r.applied.join("; ")}${rest ? ` — AINDA TEM ${rest} ERRO(S): precisa de ajuste manual antes de usar` : ""}`);
+  }
+  rel.push("", "Os arquivos originais não foram alterados. Confira cada arquivo antes de copiar para a pasta do Promob.");
+  entries.push({ name: "LEIA-ME_correcoes.txt", bytes: new TextEncoder().encode(rel.join("\r\n")) });
+  await exportFiles(entries, "layouts_corrigidos.zip");
+}
+async function audReport() {
+  await loadScopeTexts();
+  const rows = [["arquivo", "onde", "nivel", "regra", "linha", "problema", "detalhe", "correcao_automatica"]];
+  for (const it of audItems()) for (const f of it.list) rows.push([it.name, it.where, SEVS[f.sev], f.code, f.line || "", f.title, f.detail, f.fix ? "sim" : "não"]);
+  const csv = "﻿" + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+  const leia = `Auditoria de layouts do Editor XSL Promob (${new Date().toLocaleString("pt-BR")}).\r\nAbra auditoria_layouts.csv no Excel: colunas separadas por ponto e vírgula.\r\nConjunto: ${AUD.scope === "models" ? "modelos embutidos" : "arquivos abertos e pasta do sistema"}.`;
+  await exportFiles([{ name: "auditoria_layouts.csv", bytes: new TextEncoder().encode(csv) }, { name: "LEIA-ME.txt", bytes: new TextEncoder().encode(leia) }], "auditoria_layouts.zip");
+}
+function bindAudit() {
+  $("#auScope").addEventListener("change", e => { AUD.scope = e.target.value; AUD.rule = ""; renderAudit(); });
+  $("#auSev").addEventListener("change", e => { AUD.sev = e.target.value; AUD.rule = ""; renderAudit(); });
+  $("#auSearch").addEventListener("input", e => { AUD.q = e.target.value.trim(); renderAudit(); });
+  $("#auRules").addEventListener("click", e => { const b = e.target.closest("[data-arule]"); if (b) { AUD.rule = b.dataset.arule; renderAudit(); } });
+  $("#auList").addEventListener("click", e => { const b = e.target.closest("[data-aact]"); if (b) audAction(b.closest(".aurow").dataset.akey, b.dataset.aact); });
+  $("#auFixAll").addEventListener("click", audFixAll);
+  $("#auReport").addEventListener("click", audReport);
+  $("#inspect").addEventListener("click", e => {
+    const g = e.target.closest("[data-hgo]"); if (g) { goLine(+g.dataset.hgo); return; }
+    const f = e.target.closest("[data-hfix]"); if (f) { fixCurrent(+f.dataset.hfix); return; }
+    if (e.target.closest("[data-hfixall]")) fixCurrent("all");
+  });
+}
+
+/* Ganchos para os testes automáticos (web/tests). */
+window.EditorXSL = { audit: auditXsl, applyFixes, interpretXsl, generate, models: () => MODELS };
 
 /* ---------- Início ---------- */
 async function start() {
@@ -2850,6 +3192,7 @@ async function start() {
   if (saved && saved.name) { const b = $("#btnReopen"); b.hidden = false; b.textContent = "Reabrir " + saved.name; }
   if (lsGet("exsl.sideCollapsed", false)) setCollapsed(true);
   bindModels();
+  bindAudit();
   bindCompare();
   builderInit();
   showTab(savedTab);
