@@ -169,6 +169,60 @@ span.CodeMirror-selectedtext{background:none}
 .cm-comment{color:var(--muted);font-style:italic}.cm-bracket{color:var(--muted)}.cm-error{color:var(--err)}
 .cm-jump{background:var(--hl)}
 
+/* ---------- Construtor visual ---------- */
+.bwrap{flex:1;min-height:0;display:grid;grid-template-columns:200px minmax(0,1fr) 320px}
+.palette{border-right:1px solid var(--line);overflow:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
+.pitem{border:1px solid var(--line);border-radius:7px;padding:7px 9px;background:var(--panel);cursor:grab;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 6px;align-items:center;text-align:left;width:100%}
+.pitem:hover{border-color:var(--accent)}
+.pitem b{font-weight:600;font-size:13px}
+.pitem small{grid-column:1;color:var(--muted);font-size:11.5px}
+.pitem .plus{grid-row:1 / span 2;grid-column:2;color:var(--accent);font-size:18px;line-height:1}
+.pitem[disabled]{opacity:.45;cursor:default}
+.canvas{overflow:auto;background:var(--sunk);padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.canvas-inner{max-width:900px;width:100%;margin-inline:auto;display:flex;flex-direction:column;gap:10px}
+.bcard{border:1px solid var(--line);border-radius:8px;background:var(--panel);min-width:0}
+.bcard.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.bcard.dragging{opacity:.4}
+.bcard>header{display:flex;align-items:center;gap:6px;padding:5px 8px;border-bottom:1px solid var(--line);font-size:12.5px;cursor:pointer}
+.grip{cursor:grab;color:var(--muted);font-size:15px;padding:0 4px;user-select:none;letter-spacing:-2px}
+.bcard>header b{font-weight:600}
+.bcard>header .mono{color:var(--muted);font-size:11px}
+.bcard>header .sp{margin-left:auto;display:flex;gap:2px}
+.ibtn{border:0;background:transparent;border-radius:5px;padding:2px 7px;cursor:pointer;color:var(--muted);font-size:13px}
+.ibtn:hover{background:var(--sunk);color:var(--fg)}
+.paper{background:#ffffff;padding:8px;border-radius:0 0 8px 8px;overflow-x:auto;cursor:pointer}
+.bwarn{padding:8px 10px;font-size:12.5px;color:var(--err);background:var(--err-soft)}
+.dropline{height:4px;background:var(--accent);border-radius:2px}
+.cv-empty{border:1.5px dashed var(--line);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+.props{border-left:1px solid var(--line);overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.props h3{font-family:var(--display);font-weight:600;font-size:18px;margin:0;letter-spacing:.02em}
+.pf{display:grid;gap:4px}
+.pf>span{font-size:12px;color:var(--muted)}
+.pf input[type=text],.pf input[type=number],.pf select,.pf textarea,.colrow input,.colrow select{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:5px 7px;width:100%;min-width:0}
+.pf textarea{font-family:var(--mono);font-size:12px;min-height:110px}
+.ck{display:flex;gap:7px;align-items:center;font-size:13px}
+.pgroup{border:1px solid var(--line);border-radius:7px;padding:9px;display:grid;gap:8px}
+.pgroup>.label{margin-bottom:-2px}
+.colrow{border:1px solid var(--line);border-radius:7px;padding:7px;display:grid;gap:6px;background:var(--panel)}
+.colrow.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.colrow .r1{display:flex;gap:4px;align-items:center}
+.colrow .r1 input{flex:1}
+.colrow .r2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.colrow .r3{display:flex;flex-wrap:wrap;gap:4px 12px}
+.presets{display:flex;flex-wrap:wrap;gap:4px}
+.fieldrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px;align-items:center}
+.btnrow{display:flex;flex-wrap:wrap;gap:6px}
+.notes{background:var(--wood-soft);border-radius:7px;padding:9px 11px;font-size:12.5px}
+.notes ul{margin:4px 0 0;padding-left:18px}
+pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border:1px solid var(--line);border-radius:6px;padding:8px;font-size:11px}
+@media (max-width:1100px){.bwrap{grid-template-columns:170px minmax(0,1fr) 280px}}
+@media (max-width:900px){
+  .bwrap{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto}
+  .palette{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line)}
+  .pitem{width:auto;flex:none;max-width:200px}
+  .props{border-left:0;border-top:1px solid var(--line)}
+}
+
 @media (max-width:900px){
   .work{grid-template-columns:minmax(0,1fr)}
   .side{max-height:none}
@@ -208,13 +262,39 @@ span.CodeMirror-selectedtext{background:none}
 
     <main class="main">
       <div class="tabs" role="tablist">
-        <button class="tab" role="tab" aria-selected="true" data-tab="editor" type="button">Editor</button>
+        <button class="tab" role="tab" aria-selected="true" data-tab="builder" type="button">Construtor visual</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="editor" type="button">Editor de código</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="preview" type="button">Visualizar</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="fields" type="button">Campos</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="lib" type="button">Biblioteca de códigos</button>
       </div>
 
-      <section class="pane" data-pane="editor">
+      <section class="pane" data-pane="builder">
+        <div class="bar">
+          <span class="title" id="bdTitle">Construtor visual</span>
+          <label class="note" for="bdXml">Dados:</label>
+          <select class="sel xmlsel" id="bdXml"></select>
+          <button class="btn small" id="bdUndo" type="button" title="Desfazer (Ctrl+Z)">Desfazer</button>
+          <button class="btn small" id="bdRedo" type="button" title="Refazer (Ctrl+Y)">Refazer</button>
+          <button class="btn small" id="bdNew" type="button">Novo layout</button>
+          <button class="btn small" id="bdImport" type="button">Interpretar XSL aberto</button>
+          <button class="btn small primary" id="bdGen" type="button">Gerar XSL</button>
+        </div>
+        <div class="pop" id="bdNewBox" hidden>
+          <span>Começar de:</span>
+          <button class="btn small" type="button" data-start="orcamento">Modelo de orçamento</button>
+          <button class="btn small" type="button" data-start="listagem">Modelo de listagem (sem preço)</button>
+          <button class="btn small" type="button" data-start="branco">Em branco</button>
+          <button class="btn small ghost" type="button" id="bdNewCancel">Cancelar</button>
+        </div>
+        <div class="bwrap">
+          <div class="palette" id="bdPalette" aria-label="Blocos disponíveis"></div>
+          <div class="canvas" id="bdCanvas"><div class="canvas-inner" id="bdCards"></div></div>
+          <div class="props" id="bdProps"></div>
+        </div>
+      </section>
+
+      <section class="pane" data-pane="editor" hidden>
         <div class="bar">
           <span class="title" id="edTitle">Nenhum XSL aberto</span>
           <span class="status wait" id="edStatus">—</span>
@@ -238,7 +318,7 @@ span.CodeMirror-selectedtext{background:none}
         <div class="bar">
           <span class="title" id="pvTitle">Visualização</span>
           <label class="note" for="pvXml">Dados:</label>
-          <select class="sel" id="pvXml"></select>
+          <select class="sel xmlsel" id="pvXml"></select>
           <button class="btn small primary" id="btnRun" type="button">Atualizar</button>
         </div>
         <div class="preview" id="pvOut"></div>
@@ -664,7 +744,7 @@ async function openXsl(f) {
 }
 async function openXml(f) {
   await readText(f);
-  state.xml = f; renderTree(); fillXmlSelect(); renderFound();
+  state.xml = f; renderTree(); fillXmlSelect(); renderFound(); if (BD.model) renderCanvas();
   toast(`Dados de "${f.name}" carregados. Veja em Visualizar e Campos.`);
 }
 function parseXml(text) {
@@ -754,6 +834,9 @@ async function save() {
   const f = state.xsl; if (!f) return;
   f.text = cm.getValue();
   const bytes = encodeLike(f, f.text);
+  if (!f.handle && f.parent && await ensurePerm(f.parent)) {
+    try { f.handle = await f.parent.getFileHandle(f.name, { create: true }); } catch {}
+  }
   if (f.handle && f.parent && await ensurePerm(f.parent)) {
     try {
       if (!f.backedUp && f.orig != null) {
@@ -785,9 +868,8 @@ async function saveAs(name) {
 
 /* ---------- Visualizador ---------- */
 function fillXmlSelect() {
-  const sel = $("#pvXml");
   const xmls = state.files.filter(f => f.ext === "xml");
-  sel.innerHTML = xmls.map(f => `<option value="${f.id}" ${f === state.xml ? "selected" : ""}>${esc(f.origin === "exemplo" ? "Exemplo: " + f.name : f.name)}</option>`).join("") || "<option>Nenhum XML</option>";
+  for (const sel of document.querySelectorAll("select.xmlsel")) sel.innerHTML = xmls.map(f => `<option value="${f.id}" ${f === state.xml ? "selected" : ""}>${esc(f.origin === "exemplo" ? "Exemplo: " + f.name : f.name)}</option>`).join("") || "<option>Nenhum XML</option>";
 }
 function findAsset(rel) {
   const r = rel.replace(/\\/g, "/").replace(/^\/+/, "").toLowerCase();
@@ -949,6 +1031,7 @@ function showTab(name) {
   if (name === "editor" && cm.refresh) setTimeout(() => cm.refresh(), 0);
   if (name === "preview") runPreview();
   if (name === "lib") renderLib();
+  if (name === "builder" && BD.model) renderCanvas();
 }
 
 /* ---------- Eventos ---------- */
@@ -1018,8 +1101,796 @@ function bind() {
   });
 }
 
+/* ================= Construtor visual ================= */
+const BT = {
+  header: { name: "Cabeçalho", sec: "HEADER", desc: "Logo, título, data e hora", single: true },
+  customer: { name: "Dados do cliente", sec: "CUSTOMERDATA", desc: "Nome, CPF, endereço…" },
+  store: { name: "Dados da loja", sec: "STOREDATA", desc: "Dados da sua empresa" },
+  items: { name: "Tabela de itens", sec: "BODY", desc: "Ambientes, categorias, itens" },
+  payments: { name: "Condições de pagamento", sec: "PAYMENTTERMS", desc: "Parcelas e totais" },
+  entries: { name: "Entradas diferenciadas", sec: "PAYMENTENTRIES", desc: "Sinal e entradas" },
+  total: { name: "Total final", sec: "TOTALS", desc: "Valor do orçamento" },
+  observations: { name: "Observações", sec: "OBSERVATIONS", desc: "Campo de observações" },
+  text: { name: "Texto livre", sec: "", desc: "Prazo, garantia, avisos" },
+  signatures: { name: "Assinaturas", sec: "SIGNATURES", desc: "Linhas para assinar" },
+  spacer: { name: "Espaço", sec: "", desc: "Distância entre blocos" },
+  code: { name: "Código XSL", sec: "", desc: "Trecho livre (avançado)" },
+  footer: { name: "Rodapé", sec: "FOOTER", desc: "Dados da loja no fim", single: true }
+};
+const COLP = {
+  seq: { label: "Item", kind: "seq", w: "5%", align: "center" },
+  qty: { label: "Qtd", path: "@QUANTITY", fmt: "text", w: "6%", align: "center" },
+  unit: { label: "Un", path: "@UNIT", fmt: "text", w: "5%", align: "center" },
+  ref: { label: "Referência", path: "@REFERENCE", fmt: "text", w: "16%", align: "left" },
+  desc: { label: "Descrição", kind: "desc", path: "@DESCRIPTION", fmt: "text", w: "", align: "left" },
+  dim: { label: "Dimensões", path: "@TEXTDIMENSION", fmt: "text", w: "14%", align: "center" },
+  material: { label: "Material", path: "REFERENCES/MATERIAL/@REFERENCE", fmt: "text", w: "14%", align: "left" },
+  peso: { label: "Peso (kg)", path: "REFERENCES/PESO/@REFERENCE", fmt: "num", w: "8%", align: "right", sum: true },
+  pesoTotal: { label: "Peso total (kg)", path: "REFERENCES/PESO/@REFERENCE", fmt: "num", w: "9%", align: "right", mulQty: true, sum: true },
+  table: { label: "Preço tabela", path: "PRICE/@TABLE", fmt: "money", w: "10%", align: "right" },
+  price: { label: "Preço final", path: "PRICE/MARGINS/BUDGET/@TOTAL", fmt: "money", w: "11%", align: "right" }
+};
+const COLP_NAMES = { seq: "Nº", qty: "Qtd", unit: "Un", ref: "Referência", desc: "Descrição", dim: "Dimensões", material: "Material", peso: "Peso", pesoTotal: "Peso × qtd", table: "Preço tabela", price: "Preço final" };
+const custF = ids => ids.map(k => ({ id: k, label: (CUSTOMER[k] || k).replace(/^Loja: /, "") }));
+const cols = keys => keys.map(k => ({ label: "", path: "", fmt: "text", w: "", align: "left", kind: "", sum: false, mulQty: false, ...COLP[k] }));
+function newBlock(type) {
+  const d = {
+    header: { logo: "%pastasistema%/identity/logo.png", logo2: "", title: "Orçamento", showDate: true, showHour: true, showNumber: false },
+    customer: { title: "Dados do cliente", cols: 2, fields: custF(["nomecliente", "cpfcnpj", "endereco", "cep", "bairro", "cidade", "uf", "fone", "celular", "email"]) },
+    store: { title: "Dados da loja", cols: 2, fields: custF(["rep_nomeempresa", "rep_enderecoempresa", "rep_telefoneempresa", "rep_emailempresa"]) },
+    items: { showAmbient: true, showCategory: true, subitems: true, hideZero: true, catTotal: true, errorRefs: "VERIFICAR TRAVESSA; ERRO METRAGEM", columns: cols(["seq", "qty", "ref", "desc", "dim", "price"]) },
+    payments: { title: "Condições de pagamento", onlySelected: false },
+    entries: { title: "Entradas diferenciadas" },
+    total: { label: "Total final", source: "BUDGET" },
+    observations: { title: "Observações", path: "CUSTOMERSDATA/DATA[@ID='observacoes']/@VALUE", text: "" },
+    text: { text: "Prazo de entrega: 45 dias úteis após a aprovação do projeto executivo.", align: "left", size: 0, bold: false },
+    signatures: { left: "Cliente", right: "Responsável pela loja" },
+    spacer: { h: 16 },
+    code: { xsl: "<tr>\n  <td>Seu código XSL aqui</td>\n</tr>" },
+    footer: { fields: custF(["rep_nomeempresa", "rep_enderecoempresa", "rep_telefoneempresa"]), note: "Orçamento válido por 10 dias." }
+  }[type];
+  return { id: Math.random().toString(36).slice(2, 9), type, ...JSON.parse(JSON.stringify(d)) };
+}
+const defTheme = () => ({ font: "Arial", size: 11, accent: "#0e6e6a", border: "#c9d2d0" });
+function starterModel(kind) {
+  const m = { name: "Orcamento_Visual.xsl", title: "Orçamento", theme: defTheme(), blocks: [] };
+  if (kind === "branco") { m.name = "Novo_Layout.xsl"; m.blocks = [newBlock("header"), newBlock("footer")]; return m; }
+  const order = kind === "listagem" ? ["header", "customer", "items", "observations", "footer"] : ["header", "customer", "items", "payments", "total", "signatures", "footer"];
+  m.blocks = order.map(newBlock);
+  if (kind === "listagem") {
+    m.name = "Listagem_Visual.xsl"; m.title = "Listagem"; m.blocks[0].title = "Listagem de produtos";
+    const it = m.blocks[2]; it.columns = cols(["seq", "qty", "unit", "ref", "desc", "dim", "peso"]); it.catTotal = false;
+  }
+  return m;
+}
+
+/* ---------- Gerador de XSL ---------- */
+const X = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const num = p => `number(translate(${p}, ',', '.'))`;
+const PIC = { money: "###.##0,00", num: "###.##0,00", int: "###.##0" };
+const FILTER0 = "count(METADATAS/METADATA[@ID='QUANTIDADE_ALTERADA']) = 0 or METADATAS/METADATA[@ID='QUANTIDADE_ALTERADA']/@VALUE &gt; 0";
+const custPath = f => f.path || `CUSTOMERSDATA/DATA[@ID='${f.id}']/@VALUE`;
+function mixWhite(hex, t) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || ""); if (!m) return "#eef3f2";
+  const n = parseInt(m[1], 16), c = [n >> 16, (n >> 8) & 255, n & 255].map(v => Math.round(v + (255 - v) * t));
+  return "#" + c.map(v => v.toString(16).padStart(2, "0")).join("");
+}
+function genCss(t) {
+  const s = +t.size || 11, a = t.accent || "#0e6e6a", b = t.border || "#c9d2d0", soft = mixWhite(a, .86);
+  return `body{font-family:${t.font || "Arial"},Helvetica,sans-serif;font-size:${s}px;color:#222222;margin:12px;background:#ffffff}
+.pagina{width:100%}
+.secao{border:1px solid ${b};border-collapse:collapse;margin-top:10px}
+.secao td{padding:4px 8px;vertical-align:top}
+.tit{background:${soft};color:${a};font-weight:bold;font-size:${s + 2}px;border-bottom:1px solid ${b}}
+.rotulo{color:#666666}
+.titulo{font-size:${s + 9}px;font-weight:bold;color:${a}}
+.amb{font-size:${s + 3}px;font-weight:bold;color:${a};margin:14px 0 4px}
+.itens{border-collapse:collapse;margin-top:4px}
+.itens td,.itens th{border:1px solid ${b};padding:3px 5px}
+.itens th{background:${a};color:#ffffff;font-weight:bold}
+.itens .cat td{background:${soft};font-weight:bold}
+.itens .sub td{color:#555555;font-size:${s - 1}px}
+.itens .erro td{color:#cc0000;font-weight:bold}
+.itens .soma td{font-weight:bold;background:#f6f6f6}
+.total td{font-size:${s + 3}px;font-weight:bold}
+.assin td{padding-top:48px;text-align:center}
+.linha-assin{border-top:1px solid #444444;width:80%;margin:0 auto;padding-top:4px}
+.rodape{color:#666666;font-size:${s - 1}px;text-align:center;padding-top:14px;border-top:1px solid ${b}}`;
+}
+const dataAttr = (pv, i) => pv ? ` data-blk="${i}"` : "";
+function textWithTokens(s) {
+  return String(s || "").split(/(\{\{[^}]+\}\})/).map(part => {
+    const m = part.match(/^\{\{([^}]+)\}\}$/);
+    return m ? `<xsl:value-of select="${X(m[1].trim())}" />` : X(part).replace(/\n/g, "<br />");
+  }).join("");
+}
+function fieldsTable(b) {
+  const n = Math.max(1, Math.min(3, +b.cols || 2)), rows = [];
+  for (let k = 0; k < b.fields.length; k += n) rows.push(b.fields.slice(k, k + n));
+  const w = Math.floor(100 / n);
+  return rows.map(r => `<tr>${r.map(f => `<td width="${w}%"><span class="rotulo">${X(f.label)}: </span><xsl:value-of select="${X(custPath(f))}" /></td>`).join("")}${r.length < n ? `<td colspan="${n - r.length}"></td>` : ""}</tr>`).join("\n");
+}
+function cellValue(c) {
+  if (c.kind === "seq") return `<xsl:number level="any" count="ITEM" />`;
+  const p = c.path || ".";
+  if ((c.fmt || "text") === "text" && !c.mulQty) return `<xsl:value-of select="${X(p)}" />`;
+  let e = num(p); if (c.mulQty) e = `${e} * ${num("@QUANTITY")}`;
+  return `<xsl:if test="string-length(${X(p)}) &gt; 0"><xsl:value-of select="format-number(${X(e)}, '${PIC[c.fmt] || PIC.num}', 'formato')" /></xsl:if>`;
+}
+function errTest(b) {
+  const refs = String(b.errorRefs || "").split(";").map(s => s.trim()).filter(s => s && !s.includes("'"));
+  return refs.length ? refs.map(r => `@REFERENCE = '${X(r)}'`).join(" or ") : "";
+}
+function genItemsBlock(b, i, pv) {
+  const n = Math.max(1, b.columns.length);
+  const th = b.columns.map((c, k) => `<th${c.w ? ` width="${X(c.w)}"` : ""} align="${X(c.align || "left")}"${pv ? ` data-col="${k}"` : ""}>${X(c.label)}</th>`).join("");
+  const scope = (b.subitems ? ".//ITEM" : "ITEMS/ITEM") + (b.hideZero ? `[${FILTER0}]` : "");
+  let sumRow = "";
+  if (b.columns.some(c => c.sum && c.kind !== "seq" && c.kind !== "desc")) {
+    let labeled = false;
+    sumRow = `<tr class="soma">${b.columns.map((c, k) => {
+      if (c.sum && c.kind !== "seq" && c.kind !== "desc") return `<td align="right"><xsl:variable name="s${k}"><xsl:call-template name="Soma_${i}_${k}"><xsl:with-param name="itens" select="${scope}" /></xsl:call-template></xsl:variable><xsl:value-of select="format-number($s${k}, '${PIC[c.fmt] || PIC.num}', 'formato')" /></td>`;
+      if (!labeled) { labeled = true; return `<td align="right">Soma</td>`; }
+      return "<td></td>";
+    }).join("")}</tr>`;
+  }
+  const catTotal = b.catTotal ? `<xsl:if test="string-length(TOTALPRICES/MARGINS/BUDGET/@VALUE) &gt; 0"><tr class="soma"><td colspan="${n}" align="right">Total da categoria: <xsl:value-of select="/LISTING/@CURRENCYSYMBOL" /><xsl:text> </xsl:text><xsl:value-of select="format-number(${num("TOTALPRICES/MARGINS/BUDGET/@VALUE")}, '###.##0,00', 'formato')" /></td></tr></xsl:if>` : "";
+  return `<tr id="BODY" templatetext="Itens por ambiente e categoria"${dataAttr(pv, i)}>
+  <td>
+    <xsl:for-each select="AMBIENTS/AMBIENT">
+      <xsl:if test="count(CATEGORIES/CATEGORY) &gt; 0">
+        ${b.showAmbient ? `<div class="amb"><xsl:value-of select="@DESCRIPTION" /></div>` : ""}
+        <table class="itens" width="100%" cellspacing="0" cellpadding="0">
+          <xsl:for-each select="CATEGORIES/CATEGORY">
+            ${b.showCategory ? `<tr class="cat"><td colspan="${n}"><xsl:value-of select="@DESCRIPTION" /></td></tr>` : ""}
+            <tr>${th}</tr>
+            <xsl:call-template name="Itens_${i}" />
+            ${sumRow}
+            ${catTotal}
+          </xsl:for-each>
+        </table>
+      </xsl:if>
+    </xsl:for-each>
+  </td>
+</tr>`;
+}
+function genItemsTemplates(b, i) {
+  const et = errTest(b);
+  const cells = b.columns.map(c => {
+    const pad = c.kind === "desc" ? ` style="padding-left:{$nivel * 14 + 5}px"` : "";
+    return `<td align="${X(c.align || "left")}"${pad}>${cellValue(c)}</td>`;
+  }).join("\n        ");
+  let t = `
+  <xsl:template name="Itens_${i}">
+    <xsl:param name="nivel" select="0" />
+    <xsl:for-each select="ITEMS/ITEM">
+      ${b.hideZero ? `<xsl:if test="${FILTER0}">` : ""}
+      <tr>
+        <xsl:attribute name="class">linha<xsl:if test="$nivel &gt; 0"> sub</xsl:if>${et ? `<xsl:if test="${et}"> erro</xsl:if>` : ""}</xsl:attribute>
+        ${cells}
+      </tr>
+      ${b.subitems ? `<xsl:call-template name="Itens_${i}"><xsl:with-param name="nivel" select="$nivel + 1" /></xsl:call-template>` : ""}
+      ${b.hideZero ? "</xsl:if>" : ""}
+    </xsl:for-each>
+  </xsl:template>`;
+  b.columns.forEach((c, k) => {
+    if (!c.sum || c.kind === "seq" || c.kind === "desc") return;
+    let e = num(c.path || "."); if (c.mulQty) e = `${e} * ${num("@QUANTITY")}`;
+    t += `
+  <xsl:template name="Soma_${i}_${k}">
+    <xsl:param name="itens" />
+    <xsl:param name="acumulado" select="0" />
+    <xsl:choose>
+      <xsl:when test="$itens">
+        <xsl:variable name="v"><xsl:for-each select="$itens[1]"><xsl:value-of select="${X(e)}" /></xsl:for-each></xsl:variable>
+        <xsl:call-template name="Soma_${i}_${k}">
+          <xsl:with-param name="itens" select="$itens[position() &gt; 1]" />
+          <xsl:with-param name="acumulado"><xsl:choose><xsl:when test="number($v) = number($v)"><xsl:value-of select="$acumulado + number($v)" /></xsl:when><xsl:otherwise><xsl:value-of select="$acumulado" /></xsl:otherwise></xsl:choose></xsl:with-param>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise><xsl:value-of select="$acumulado" /></xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>`;
+  });
+  return t;
+}
+function codeOk(xsl) {
+  return !parseXml(`<r xmlns:xsl="${XSLNS}">${xsl}</r>`).error;
+}
+function genBlock(b, i, pv, model) {
+  const da = dataAttr(pv, i), sec = id => ` id="${id}"${da}`;
+  switch (b.type) {
+    case "header": return `<thead${sec("HEADER")}>
+  <tr><td>
+    <table width="100%" cellspacing="0" cellpadding="4" style="border-bottom:2px solid ${X(model.theme.accent)}">
+      <tr>
+        <td valign="middle">${b.logo ? `<img src="${X(b.logo)}" alt="" border="0" />` : ""}</td>
+        <td valign="middle" align="right">
+          <div class="titulo">${X(b.title)}</div>
+          ${b.showNumber ? `<div><span class="rotulo">Projeto nº </span><xsl:value-of select="@CUSTOMERNUMBER" /></div>` : ""}
+          ${b.showDate || b.showHour ? `<div>${b.showDate ? `<span class="rotulo">Data: </span><xsl:value-of select="@DATE" /><xsl:text>   </xsl:text>` : ""}${b.showHour ? `<span class="rotulo">Hora: </span><xsl:value-of select="@HOUR" />` : ""}</div>` : ""}
+        </td>
+        ${b.logo2 ? `<td width="1%" valign="middle"><img src="${X(b.logo2)}" alt="" border="0" /></td>` : ""}
+      </tr>
+    </table>
+  </td></tr>
+</thead>`;
+    case "customer": case "store": return `<tr${sec(BT[b.type].sec)}><td>
+  <table class="secao" width="100%" cellspacing="0" cellpadding="0">
+    <tr><td class="tit" colspan="${Math.max(1, Math.min(3, +b.cols || 2))}">${X(b.title)}</td></tr>
+${fieldsTable(b)}
+  </table>
+</td></tr>`;
+    case "items": return genItemsBlock(b, i, pv);
+    case "payments": return `<tr${sec("PAYMENTTERMS")}><td>
+  <xsl:if test="count(PAYMENTTERMS/PAYMENTTERMCOLLECTION/PAYMENTTERM${b.onlySelected ? "[@SELECTED='Y']" : ""}) &gt; 0">
+    <table class="secao itens" width="100%" cellspacing="0" cellpadding="0">
+      <tr><td class="tit" colspan="4">${X(b.title)}</td></tr>
+      <tr><th>Condição</th><th>Parcelas</th><th>Valor da parcela</th><th>Valor total</th></tr>
+      <xsl:for-each select="PAYMENTTERMS/PAYMENTTERMCOLLECTION/PAYMENTTERM${b.onlySelected ? "[@SELECTED='Y']" : ""}">
+        <tr>
+          <td><xsl:value-of select="@DESCRIPTION" /></td>
+          <td align="center"><xsl:value-of select="@PARCELQUANTITY" />x</td>
+          <td align="right"><xsl:value-of select="format-number(@PARCELVALUE, '###.##0,00', 'formato')" /></td>
+          <td align="right"><xsl:value-of select="format-number(@GENERALTOTAL, '###.##0,00', 'formato')" /></td>
+        </tr>
+      </xsl:for-each>
+    </table>
+  </xsl:if>
+</td></tr>`;
+    case "entries": return `<tr${sec("PAYMENTENTRIES")}><td>
+  <xsl:if test="count(PAYMENTTERMS/ADITIONALENTRYCOLLECTION/ADITIONALENTRY) &gt; 0">
+    <table class="secao itens" width="100%" cellspacing="0" cellpadding="0">
+      <tr><td class="tit" colspan="2">${X(b.title)}</td></tr>
+      <xsl:for-each select="PAYMENTTERMS/ADITIONALENTRYCOLLECTION/ADITIONALENTRY">
+        <tr><td><xsl:value-of select="@DESCRIPTION" /></td><td align="right" width="25%"><xsl:value-of select="format-number(@VALUE, '###.##0,00', 'formato')" /></td></tr>
+      </xsl:for-each>
+    </table>
+  </xsl:if>
+</td></tr>`;
+    case "total": {
+      const p = b.source === "ORDER" ? "TOTALPRICES/MARGINS/ORDER/@VALUE" : b.source === "TABLE" ? "TOTALPRICES/@TABLE" : "TOTALPRICES/MARGINS/BUDGET/@VALUE";
+      return `<tr${sec("TOTALS")}><td>
+  <table class="secao total" width="100%" cellspacing="0" cellpadding="0">
+    <tr>
+      <td>${X(b.label)}</td>
+      <td align="right"><xsl:value-of select="/LISTING/@CURRENCYSYMBOL" /><xsl:text> </xsl:text><xsl:choose><xsl:when test="string-length(${p}) &gt; 0"><xsl:value-of select="format-number(${num(p)}, '###.##0,00', 'formato')" /></xsl:when><xsl:otherwise>0,00</xsl:otherwise></xsl:choose></td>
+    </tr>
+  </table>
+</td></tr>`;
+    }
+    case "observations": return `<tr${sec("OBSERVATIONS")}><td>
+  <table class="secao" width="100%" cellspacing="0" cellpadding="0">
+    <tr><td class="tit">${X(b.title)}</td></tr>
+    <tr><td>${b.path ? `<xsl:value-of select="${X(b.path)}" />` : ""}${b.text ? `${b.path ? "<br />" : ""}${textWithTokens(b.text)}` : ""}</td></tr>
+  </table>
+</td></tr>`;
+    case "text": return `<tr${da}><td align="${X(b.align || "left")}" style="padding-top:8px${+b.size ? `;font-size:${+b.size}px` : ""}${b.bold ? ";font-weight:bold" : ""}">${textWithTokens(b.text)}</td></tr>`;
+    case "signatures": return `<tr${sec("SIGNATURES")}><td>
+  <table class="assin" width="100%" cellspacing="0" cellpadding="0">
+    <tr><td width="50%"><div class="linha-assin">${X(b.left)}</div></td><td width="50%"><div class="linha-assin">${X(b.right)}</div></td></tr>
+  </table>
+</td></tr>`;
+    case "spacer": return `<tr${da}><td height="${Math.max(0, +b.h || 0)}"></td></tr>`;
+    case "code": {
+      const raw = codeOk(b.xsl) ? b.xsl : `<tr><td style="color:#cc0000">Bloco de código com erro de estrutura</td></tr>`;
+      const isRow = /^\s*<tr[\s>]/.test(raw);
+      if (pv) return `<tr${da}><td><table width="100%" cellspacing="0" cellpadding="0">${isRow ? raw : `<tr><td>${raw}</td></tr>`}</table></td></tr>`;
+      return isRow ? raw : `<tr><td>${raw}</td></tr>`;
+    }
+    case "footer": return `<tfoot${sec("FOOTER")}>
+  <tr><td class="rodape">
+    ${b.fields.map(f => `<span class="rotulo">${X(f.label)}: </span><xsl:value-of select="${X(custPath(f))}" />`).join(" &#160;|&#160; ")}
+    ${b.note ? `<br />${textWithTokens(b.note)}` : ""}
+  </td></tr>
+</tfoot>`;
+  }
+  return "";
+}
+const b64e = s => btoa(unescape(encodeURIComponent(s)));
+const b64d = s => decodeURIComponent(escape(atob(s)));
+function generate(model, pv) {
+  const bl = model.blocks;
+  const head = bl.map((b, i) => b.type === "header" ? genBlock(b, i, pv, model) : "").join("");
+  const foot = bl.map((b, i) => b.type === "footer" ? genBlock(b, i, pv, model) : "").join("");
+  const body = bl.map((b, i) => b.type !== "header" && b.type !== "footer" ? genBlock(b, i, pv, model) : "").filter(Boolean).join("\n");
+  const tpls = bl.map((b, i) => b.type === "items" ? genItemsTemplates(b, i) : "").join("");
+  const meta = pv ? "" : `<!-- Gerado pelo Editor XSL Promob (construtor visual). Para editar visualmente, abra no construtor. EDITORXSL-MODEL:${b64e(JSON.stringify(model))} -->\n`;
+  return `<?xml version="1.0" encoding="utf-8"?>
+${meta}<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:decimal-format name="formato" decimal-separator="," grouping-separator="." />
+  <xsl:output method="html" />
+  <xsl:template match="LISTING">
+    <html generator="ProMob.Cadastro">
+      <head>
+        <title>${X(model.title)}</title>
+        <style type="text/css">${genCss(model.theme)}</style>
+      </head>
+      <body>
+        <table class="pagina" align="center" border="0" cellspacing="0" cellpadding="0">
+${head}
+<tbody>
+${body}
+</tbody>
+${foot}
+        </table>
+      </body>
+    </html>
+  </xsl:template>${tpls}
+</xsl:stylesheet>
+`;
+}
+
+/* ---------- Interpretar um XSL existente ---------- */
+function textOnly(el) {
+  let s = "";
+  for (const n of el.childNodes) {
+    if (n.nodeType === 3) s += n.nodeValue;
+    else if (n.nodeType === 1 && n.namespaceURI !== XSLNS) s += textOnly(n);
+  }
+  return s.replace(/\s+/g, " ").trim();
+}
+function interpretXsl(text, name) {
+  const mm = text.match(/EDITORXSL-MODEL:([A-Za-z0-9+/=]+)/);
+  if (mm) { try { return { model: JSON.parse(b64d(mm[1])), notes: ["Layout criado no construtor: aberto exatamente como foi salvo."] }; } catch {} }
+  const { doc, error } = parseXml(text);
+  if (error) throw new Error("O XSL tem erro de estrutura e não pode ser interpretado: " + error);
+  const out = doc.getElementsByTagNameNS(XSLNS, "output")[0];
+  if (out && out.getAttribute("method") === "xml") throw new Error("Este XSL gera o XML de integração. O construtor monta relatórios; para integração use a aba Editor.");
+  const all = [...doc.getElementsByTagName("*")].filter(e => e.namespaceURI !== XSLNS);
+  const titleEl = all.find(e => e.localName === "title");
+  const model = { name: (name || "Layout").replace(/(\.xslt?)?$/i, "_visual.xsl"), title: titleEl ? textOnly(titleEl) || "Orçamento" : "Orçamento", theme: defTheme(), blocks: [] };
+  const notes = [];
+  const vals = el => [...el.getElementsByTagNameNS(XSLNS, "value-of")].map(v => v.getAttribute("select") || "");
+  const custFields = (el, keepRep) => [...el.getElementsByTagNameNS(XSLNS, "value-of")].map(v => {
+    const m = (v.getAttribute("select") || "").match(/DATA\[@ID\s*=\s*'([^']+)'\]/); if (!m) return null;
+    if (!keepRep && /^rep_/.test(m[1])) return null;
+    let s = "", n = v.previousSibling;
+    while (n && !s) { s = n.nodeType === 3 ? n.nodeValue.trim() : n.nodeType === 1 && n.namespaceURI !== XSLNS ? textOnly(n) : ""; n = n.previousSibling; }
+    if (!s) { let td = v.parentNode; while (td && !/^t[dh]$/i.test(td.localName || "")) td = td.parentNode; if (td) s = textOnly(td); }
+    s = (s || "").split("|").pop().replace(/[:\s]+$/, "").trim();
+    return { id: m[1], label: s && s.length < 40 ? s : (CUSTOMER[m[1]] || m[1]).replace(/^Loja: /, "") };
+  }).filter(Boolean);
+  const secs = all.filter(e => /^[A-Z][A-Z_]+$/.test(e.getAttribute("id") || ""));
+  for (const el of secs) {
+    const id = el.getAttribute("id");
+    if (id === "HEADER") {
+      const b = newBlock("header"), imgs = [...el.getElementsByTagName("img")].map(i => i.getAttribute("src") || "");
+      const v = vals(el);
+      Object.assign(b, { logo: imgs[0] || "", logo2: imgs[1] || "", title: model.title, showDate: v.includes("@DATE"), showHour: v.includes("@HOUR"), showNumber: v.includes("@CUSTOMERNUMBER") });
+      model.blocks.push(b);
+      if (el.getElementsByTagName("script").length || el.getElementsByTagName("a").length) notes.push("Cabeçalho: o link/script do original (ex.: \"Cinex do Meu Jeito\") não foi recriado. Use um bloco de Código XSL se precisar.");
+    } else if (id === "CUSTOMERDATA" || id === "STOREDATA") {
+      const b = newBlock(id === "CUSTOMERDATA" ? "customer" : "store"); const f = custFields(el, id === "STOREDATA");
+      if (f.length) b.fields = f; const t = el.getElementsByTagName("b")[0]; if (t && textOnly(t)) b.title = textOnly(t).replace(/[:\s-]+$/, "");
+      model.blocks.push(b);
+    } else if (id === "BODY") {
+      model.blocks.push(interpretItems(doc, el, notes));
+    } else if (id === "PAYMENTTERMS") { const b = newBlock("payments"); model.blocks.push(b); }
+    else if (id === "PAYMENTENTRIES") model.blocks.push(newBlock("entries"));
+    else if (id === "TOTALS") {
+      const b = newBlock("total"), v = vals(el).join(" ") + " " + [...el.getElementsByTagNameNS(XSLNS, "variable")].map(x => x.getAttribute("select")).join(" ");
+      b.source = /ORDER/.test(v) ? "ORDER" : /TOTALPRICES\/@TABLE/.test(v) ? "TABLE" : "BUDGET";
+      const lb = textOnly(el).split(":")[0].trim(); if (lb && lb.length < 30) b.label = lb;
+      model.blocks.push(b);
+    } else if (id === "FOOTER") {
+      const b = newBlock("footer"), f = custFields(el, true); if (f.length) b.fields = f;
+      const t = textOnly(el).match(/©[^|]*$/); b.note = t ? t[0].trim() : "";
+      model.blocks.push(b);
+    } else if (id === "OBSERVATIONS") { model.blocks.push(newBlock("observations")); }
+    else if (id === "SIGNATURES") { model.blocks.push(newBlock("signatures")); }
+    else if (el.localName !== "th" && id !== "columns") {
+      const b = newBlock("code"); b.xsl = new XMLSerializer().serializeToString(el).replace(/ xmlns:xsl="[^"]*"/g, "");
+      model.blocks.push(b); notes.push(`Seção ${id} não tem bloco visual próprio: entrou como Código XSL.`);
+    }
+  }
+  const h = model.blocks.findIndex(b => b.type === "header"); if (h > 0) model.blocks.unshift(...model.blocks.splice(h, 1));
+  const f = model.blocks.findIndex(b => b.type === "footer"); if (f >= 0 && f !== model.blocks.length - 1) model.blocks.push(...model.blocks.splice(f, 1));
+  if (!model.blocks.length) throw new Error("Não encontrei seções do Promob (HEADER, CUSTOMERDATA, BODY…) neste XSL.");
+  notes.push("O visual (cores, fontes e bordas) é refeito no padrão do construtor. O arquivo original não é alterado: o resultado é salvo com outro nome.");
+  return { model, notes };
+}
+function interpretItems(doc, body, notes) {
+  const b = newBlock("items");
+  const ths = [...body.getElementsByTagName("th")];
+  const tpl = n => [...doc.getElementsByTagNameNS(XSLNS, "template")].find(t => t.getAttribute("name") === n);
+  const call = body.getElementsByTagNameNS(XSLNS, "call-template")[0];
+  let t = call ? tpl(call.getAttribute("name")) : null; const chain = [];
+  for (let g = 0; t && g < 6; g++) { chain.push(t.getAttribute("name")); if (t.getElementsByTagName("td").length) break; const c = t.getElementsByTagNameNS(XSLNS, "call-template")[0]; t = c ? tpl(c.getAttribute("name")) : null; }
+  const host = t || body;
+  const td0 = host.getElementsByTagName("td")[0];
+  b.showAmbient = /AMBIENT/.test(new XMLSerializer().serializeToString(body));
+  b.showCategory = [...body.getElementsByTagNameNS(XSLNS, "for-each")].some(fe => /CATEGORY/.test(fe.getAttribute("select") || ""));
+  const hostTxt = new XMLSerializer().serializeToString(host);
+  b.hideZero = /QUANTIDADE_ALTERADA/.test(hostTxt);
+  b.subitems = !!t && [...t.getElementsByTagNameNS(XSLNS, "call-template")].some(c => chain.includes(c.getAttribute("name")));
+  const refs = [...new Set([...hostTxt.matchAll(/@REFERENCE\s*=\s*'([^']+)'/g)].map(m => m[1].replace(/&amp;/g, "&")))];
+  b.errorRefs = refs.join("; ");
+  b.catTotal = false;
+  if (!td0 || !t) { b.columns = cols(["seq", "qty", "ref", "desc", "dim"]); notes.push("Tabela de itens: não achei o template das linhas; usei colunas padrão."); return b; }
+  let row = td0.parentNode; while (row && row.namespaceURI === XSLNS) row = row.parentNode;
+  const kids = [...row.childNodes].filter(n => n.nodeType === 1);
+  const units = []; let run = [];
+  const flush = () => { if (run.length) units.push({ run }); run = []; };
+  for (const k of kids) {
+    if (k.namespaceURI === XSLNS && (k.localName === "if" || k.localName === "choose") && k.getElementsByTagName("td").length) run.push(k);
+    else if (k.localName === "td") { flush(); units.push({ td: k }); }
+    else flush();
+  }
+  flush();
+  const tdCount = units.filter(u => u.td).length, runs = units.filter(u => u.run);
+  const need = ths.length - tdCount;
+  const cells = [];
+  for (const u of units) {
+    if (u.td) { cells.push([u.td]); continue; }
+    const r = u.run.length;
+    const chunk = runs.length === 1 && need > 0 && r % need === 0 ? r / need : u.run[0].localName === "choose" ? 1 : 2;
+    for (let k = 0; k < r; k += chunk) cells.push(u.run.slice(k, k + chunk));
+  }
+  b.columns = cells.map((alts, k) => {
+    const th = ths[k];
+    const col = { label: th ? textOnly(th) : "Coluna " + (k + 1), w: th ? th.getAttribute("width") || "" : "", align: "left", path: "", fmt: "text", kind: "", sum: false, mulQty: false };
+    const tds = alts.flatMap(a => a.localName === "td" ? [a] : [...a.getElementsByTagName("td")]);
+    const td = tds.find(x => x.getElementsByTagNameNS(XSLNS, "value-of").length || x.getElementsByTagNameNS(XSLNS, "number").length) || tds[0];
+    if (td) col.align = (td.getAttribute("align") || "left").replace("middle", "center");
+    if (td && td.getElementsByTagNameNS(XSLNS, "number").length) return { ...col, kind: "seq" };
+    const vs = td ? [...td.getElementsByTagNameNS(XSLNS, "value-of")].map(v => v.getAttribute("select") || "").filter(s => !/^\$espacos/.test(s)) : [];
+    let sel = vs[0] || "";
+    const fm = sel.match(/^format-number\(\s*(.+?)\s*,\s*'/);
+    if (fm) {
+      col.fmt = "money"; let inner = fm[1];
+      const vm = inner.match(/^\$(\w+)$/);
+      if (vm) { const v = [...td.getElementsByTagNameNS(XSLNS, "variable")].find(x => x.getAttribute("name") === vm[1]); inner = v ? v.getAttribute("select") || "" : inner; }
+      const tm = inner.match(/^translate\(\s*(.+?)\s*,/); sel = tm ? tm[1] : inner;
+    }
+    col.path = sel || "@DESCRIPTION";
+    if (col.path === "@DESCRIPTION") col.kind = "desc";
+    if (vs.length > 1 && !fm) notes.push(`Coluna "${col.label}": o original juntava ${vs.length} campos; o construtor usa só ${labelFor(col.path)}.`);
+    return col;
+  });
+  if (ths.length && ths.length !== cells.length) notes.push(`Tabela de itens: o cabeçalho tem ${ths.length} colunas e as linhas têm ${cells.length}. Confira os títulos.`);
+  return b;
+}
+
+/* ---------- Estado do construtor ---------- */
+const BD = { model: null, sel: -1, selCol: -1, hist: [], fut: [], lastKey: "", lastT: 0, timer: 0, src: null, out: null, notes: [], dragFrom: null, dragNew: null };
+function bdCommit(key) {
+  const now = Date.now();
+  if (key && key === BD.lastKey && now - BD.lastT < 900) { BD.lastT = now; } else { BD.hist.push(BD.snap); if (BD.hist.length > 80) BD.hist.shift(); BD.fut = []; BD.lastKey = key || ""; BD.lastT = now; }
+  BD.snap = JSON.stringify(BD.model);
+  lsSet("exsl.builder", BD.model);
+  clearTimeout(BD.timer); BD.timer = setTimeout(renderCanvas, 220);
+}
+function bdLoad(model, notes, src) {
+  BD.model = model; BD.snap = JSON.stringify(model); BD.hist = []; BD.fut = []; BD.sel = -1; BD.selCol = -1; BD.notes = notes || []; BD.src = src || null; BD.out = null;
+  lsSet("exsl.builder", model);
+  renderPalette(); renderCanvas(); renderProps();
+}
+function bdUndo(dir) {
+  const from = dir < 0 ? BD.hist : BD.fut, to = dir < 0 ? BD.fut : BD.hist;
+  if (!from.length) { toast(dir < 0 ? "Nada para desfazer." : "Nada para refazer."); return; }
+  to.push(BD.snap); BD.snap = from.pop(); BD.model = JSON.parse(BD.snap); BD.lastKey = "";
+  if (BD.sel >= BD.model.blocks.length) BD.sel = -1;
+  lsSet("exsl.builder", BD.model); renderPalette(); renderCanvas(); renderProps();
+}
+function clampIndex(idx) {
+  const bl = BD.model.blocks;
+  const min = bl[0] && bl[0].type === "header" ? 1 : 0;
+  const max = bl.length && bl[bl.length - 1].type === "footer" ? bl.length - 1 : bl.length;
+  return Math.max(min, Math.min(max, idx));
+}
+function addBlock(type, at) {
+  const bl = BD.model.blocks, b = newBlock(type);
+  if (BT[type].single && bl.some(x => x.type === type)) { toast(`O layout já tem ${BT[type].name}.`); return; }
+  let idx = type === "header" ? 0 : type === "footer" ? bl.length : clampIndex(at ?? (BD.sel >= 0 ? BD.sel + 1 : bl.length));
+  bl.splice(idx, 0, b); BD.sel = idx; BD.selCol = -1;
+  bdCommit(); renderPalette(); renderCanvas(); renderProps();
+}
+function moveBlock(from, to) {
+  const bl = BD.model.blocks, b = bl[from];
+  if (!b || b.type === "header" || b.type === "footer") return;
+  bl.splice(from, 1); if (to > from) to--; to = clampIndex(to); bl.splice(to, 0, b); BD.sel = to;
+  bdCommit(); renderCanvas(); renderProps();
+}
+
+/* ---------- Paleta ---------- */
+function renderPalette() {
+  const has = t => BD.model.blocks.some(b => b.type === t);
+  $("#bdPalette").innerHTML = `<span class="label">Blocos</span>` + Object.entries(BT).map(([k, v]) =>
+    `<button class="pitem" type="button" draggable="${v.single && has(k) ? "false" : "true"}" data-add="${k}" ${v.single && has(k) ? "disabled" : ""} title="Arraste para o layout ou clique para adicionar"><b>${esc(v.name)}</b><small>${esc(v.desc)}</small><span class="plus">+</span></button>`).join("");
+}
+
+/* ---------- Tela (canvas) ---------- */
+let bdCss = "", bdSeq = 0;
+async function renderCanvas() {
+  const box = $("#bdCards"); if (!BD.model) return;
+  const seq = ++bdSeq;
+  $("#bdTitle").textContent = "Construtor: " + BD.model.name;
+  const bl = BD.model.blocks;
+  if (!bl.length) { box.innerHTML = '<div class="cv-empty">Arraste um bloco da esquerda para começar.</div>'; return; }
+  let res = null, err = "";
+  const xslText = generate(BD.model, true);
+  const xsl = parseXml(xslText);
+  if (xsl.error) err = xsl.error;
+  else if (!state.xml) err = "Carregue um XML de dados para ver o conteúdo dos blocos.";
+  else if (!window.XSLTProcessor) err = "Este navegador não aplica XSL; os blocos aparecem sem conteúdo.";
+  else {
+    try { const xt = await readText(state.xml); if (seq !== bdSeq) return; const p = new XSLTProcessor(); p.importStylesheet(xsl.doc); res = p.transformToDocument(parseXml(xt).doc); } catch { res = null; }
+    if (!res || !res.documentElement) err = "O navegador não conseguiu aplicar o layout aos dados. Verifique os blocos de código e os caminhos personalizados.";
+  }
+  bdCss = genCss(BD.model.theme);
+  box.innerHTML = bl.map((b, i) => {
+    const fixed = b.type === "header" || b.type === "footer";
+    return `<article class="bcard${i === BD.sel ? " on" : ""}" data-i="${i}">
+      <header>${fixed ? '<span class="grip" title="Posição fixa">•</span>' : '<span class="grip" title="Arraste para mover" data-grip>⋮⋮</span>'}<b>${esc(BT[b.type].name)}</b>${BT[b.type].sec ? `<span class="mono">${BT[b.type].sec}</span>` : ""}
+        <span class="sp">${fixed ? "" : `<button class="ibtn" type="button" data-up="${i}" title="Subir">↑</button><button class="ibtn" type="button" data-down="${i}" title="Descer">↓</button><button class="ibtn" type="button" data-dup="${i}" title="Duplicar">⧉</button>`}<button class="ibtn" type="button" data-del="${i}" title="Remover">✕</button></span></header>
+      ${b.type === "code" && !codeOk(b.xsl) ? '<div class="bwarn">O código deste bloco tem erro de estrutura.</div>' : ""}
+      <div class="paper" data-paper="${i}"></div></article>`;
+  }).join("") + (err ? `<div class="errbox">${esc(err)}</div>` : "");
+  if (!res) return;
+  for (let i = 0; i < bl.length; i++) {
+    const host = box.querySelector(`[data-paper="${i}"]`), el = res.querySelector(`[data-blk="${i}"]`);
+    if (!host) continue;
+    const root = host.shadowRoot || host.attachShadow({ mode: "open" });
+    const html = el ? await resolveAssets(el.outerHTML) : '<tr><td style="color:#888">(sem conteúdo com estes dados)</td></tr>';
+    if (seq !== bdSeq) return;
+    root.innerHTML = `<style>${bdCss}:host{display:block}body,table{font-family:inherit}th[data-col]{cursor:pointer}th[data-col].sel{outline:2px solid #e0a020;outline-offset:-2px}</style>
+      <div style="font-family:${esc(BD.model.theme.font || "Arial")},Helvetica,sans-serif;font-size:${+BD.model.theme.size || 11}px;color:#222"><table class="pagina" width="100%" cellspacing="0" cellpadding="0">${html}</table></div>`;
+    if (i === BD.sel && BD.selCol >= 0) { const th = root.querySelector(`th[data-col="${BD.selCol}"]`); if (th) th.classList.add("sel"); }
+  }
+}
+
+/* ---------- Painel de propriedades ---------- */
+function scanFields() {
+  const r = { refs: new Set(["COMPLETE", "MATERIAL", "PESO", "VOLUME", "ITEM_BASE"]), integ: new Set(), meta: new Set(), cust: new Set(Object.keys(CUSTOMER)) };
+  if (state.xml && state.xml.text) {
+    const { doc, error } = parseXml(state.xml.text);
+    if (!error) {
+      doc.querySelectorAll("REFERENCES > *").forEach(n => r.refs.add(n.nodeName));
+      doc.querySelectorAll("INTEGRATIONDATA ATTRIBUTE").forEach(n => r.integ.add(n.getAttribute("NAME")));
+      doc.querySelectorAll("ITEM METADATA[ID]").forEach(n => { if (n.getAttribute("VALUE") != null) r.meta.add(n.getAttribute("ID")); });
+      doc.querySelectorAll("CUSTOMERSDATA > DATA").forEach(n => r.cust.add(n.getAttribute("ID")));
+    }
+  }
+  return r;
+}
+function itemOptions() {
+  const f = scanFields();
+  const g = [
+    ["Item", ["@DESCRIPTION", "@REFERENCE", "@QUANTITY", "@UNIT", "@TEXTDIMENSION", "@WIDTH", "@HEIGHT", "@DEPTH", "@REPETITION", "@FAMILY", "@OBSERVATIONS"]],
+    ["Referências do item", [...f.refs].map(k => `REFERENCES/${k}/@REFERENCE`)],
+    ["Preço", ["PRICE/MARGINS/BUDGET/@TOTAL", "PRICE/MARGINS/BUDGET/@UNIT", "PRICE/MARGINS/ORDER/@TOTAL", "PRICE/@TABLE", "PRICE/@UNIT", "PRICE/@TOTAL"]],
+    ["Integração", [...f.integ].map(k => `METADATAS/METADATA/METADATA.VALUE/INTEGRATIONDATA/ATTRIBUTES/ATTRIBUTE[@NAME='${k}']/@VALUE`)],
+    ["Metadados", [...f.meta].map(k => `METADATAS/METADATA[@ID='${k}']/@VALUE`)],
+    ["Builder", ["ADDITIONAL_INFORMATIONS_BUILDER/@ID_ERP", "ADDITIONAL_INFORMATIONS_BUILDER/@CODE"]]
+  ];
+  return g.filter(x => x[1].length);
+}
+function listingOptions() {
+  const f = scanFields();
+  return [
+    ["Cliente e loja", [...f.cust].map(k => `CUSTOMERSDATA/DATA[@ID='${k}']/@VALUE`)],
+    ["Listagem", ["@DATE", "@HOUR", "@CUSTOMERNUMBER", "@CURRENCYSYMBOL"]],
+    ["Totais", ["TOTALPRICES/MARGINS/BUDGET/@VALUE", "TOTALPRICES/MARGINS/ORDER/@VALUE", "TOTALPRICES/@TABLE"]]
+  ];
+}
+function pathSelect(key, value, groups) {
+  const known = groups.some(g => g[1].includes(value));
+  return `<select data-k="${key}" data-path>${groups.map(([g, list]) => `<optgroup label="${esc(g)}">${list.map(p => `<option value="${esc(p)}" ${p === value ? "selected" : ""}>${esc(labelFor(p))}</option>`).join("")}</optgroup>`).join("")}
+    <option value="__custom" ${known ? "" : "selected"}>Outro caminho…</option></select>
+    ${known ? "" : `<input type="text" data-k="${key}" value="${esc(value)}" placeholder="Caminho XPath, ex.: REFERENCES/COR/@REFERENCE">`}`;
+}
+const pf = (label, inner) => `<label class="pf"><span>${esc(label)}</span>${inner}</label>`;
+const inTxt = (k, v, ph = "") => `<input type="text" data-k="${k}" value="${esc(v ?? "")}" placeholder="${esc(ph)}">`;
+const inNum = (k, v) => `<input type="number" data-k="${k}" value="${esc(v ?? 0)}">`;
+const inChk = (k, v, label) => `<label class="ck"><input type="checkbox" data-k="${k}" ${v ? "checked" : ""}> ${esc(label)}</label>`;
+const inSel = (k, v, opts) => `<select data-k="${k}">${opts.map(([val, l]) => `<option value="${esc(val)}" ${String(v) === String(val) ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+function fieldList(b, key) {
+  const opts = listingOptions().slice(0, 1);
+  return `<div class="pgroup"><span class="label">Campos</span>${b.fields.map((f, k) => `<div class="colrow">
+      <div class="r1">${inTxt(`${key}.${k}.label`, f.label, "Rótulo")}<button class="ibtn" type="button" data-fup="${k}" title="Subir">↑</button><button class="ibtn" type="button" data-fdel="${k}" title="Remover">✕</button></div>
+      ${pathSelect(`${key}.${k}.path`, custPath(f), opts)}</div>`).join("")}
+    <button class="btn small" type="button" data-fadd>Adicionar campo</button></div>`;
+}
+function tokenHelper(key) {
+  const opts = listingOptions();
+  return `<div class="fieldrow"><select data-tokfor="${key}"><option value="">Inserir campo no texto…</option>${opts.map(([g, l]) => `<optgroup label="${esc(g)}">${l.map(p => `<option value="${esc(p)}">${esc(labelFor(p))}</option>`).join("")}</optgroup>`).join("")}</select></div>`;
+}
+function renderProps() {
+  const box = $("#bdProps"); if (!BD.model) return;
+  const b = BD.model.blocks[BD.sel];
+  if (!b) {
+    const t = BD.model.theme;
+    box.innerHTML = `<h3>Layout</h3>
+      ${BD.notes.length ? `<div class="notes"><b>Como o XSL foi interpretado</b><ul>${BD.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul></div>` : ""}
+      ${pf("Nome do arquivo", `<input type="text" data-m="name" value="${esc(BD.model.name)}">`)}
+      ${pf("Título da página", `<input type="text" data-m="title" value="${esc(BD.model.title)}">`)}
+      <div class="pgroup"><span class="label">Aparência</span>
+        ${pf("Fonte", `<select data-m="theme.font">${["Arial", "Tahoma", "Verdana", "Calibri", "Segoe UI", "Times New Roman"].map(f => `<option ${f === t.font ? "selected" : ""}>${f}</option>`).join("")}</select>`)}
+        ${pf("Tamanho do texto (px)", `<input type="number" min="8" max="18" data-m="theme.size" value="${esc(t.size)}">`)}
+        ${pf("Cor principal", `<input type="color" data-m="theme.accent" value="${esc(t.accent)}">`)}
+        ${pf("Cor das bordas", `<input type="color" data-m="theme.border" value="${esc(t.border)}">`)}
+      </div>
+      <p class="note">Clique num bloco para editar. Arraste blocos da esquerda para o layout, ou arraste pelo ⋮⋮ para mudar a ordem.</p>
+      <details><summary class="note">Ver XSL que será gerado</summary><pre class="gen">${esc(generate(BD.model, false).replace(/EDITORXSL-MODEL:[A-Za-z0-9+/=]+/, "EDITORXSL-MODEL:…"))}</pre></details>`;
+    return;
+  }
+  const head = `<div class="btnrow" style="justify-content:space-between;align-items:center"><h3>${esc(BT[b.type].name)}</h3><button class="btn small ghost" type="button" data-unsel>Layout</button></div>`;
+  let h = "";
+  switch (b.type) {
+    case "header":
+      h = pf("Título", inTxt("title", b.title)) + pf("Logo (caminho)", inTxt("logo", b.logo, "%pastasistema%/identity/logo.png")) + pf("Segundo logo, à direita (opcional)", inTxt("logo2", b.logo2, "%pastasistema%/identity/logoPromob.png"))
+        + `<div class="pgroup">${inChk("showDate", b.showDate, "Mostrar data")}${inChk("showHour", b.showHour, "Mostrar hora")}${inChk("showNumber", b.showNumber, "Mostrar nº do projeto")}</div>`
+        + `<p class="note">%pastasistema% é a pasta System do Promob. Com a pasta mapeada, o logo aparece na tela.</p>`; break;
+    case "customer": case "store":
+      h = pf("Título", inTxt("title", b.title)) + pf("Colunas", inSel("cols", b.cols, [[1, "1 coluna"], [2, "2 colunas"], [3, "3 colunas"]])) + fieldList(b, "fields"); break;
+    case "items":
+      h = `<div class="pgroup"><span class="label">Colunas</span>
+        ${b.columns.map((c, k) => `<div class="colrow${k === BD.selCol ? " on" : ""}" data-colrow="${k}">
+          <div class="r1">${inTxt(`columns.${k}.label`, c.label, "Título")}<button class="ibtn" type="button" data-cup="${k}" title="Mover para a esquerda">←</button><button class="ibtn" type="button" data-cdown="${k}" title="Mover para a direita">→</button><button class="ibtn" type="button" data-cdel="${k}" title="Remover">✕</button></div>
+          ${c.kind === "seq" ? '<span class="note">Numeração automática dos itens</span>' : pathSelect(`columns.${k}.path`, c.path, itemOptions())}
+          ${c.kind === "seq" ? "" : `<div class="r2">${inSel(`columns.${k}.fmt`, c.fmt, [["text", "Texto"], ["money", "Moeda 1.234,56"], ["num", "Número 1.234,56"], ["int", "Inteiro 1.234"]])}${inSel(`columns.${k}.align`, c.align, [["left", "Esquerda"], ["center", "Centro"], ["right", "Direita"]])}</div>
+          <div class="r2">${inTxt(`columns.${k}.w`, c.w, "Largura, ex.: 10%")}<span></span></div>
+          <div class="r3">${inChk(`columns.${k}.mulQty`, c.mulQty, "× quantidade")}${inChk(`columns.${k}.sum`, c.sum, "Somar na categoria")}${inChk(`columns.${k}.kind`, c.kind === "desc", "Recuar subitens")}</div>`}
+        </div>`).join("")}
+        <span class="note">Adicionar coluna pronta:</span>
+        <div class="presets">${Object.keys(COLP).map(k => `<button class="fchip" type="button" data-cadd="${k}">${esc(COLP_NAMES[k])}</button>`).join("")}<button class="fchip" type="button" data-cadd="custom">Personalizada</button></div></div>
+        <div class="pgroup"><span class="label">Opções</span>
+        ${inChk("showAmbient", b.showAmbient, "Mostrar nome do ambiente")}${inChk("showCategory", b.showCategory, "Mostrar nome da categoria")}
+        ${inChk("subitems", b.subitems, "Listar subitens (peças e componentes)")}${inChk("hideZero", b.hideZero, "Ocultar itens com quantidade zerada")}
+        ${inChk("catTotal", b.catTotal, "Total da categoria (orçamento)")}
+        ${pf("Referências destacadas em vermelho (separe com ;)", inTxt("errorRefs", b.errorRefs))}</div>`; break;
+    case "payments": h = pf("Título", inTxt("title", b.title)) + inChk("onlySelected", b.onlySelected, "Mostrar só a condição escolhida"); break;
+    case "entries": h = pf("Título", inTxt("title", b.title)); break;
+    case "total": h = pf("Rótulo", inTxt("label", b.label)) + pf("Valor", inSel("source", b.source, [["BUDGET", "Total do orçamento (cliente)"], ["ORDER", "Total do pedido"], ["TABLE", "Total em preço de tabela"]])); break;
+    case "observations": h = pf("Título", inTxt("title", b.title)) + pf("Campo", pathSelect("path", b.path, listingOptions())) + pf("Texto fixo (opcional)", `<textarea data-k="text">${esc(b.text)}</textarea>`) + tokenHelper("text"); break;
+    case "text": h = pf("Texto", `<textarea data-k="text">${esc(b.text)}</textarea>`) + tokenHelper("text") + pf("Alinhamento", inSel("align", b.align, [["left", "Esquerda"], ["center", "Centro"], ["right", "Direita"]])) + pf("Tamanho (px, 0 = padrão)", inNum("size", b.size)) + inChk("bold", b.bold, "Negrito") + `<p class="note">Campos aparecem como {{caminho}} no texto.</p>`; break;
+    case "signatures": h = pf("Assinatura à esquerda", inTxt("left", b.left)) + pf("Assinatura à direita", inTxt("right", b.right)); break;
+    case "spacer": h = pf("Altura (px)", inNum("h", b.h)); break;
+    case "code": h = pf("Código XSL (uma ou mais linhas <tr>)", `<textarea data-k="xsl" style="min-height:220px">${esc(b.xsl)}</textarea>`) + `<p class="note">Use a Biblioteca de códigos e copie trechos para cá.</p>`; break;
+    case "footer": h = fieldList(b, "fields") + pf("Texto abaixo (opcional)", `<textarea data-k="note">${esc(b.note)}</textarea>`); break;
+  }
+  box.innerHTML = head + h;
+}
+function setPath(obj, path, val) {
+  const ks = path.split("."); let o = obj;
+  for (let k = 0; k < ks.length - 1; k++) o = o[ks[k]];
+  o[ks[ks.length - 1]] = val;
+}
+function onPropInput(e) {
+  const el = e.target;
+  if (el.dataset.m) {
+    let v = el.type === "number" ? +el.value : el.value;
+    setPath(BD.model, el.dataset.m, v); bdCommit("m:" + el.dataset.m); return;
+  }
+  if (el.dataset.tokfor) {
+    if (!el.value) return;
+    const b = BD.model.blocks[BD.sel]; b[el.dataset.tokfor] = (b[el.dataset.tokfor] || "") + `{{${el.value}}}`;
+    bdCommit(); renderProps(); return;
+  }
+  const k = el.dataset.k; if (!k) return;
+  const b = BD.model.blocks[BD.sel]; if (!b) return;
+  if (el.dataset.path !== undefined && el.value === "__custom") { setPath(b, k, k.startsWith("fields") ? "CUSTOMERSDATA/DATA[@ID='campo']/@VALUE" : ""); bdCommit(); renderProps(); return; }
+  let v = el.type === "checkbox" ? el.checked : el.type === "number" ? +el.value : el.value;
+  if (/\.kind$/.test(k)) v = el.checked ? "desc" : "";
+  if (/^fields\.\d+\.path$/.test(k)) { const f = b.fields[+k.split(".")[1]]; const m = String(v).match(/^CUSTOMERSDATA\/DATA\[@ID='([^']+)'\]\/@VALUE$/); if (m) { f.id = m[1]; delete f.path; } else f.path = v; bdCommit(k); if (e.type === "change") renderProps(); return; }
+  setPath(b, k, v);
+  bdCommit(k);
+  if (e.type === "change" && (el.tagName === "SELECT" || el.type === "checkbox")) renderProps();
+}
+function onPropClick(e) {
+  const t = e.target.closest("button"); if (!t) return;
+  const b = BD.model.blocks[BD.sel];
+  if (t.hasAttribute("data-unsel")) { BD.sel = -1; renderCanvas(); renderProps(); return; }
+  if (!b) return;
+  const d = t.dataset;
+  if (d.cadd) { const c = d.cadd === "custom" ? { label: "Nova coluna", path: "REFERENCES/PESO/@REFERENCE", fmt: "text", w: "", align: "left", kind: "", sum: false, mulQty: false } : cols([d.cadd])[0]; b.columns.push(c); BD.selCol = b.columns.length - 1; }
+  else if (d.cdel) { b.columns.splice(+d.cdel, 1); BD.selCol = -1; }
+  else if (d.cup) { const k = +d.cup; if (k > 0) { [b.columns[k - 1], b.columns[k]] = [b.columns[k], b.columns[k - 1]]; BD.selCol = k - 1; } }
+  else if (d.cdown) { const k = +d.cdown; if (k < b.columns.length - 1) { [b.columns[k + 1], b.columns[k]] = [b.columns[k], b.columns[k + 1]]; BD.selCol = k + 1; } }
+  else if (d.fadd !== undefined) b.fields.push({ id: "nomecliente", label: "Novo campo" });
+  else if (d.fdel) b.fields.splice(+d.fdel, 1);
+  else if (d.fup) { const k = +d.fup; if (k > 0) [b.fields[k - 1], b.fields[k]] = [b.fields[k], b.fields[k - 1]]; }
+  else return;
+  bdCommit(); renderProps(); renderCanvas();
+}
+
+/* ---------- Arrastar e soltar ---------- */
+function dropIndex(y) {
+  const cards = [...$("#bdCards").querySelectorAll(".bcard")];
+  let idx = cards.length;
+  for (const c of cards) { const r = c.getBoundingClientRect(); if (y < r.top + r.height / 2) { idx = +c.dataset.i; break; } }
+  return clampIndex(idx);
+}
+function showDropLine(idx) {
+  const inner = $("#bdCards"); let line = inner.querySelector(".dropline");
+  if (!line) { line = document.createElement("div"); line.className = "dropline"; }
+  const cards = [...inner.querySelectorAll(".bcard")];
+  const ref = cards.find(c => +c.dataset.i === idx);
+  if (ref) inner.insertBefore(line, ref); else { const last = cards[cards.length - 1]; if (last) last.after(line); else inner.appendChild(line); }
+}
+const hideDropLine = () => { const l = $("#bdCards").querySelector(".dropline"); if (l) l.remove(); };
+function bindBuilder() {
+  $("#bdPalette").addEventListener("click", e => { const p = e.target.closest("[data-add]"); if (p && !p.disabled) addBlock(p.dataset.add); });
+  $("#bdPalette").addEventListener("dragstart", e => { const p = e.target.closest("[data-add]"); if (!p) return; BD.dragNew = p.dataset.add; BD.dragFrom = null; e.dataTransfer.setData("text/plain", "new"); e.dataTransfer.effectAllowed = "copy"; });
+  const cv = $("#bdCanvas");
+  cv.addEventListener("pointerdown", e => { const g = e.target.closest("[data-grip]"); if (g) g.closest(".bcard").draggable = true; });
+  cv.addEventListener("pointerup", () => { cv.querySelectorAll(".bcard[draggable=true]").forEach(c => { c.draggable = false; }); });
+  cv.addEventListener("dragstart", e => { const c = e.target.closest(".bcard"); if (!c) return; BD.dragFrom = +c.dataset.i; BD.dragNew = null; c.classList.add("dragging"); e.dataTransfer.setData("text/plain", "move"); e.dataTransfer.effectAllowed = "move"; });
+  cv.addEventListener("dragend", e => { const c = e.target.closest(".bcard"); if (c) { c.draggable = false; c.classList.remove("dragging"); } hideDropLine(); });
+  cv.addEventListener("dragover", e => { if (BD.dragNew == null && BD.dragFrom == null) return; e.preventDefault(); showDropLine(dropIndex(e.clientY)); });
+  cv.addEventListener("dragleave", e => { if (!cv.contains(e.relatedTarget)) hideDropLine(); });
+  cv.addEventListener("drop", e => {
+    e.preventDefault(); const idx = dropIndex(e.clientY); hideDropLine();
+    if (BD.dragNew) addBlock(BD.dragNew, idx); else if (BD.dragFrom != null) moveBlock(BD.dragFrom, idx);
+    BD.dragNew = null; BD.dragFrom = null;
+  });
+  cv.addEventListener("click", e => {
+    const t = e.target.closest("button");
+    if (t && t.dataset) {
+      const d = t.dataset;
+      if (d.del) { BD.model.blocks.splice(+d.del, 1); BD.sel = -1; bdCommit(); renderPalette(); renderCanvas(); renderProps(); return; }
+      if (d.up) { moveBlock(+d.up, +d.up - 1); return; }
+      if (d.down) { moveBlock(+d.down, +d.down + 2); return; }
+      if (d.dup) { const b = JSON.parse(JSON.stringify(BD.model.blocks[+d.dup])); b.id = Math.random().toString(36).slice(2, 9); BD.model.blocks.splice(+d.dup + 1, 0, b); BD.sel = +d.dup + 1; bdCommit(); renderCanvas(); renderProps(); return; }
+    }
+    const card = e.target.closest(".bcard"); if (!card) { return; }
+    const i = +card.dataset.i, path = e.composedPath();
+    const th = path.find(n => n && n.getAttribute && n.hasAttribute && n.hasAttribute("data-col"));
+    BD.selCol = th ? +th.getAttribute("data-col") : (i === BD.sel ? BD.selCol : -1);
+    if (i !== BD.sel || th) { BD.sel = i; renderCanvas(); renderProps(); if (th) { const r = $(`#bdProps [data-colrow="${BD.selCol}"]`); if (r) r.scrollIntoView({ block: "nearest" }); } }
+  });
+  const pr = $("#bdProps");
+  pr.addEventListener("input", e => { if (e.target.tagName !== "SELECT" && e.target.type !== "checkbox") onPropInput(e); });
+  pr.addEventListener("change", e => { if (e.target.tagName === "SELECT" || e.target.type === "checkbox" || e.target.type === "color") onPropInput(e); });
+  pr.addEventListener("click", onPropClick);
+  $("#bdUndo").addEventListener("click", () => bdUndo(-1));
+  $("#bdRedo").addEventListener("click", () => bdUndo(1));
+  document.addEventListener("keydown", e => {
+    if ($('[data-pane="builder"]').hidden || !(e.ctrlKey || e.metaKey)) return;
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || "")) return;
+    const k = e.key.toLowerCase();
+    if (k === "z" && !e.shiftKey) { e.preventDefault(); bdUndo(-1); } else if (k === "y" || (k === "z" && e.shiftKey)) { e.preventDefault(); bdUndo(1); }
+  });
+  $("#bdNew").addEventListener("click", () => { $("#bdNewBox").hidden = false; });
+  $("#bdNewCancel").addEventListener("click", () => { $("#bdNewBox").hidden = true; });
+  $("#bdNewBox").addEventListener("click", e => { const s = e.target.closest("[data-start]"); if (!s) return; $("#bdNewBox").hidden = true; bdLoad(starterModel(s.dataset.start), [], null); toast("Layout novo criado."); });
+  $("#bdImport").addEventListener("click", () => {
+    if (!state.xsl) { toast("Abra um XSL na lista de arquivos primeiro."); return; }
+    try { const r = interpretXsl(cm.getValue(), state.xsl.name); bdLoad(r.model, r.notes, state.xsl); toast(`"${state.xsl.name}" interpretado em ${r.model.blocks.length} blocos.`); }
+    catch (err) { toast(err.message); }
+  });
+  $("#bdGen").addEventListener("click", builderToEditor);
+  $("#bdXml").addEventListener("change", async () => { const f = state.files.find(x => String(x.id) === $("#bdXml").value); if (f) { await readText(f); state.xml = f; renderTree(); renderFound(); fillXmlSelect(); renderCanvas(); } });
+}
+async function builderToEditor() {
+  const text = generate(BD.model, false);
+  if (window.XSLTProcessor) { try { new XSLTProcessor().importStylesheet(parseXml(text).doc); } catch {} }
+  let f = BD.out && state.files.includes(BD.out) ? BD.out : null;
+  if (!f) {
+    const src = BD.src, dir = src && src.path.includes("/") ? src.path.slice(0, src.path.lastIndexOf("/") + 1) : "";
+    let name = /\.xslt?$/i.test(BD.model.name) ? BD.model.name : BD.model.name + ".xsl";
+    const taken = n => state.files.some(x => x.path.toLowerCase() === (dir + n).toLowerCase() && (!src || x.parent === src.parent || x.origin === src.origin));
+    for (let k = 2; taken(name); k++) name = name.replace(/(_\d+)?(\.xslt?)$/i, `_${k}$2`);
+    f = addFile({ name, path: dir + name, text, orig: null, enc: "utf-8", origin: src && src.origin === "sistema" ? "sistema" : "import", parent: src ? src.parent : undefined });
+    BD.out = f;
+  }
+  f.text = text;
+  await openXsl(f); f.dirty = true; renderTree();
+  toast(`XSL gerado em ${f.name}. Confira no Editor e clique em Salvar.`);
+}
+function builderInit() {
+  bindBuilder();
+  const saved = lsGet("exsl.builder", null);
+  if (saved && saved.blocks) { bdLoad(saved, [], null); return; }
+  const cinex = state.files.find(f => /^Parceiro_Cinex_Orcamento/i.test(f.name));
+  if (cinex && cinex.text) { try { const r = interpretXsl(cinex.text, cinex.name); bdLoad(r.model, r.notes, cinex); return; } catch {} }
+  bdLoad(starterModel("orcamento"), [], null);
+}
+
 /* ---------- Início ---------- */
 async function start() {
+  const savedTab = lsGet("exsl.tab", "builder");
   initEditor(); bind(); renderCatalog();
   let samples = [];
   try { samples = JSON.parse($("#samples").textContent); } catch {}
@@ -1032,7 +1903,8 @@ async function start() {
   if (!window.showDirectoryPicker) $("#btnMap").title = "Seu navegador abre a pasta em modo leitura. Para salvar direto nela, use Chrome ou Edge.";
   const saved = await idbGet("root");
   if (saved && saved.name) { const b = $("#btnReopen"); b.hidden = false; b.textContent = "Reabrir " + saved.name; }
-  const tab = lsGet("exsl.tab", "editor"); if (tab !== "editor") showTab(tab);
+  builderInit();
+  showTab(savedTab);
 }
 start();
 })();
