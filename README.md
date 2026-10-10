@@ -1,5 +1,23 @@
 # Editor XSL
 
+## Editor XSL Promob (web)
+
+Editor de layouts XSL do Promob (orçamento, listagem e integração ERP), em uma página só, sem instalação.
+
+- **Mapear pasta do sistema:** lê a pasta do Promob e lista todos os `.xsl` e os `.xml` de layouts e orçamento. No Chrome e no Edge, salva direto na pasta e cria um `.bak` do original.
+- **Importar:** arraste ou escolha arquivos avulsos.
+- **Editor:** código com destaque, validação na hora e mapa das seções (HEADER, CUSTOMERDATA, BODY, TOTALS, FOOTER…) com nomes legíveis para cada campo.
+- **Visualizar:** aplica o XSL ao XML de orçamento e mostra o relatório ou o XML de integração.
+- **Campos:** catálogo do XML de orçamento e os campos que existem de fato no XML carregado (referências, metadados, integração).
+- **Biblioteca de códigos:** trechos prontos (peso pela referência, moeda, somas, colunas, integração) e os seus, com exportação.
+- **Pedir à IA:** monta um pedido completo para colar no Claude.
+
+Gerar: `python3 web/build.py` → `web/dist/EditorXSL-Promob.html` (abrir no navegador). Layouts reais podem ficar em `web/private/` (fora do git) para virem embutidos como exemplo.
+
+---
+
+## Utilitário original (recents.xsl)
+
 Uma reconstrução limpa do utilitário **Editor_XSL.exe** (v1.0.0.0, 2011, .NET 2.0), usado em instalações do **Promob**.
 
 ## O que ele faz

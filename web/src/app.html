@@ -1,0 +1,1039 @@
+<title>Editor XSL Promob</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: oficina de layouts — barra de sistema no topo, árvore de arquivos à esquerda, bancada com abas (Editor, Visualizar, Campos, Biblioteca) à direita. */
+:root{
+  --bg:#eef2f1; --panel:#ffffff; --sunk:#f6f8f7; --fg:#1b2524; --muted:#5b6a67; --line:#d3dbd9;
+  --accent:#0e6e6a; --accent-ink:#ffffff; --accent-soft:#d9ecea; --wood:#9a5a1c; --wood-soft:#f3e6d6;
+  --ok:#2e7a33; --ok-soft:#dff0e0; --err:#b3261e; --err-soft:#fbe3e1;
+  --code-bg:#fbfcfc; --code-gutter:#eef3f2; --sel:#cde4e1; --hl:#ffe7a0;
+  --tok-tag:#0b5d87; --tok-attr:#8a4a0d; --tok-str:#2d6a2d;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --sans:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",Consolas,"Courier New",monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111716; --panel:#182120; --sunk:#141c1b; --fg:#e2eae8; --muted:#94a4a1; --line:#2a3634;
+  --accent:#3fb2a8; --accent-ink:#04201d; --accent-soft:#1b3835; --wood:#dc9d5a; --wood-soft:#3a2a19;
+  --ok:#74c479; --ok-soft:#1d3320; --err:#ff8c82; --err-soft:#3c1d1a;
+  --code-bg:#131a19; --code-gutter:#172120; --sel:#24443f; --hl:#5b4a12;
+  --tok-tag:#7cc3ec; --tok-attr:#e3aa6e; --tok-str:#a0d08e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111716; --panel:#182120; --sunk:#141c1b; --fg:#e2eae8; --muted:#94a4a1; --line:#2a3634;
+  --accent:#3fb2a8; --accent-ink:#04201d; --accent-soft:#1b3835; --wood:#dc9d5a; --wood-soft:#3a2a19;
+  --ok:#74c479; --ok-soft:#1d3320; --err:#ff8c82; --err-soft:#3c1d1a;
+  --code-bg:#131a19; --code-gutter:#172120; --sel:#24443f; --hl:#5b4a12;
+  --tok-tag:#7cc3ec; --tok-attr:#e3aa6e; --tok-str:#a0d08e; color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.45}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+code,pre,.mono{font-family:var(--mono);font-size:12.5px}
+
+.app{height:100%;display:flex;flex-direction:column;padding-inline:16px;gap:12px;padding-block:12px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto}
+.brand h1{font-family:var(--display);font-weight:600;font-size:26px;letter-spacing:.02em;margin:0;line-height:1}
+.brand span{color:var(--muted);font-size:13px}
+.sys{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.sys .who{font-size:13px;color:var(--muted)} .sys .who b{color:var(--fg);font-weight:600}
+
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:6px 11px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.small{padding:3px 8px;font-size:12.5px}
+.btn.ghost{background:transparent}
+.btn[disabled]{opacity:.5;cursor:default}
+
+.work{flex:1;min-height:0;display:grid;grid-template-columns:290px minmax(0,1fr);gap:12px}
+.side,.main{background:var(--panel);border:1px solid var(--line);border-radius:8px;min-height:0;display:flex;flex-direction:column}
+.side{overflow:hidden}
+.side-head{padding:12px 12px 8px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--line)}
+.label{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.search{width:100%;border:1px solid var(--line);background:var(--sunk);border-radius:6px;padding:6px 9px}
+.tree{flex:1;overflow:auto;padding:6px 6px 12px}
+.drop{margin:8px 12px 12px;border:1.5px dashed var(--line);border-radius:8px;padding:10px;text-align:center;color:var(--muted);font-size:12.5px}
+.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--fg)}
+details.grp>summary{list-style:none;cursor:pointer;padding:5px 6px;border-radius:5px;font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:center;word-break:break-all}
+details.grp>summary::-webkit-details-marker{display:none}
+details.grp>summary::before{content:"▸";font-size:10px;transition:transform .15s}
+details.grp[open]>summary::before{transform:rotate(90deg)}
+.file{display:flex;align-items:center;gap:7px;width:100%;text-align:left;border:0;background:transparent;padding:4px 6px 4px 18px;border-radius:5px;cursor:pointer;font-size:13px}
+.file:hover{background:var(--sunk)} .file.on{background:var(--accent-soft)}
+.file .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.chip{font-family:var(--mono);font-size:10.5px;padding:1px 5px;border-radius:4px;border:1px solid var(--line);color:var(--muted);flex:none}
+.chip.xsl{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.chip.xml{background:var(--wood-soft);color:var(--wood);border-color:transparent}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--wood);flex:none}
+.empty{color:var(--muted);font-size:13px;padding:10px}
+
+.tabs{display:flex;gap:2px;padding:8px 8px 0;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{border:0;background:transparent;padding:8px 14px;border-radius:6px 6px 0 0;cursor:pointer;color:var(--muted);font-weight:500;white-space:nowrap}
+.tab[aria-selected="true"]{background:var(--sunk);color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent)}
+.pane{flex:1;min-height:0;display:flex;flex-direction:column}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--sunk)}
+.bar .title{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:auto}
+.bar .title small{color:var(--muted);font-weight:400;margin-left:6px}
+.status{font-size:12px;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.status.ok{background:var(--ok-soft);color:var(--ok)} .status.err{background:var(--err-soft);color:var(--err)} .status.wait{background:var(--sunk);color:var(--muted);border:1px solid var(--line)}
+.split{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 330px}
+.codebox{min-width:0;min-height:0;border-right:1px solid var(--line)}
+.inspect{min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:14px}
+.inspect h3,.col h3{font-family:var(--display);font-weight:600;font-size:18px;letter-spacing:.02em;margin:0}
+.sec{border:1px solid var(--line);border-radius:7px;overflow:hidden;flex:none}
+.sec>header{display:flex;align-items:center;gap:8px;padding:6px 9px;background:var(--sunk);font-size:12.5px}
+.sec>header b{font-weight:600}
+.sec>header .mono{color:var(--muted);margin-left:auto;font-size:11px}
+.frow{display:grid;grid-template-columns:minmax(0,1fr);gap:1px;padding:5px 9px;border-top:1px solid var(--line);cursor:pointer;background:transparent;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left}
+.frow:hover{background:var(--accent-soft)}
+.frow .lb{font-size:13px} .frow code{color:var(--muted);font-size:11px;overflow-wrap:anywhere}
+.note{font-size:12.5px;color:var(--muted)}
+.errbox{background:var(--err-soft);color:var(--err);border-radius:7px;padding:9px 11px;font-size:13px;white-space:pre-wrap}
+
+.preview{flex:1;min-height:0;display:flex;flex-direction:column}
+.preview iframe{flex:1;border:0;width:100%;background:#fff;min-height:300px}
+.preview pre{flex:1;margin:0;overflow:auto;padding:12px;background:var(--code-bg)}
+.pv-msg{padding:16px}
+select.sel{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:5px 8px;max-width:260px}
+
+.cols{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px;padding:14px;align-content:start}
+.col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.fgroup{border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.fgroup>summary{cursor:pointer;padding:7px 10px;background:var(--sunk);font-weight:600;font-size:13px;list-style:none;display:flex;gap:8px}
+.fgroup>summary::-webkit-details-marker{display:none}
+.fgroup>summary small{color:var(--muted);font-weight:400;font-family:var(--mono);font-size:11px;overflow-wrap:anywhere}
+.field{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:7px 10px;border-top:1px solid var(--line);align-items:center}
+.field .lb{font-size:13px;font-weight:500} .field .ds{font-size:12px;color:var(--muted);grid-column:1} .field code{grid-column:1;color:var(--accent);font-size:11.5px;overflow-wrap:anywhere}
+.field .acts{grid-column:2;grid-row:1 / span 3;display:flex;flex-direction:column;gap:4px}
+.field .ex{font-size:11.5px;color:var(--wood);font-family:var(--mono)}
+
+.lib{flex:1;min-height:0;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.filters{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.fchip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:3px 10px;font-size:12.5px;cursor:pointer}
+.fchip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:12px}
+.card{border:1px solid var(--line);border-radius:8px;padding:11px 12px;display:flex;flex-direction:column;gap:7px;min-width:0;background:var(--panel)}
+.card .cat{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--wood);font-weight:600}
+.card h4{margin:0;font-size:14.5px;font-weight:600}
+.card p{margin:0;font-size:12.5px;color:var(--muted)}
+.card pre{margin:0;background:var(--code-bg);border:1px solid var(--line);border-radius:6px;padding:8px;overflow:auto;max-height:150px;font-size:11.5px}
+.card .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
+.form{border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;gap:8px;background:var(--sunk)}
+.form input,.form textarea,.form select{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:6px 8px;width:100%}
+.form textarea{font-family:var(--mono);font-size:12.5px;min-height:120px}
+.form .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+
+.ai textarea{width:100%;min-height:80px;border:1px solid var(--line);border-radius:6px;padding:7px;background:var(--panel)}
+.pop{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--wood-soft)}
+.pop input{border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:var(--panel);min-width:0;flex:1 1 200px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 14px;border-radius:8px;font-size:13px;max-width:calc(100% - 32px);z-index:50;box-shadow:0 6px 24px rgb(0 0 0 / .2)}
+.prog{font-size:12px;color:var(--muted)}
+.mobile-files{display:none}
+
+/* CodeMirror 5 — estilos essenciais */
+.CodeMirror{font-family:var(--mono);font-size:12.5px;height:100%;position:relative;overflow:hidden;background:var(--code-bg);color:var(--fg);direction:ltr;line-height:1.5}
+.CodeMirror-lines{padding:6px 0;cursor:text;min-height:1px}
+.CodeMirror pre.CodeMirror-line,.CodeMirror pre.CodeMirror-line-like{padding:0 6px;border-radius:0;border-width:0;background:transparent;font-family:inherit;font-size:inherit;margin:0;white-space:pre;word-wrap:normal;line-height:inherit;color:inherit;z-index:2;position:relative;overflow:visible;-webkit-tap-highlight-color:transparent}
+.CodeMirror-scrollbar-filler,.CodeMirror-gutter-filler{background:var(--code-bg)}
+.CodeMirror-gutters{border-right:1px solid var(--line);background:var(--code-gutter);white-space:nowrap;position:absolute;left:0;top:0;min-height:100%;z-index:3}
+.CodeMirror-linenumber{padding:0 6px 0 5px;min-width:28px;text-align:right;color:var(--muted);white-space:nowrap}
+.CodeMirror-cursor{border-left:2px solid var(--fg);border-right:none;width:0;position:absolute;pointer-events:none}
+div.CodeMirror-cursors{visibility:hidden;position:relative;z-index:3}
+.CodeMirror-focused div.CodeMirror-cursors{visibility:visible}
+div.CodeMirror-dragcursors{visibility:visible}
+.CodeMirror-scroll{overflow:scroll!important;margin-bottom:-50px;margin-right:-50px;padding-bottom:50px;height:100%;outline:none;position:relative;z-index:0}
+.CodeMirror-sizer{position:relative;border-right:50px solid transparent}
+.CodeMirror-vscrollbar,.CodeMirror-hscrollbar,.CodeMirror-scrollbar-filler,.CodeMirror-gutter-filler{position:absolute;z-index:6;display:none;outline:none}
+.CodeMirror-vscrollbar{right:0;top:0;overflow-x:hidden;overflow-y:scroll}
+.CodeMirror-hscrollbar{bottom:0;left:0;overflow-y:hidden;overflow-x:scroll}
+.CodeMirror-scrollbar-filler{right:0;bottom:0}.CodeMirror-gutter-filler{left:0;bottom:0}
+.CodeMirror-gutter{white-space:normal;height:100%;display:inline-block;vertical-align:top;margin-bottom:-50px}
+.CodeMirror-gutter-wrapper{position:absolute;z-index:4;background:none!important;border:none!important}
+.CodeMirror-gutter-background{position:absolute;top:0;bottom:0;z-index:4}
+.CodeMirror-gutter-elt{position:absolute;cursor:default;z-index:4}
+.CodeMirror-linebackground{position:absolute;left:0;right:0;top:0;bottom:0;z-index:0}
+.CodeMirror-linewidget{position:relative;z-index:2;padding:.1px}
+.CodeMirror-code{outline:none}
+.CodeMirror-scroll,.CodeMirror-sizer,.CodeMirror-gutter,.CodeMirror-gutters,.CodeMirror-linenumber{box-sizing:content-box}
+.CodeMirror-measure{position:absolute;width:100%;height:0;overflow:hidden;visibility:hidden}
+.CodeMirror-measure pre{position:static}
+.CodeMirror-selected,.CodeMirror-focused .CodeMirror-selected{background:var(--sel)}
+.CodeMirror-line::selection,.CodeMirror-line>span::selection,.CodeMirror-line>span>span::selection{background:var(--sel)}
+span.CodeMirror-selectedtext{background:none}
+.cm-tab{display:inline-block;text-decoration:inherit}
+.cm-tag{color:var(--tok-tag)}.cm-attribute{color:var(--tok-attr)}.cm-string{color:var(--tok-str)}
+.cm-comment{color:var(--muted);font-style:italic}.cm-bracket{color:var(--muted)}.cm-error{color:var(--err)}
+.cm-jump{background:var(--hl)}
+
+@media (max-width:900px){
+  .work{grid-template-columns:minmax(0,1fr)}
+  .side{max-height:none}
+  .side .tree{max-height:240px}
+  .split{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(320px,60vh) auto}
+  .codebox{border-right:0;border-bottom:1px solid var(--line)}
+  .app{height:auto;min-height:100%}
+  .work{flex:none}
+  .main{min-height:600px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand"><h1>Editor XSL Promob</h1><span>layouts de orçamento, listagem e integração</span></div>
+    <div class="sys">
+      <span class="who">Sistema: <b id="sysName">Exemplos</b></span>
+      <button class="btn primary" id="btnMap" type="button">Mapear pasta do sistema</button>
+      <button class="btn" id="btnReopen" type="button" hidden>Reabrir</button>
+      <label class="btn" for="inFiles">Importar arquivos</label>
+      <input id="inFiles" type="file" multiple accept=".xsl,.xslt,.xml,.css,.png,.jpg,.jpeg,.gif,.bmp" hidden>
+      <input id="inDir" type="file" webkitdirectory multiple hidden>
+    </div>
+  </header>
+
+  <div class="work">
+    <aside class="side" aria-label="Arquivos do sistema">
+      <div class="side-head">
+        <span class="label">Arquivos</span>
+        <input class="search" id="fFilter" type="search" placeholder="Filtrar por nome ou pasta">
+        <span class="prog" id="prog"></span>
+      </div>
+      <div class="tree" id="tree"></div>
+      <div class="drop" id="drop">Arraste arquivos .xsl e .xml aqui</div>
+    </aside>
+
+    <main class="main">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" aria-selected="true" data-tab="editor" type="button">Editor</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="preview" type="button">Visualizar</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="fields" type="button">Campos</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="lib" type="button">Biblioteca de códigos</button>
+      </div>
+
+      <section class="pane" data-pane="editor">
+        <div class="bar">
+          <span class="title" id="edTitle">Nenhum XSL aberto</span>
+          <span class="status wait" id="edStatus">—</span>
+          <button class="btn small" id="btnAI" type="button">Pedir à IA</button>
+          <button class="btn small" id="btnSaveAs" type="button">Salvar como</button>
+          <button class="btn small primary" id="btnSave" type="button">Salvar</button>
+          <button class="btn small" id="btnCopy" type="button">Copiar código</button>
+        </div>
+        <div class="pop" id="saveAsBox" hidden>
+          <span>Novo nome:</span><input id="saveAsName" type="text" value="MeuLayout.xsl">
+          <button class="btn small primary" id="saveAsGo" type="button">Criar arquivo</button>
+          <button class="btn small ghost" id="saveAsCancel" type="button">Cancelar</button>
+        </div>
+        <div class="split">
+          <div class="codebox" id="codebox"></div>
+          <div class="inspect" id="inspect"></div>
+        </div>
+      </section>
+
+      <section class="pane" data-pane="preview" hidden>
+        <div class="bar">
+          <span class="title" id="pvTitle">Visualização</span>
+          <label class="note" for="pvXml">Dados:</label>
+          <select class="sel" id="pvXml"></select>
+          <button class="btn small primary" id="btnRun" type="button">Atualizar</button>
+        </div>
+        <div class="preview" id="pvOut"></div>
+      </section>
+
+      <section class="pane" data-pane="fields" hidden>
+        <div class="cols">
+          <div class="col">
+            <h3>Catálogo do XML de orçamento</h3>
+            <p class="note">Campos documentados pela Procad/Promob. Use <b>Inserir</b> para colocar o campo no ponto do cursor do editor.</p>
+            <div id="catalog"></div>
+          </div>
+          <div class="col">
+            <h3>Encontrado nos dados</h3>
+            <p class="note" id="foundNote"></p>
+            <div id="found"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="pane" data-pane="lib" hidden>
+        <div class="lib">
+          <div class="filters" id="libFilters"></div>
+          <input class="search" id="libSearch" type="search" placeholder="Buscar na biblioteca (ex.: peso, moeda, coluna)">
+          <div class="cards" id="libCards"></div>
+          <details class="form" id="libNew">
+            <summary><b>Adicionar código à biblioteca</b></summary>
+            <div class="two">
+              <input id="snTitle" type="text" placeholder="Título (ex.: Coluna de peso)">
+              <input id="snCat" type="text" placeholder="Categoria (ex.: Itens)">
+            </div>
+            <input id="snDesc" type="text" placeholder="Para que serve">
+            <textarea id="snCode" placeholder="Código XSL"></textarea>
+            <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn small primary" id="snAdd" type="button">Salvar na biblioteca</button>
+              <button class="btn small" id="snFromSel" type="button">Usar trecho selecionado no editor</button>
+              <button class="btn small" id="libExport" type="button">Exportar biblioteca</button>
+              <label class="btn small" for="libImport">Importar biblioteca</label>
+              <input id="libImport" type="file" accept=".json" hidden>
+            </div>
+          </details>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script id="samples" type="application/json">__SAMPLES__</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+<script>
+(() => {
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+/* ---------- Catálogo (documentação do XML de orçamento + campos usados nos layouts) ---------- */
+const CUSTOMER = {
+  codcliente: "Código do cliente", nomecliente: "Nome do cliente", cpfcnpj: "CPF/CNPJ", endereco: "Endereço", cep: "CEP",
+  bairro: "Bairro", cidade: "Cidade", uf: "UF", endentrega: "Endereço de entrega", fone: "Telefone", celular: "Celular",
+  email: "E-mail", observacoes: "Observações", rep_nomeempresa: "Loja: nome", rep_enderecoempresa: "Loja: endereço",
+  rep_bairroempresa: "Loja: bairro", rep_cepenpresa: "Loja: CEP", rep_cidadeempresa: "Loja: cidade", rep_ufempresa: "Loja: UF",
+  rep_telefoneempresa: "Loja: telefone", rep_emailempresa: "Loja: e-mail", rep_contatoempresa: "Loja: contato"
+};
+const ATTR = {
+  DATE: "Data da listagem", HOUR: "Hora da listagem", CURRENCYSYMBOL: "Símbolo da moeda", CUSTOMERNUMBER: "Número do projeto", UNIT: "Unidade",
+  DESCRIPTION: "Descrição", OBSERVATIONS: "Observações do item", REFERENCE: "Referência", REPETITION: "Repetições", QUANTITY: "Quantidade",
+  WIDTH: "Largura", HEIGHT: "Altura", DEPTH: "Profundidade", TEXTDIMENSION: "Dimensões (texto)", COMPONENT: "É componente?", FAMILY: "Família / linha",
+  UNIQUEID: "ID único do item", UNIQUEPARENTID: "ID do item pai", ID: "ID", STRUCTURE: "É estrutura?", STRUCTUREKEY: "Chave da estrutura",
+  GUIDBUILDER: "GUID do Builder", GUID: "GUID", ITEM_BASE: "Item base", VOLUME: "Volume", SHOWPRICE: "Mostrar preço?", VALUE: "Valor",
+  TABLE: "Preço de tabela", TOTAL: "Total", TOTALCOMPONENTS: "Total dos componentes", PARCELEDTOTAL: "Valor a parcelar", PARCELVALUE: "Valor da parcela",
+  GENERALTOTAL: "Valor total", PARCELQUANTITY: "Nº de parcelas", PERCENTUALDISCOUNT: "Desconto %", INITIALVALUE: "Valor inicial",
+  VERSION: "Versão", REVISION: "Revisão", BUILD: "Build", SYSTEM: "Sistema", DISTRIBUTION: "Distribuição", SERIALNUMBER: "Nº de série", NAME: "Nome"
+};
+const CATALOG = [
+  { g: "Listagem", ctx: "/LISTING", f: [
+    ["@DATE", "Data de geração da listagem"], ["@HOUR", "Hora de geração"], ["@CUSTOMERNUMBER", "Número do projeto (janela Sobre)"],
+    ["@CURRENCYSYMBOL", "Símbolo da moeda (R$, $…)"], ["@UNIT", "Unidade de medida do projeto"], ["@ONLYSELECTEDITEMS", "Só itens selecionados?"]]},
+  { g: "Promob (Sobre)", ctx: "LISTING/ABOUTPROMOB", f: [
+    ["ABOUTPROMOB/@VERSION", "Versão do sistema"], ["ABOUTPROMOB/@SYSTEM", "Sistema (ex.: Cinex)"], ["ABOUTPROMOB/@DISTRIBUTION", "Distribuição (Studio, Plus…)"],
+    ["ABOUTPROMOB/@SERIALNUMBER", "Número de série"], ["ABOUTPROMOB/LIBRARIES/LIBRARY/@LINE", "Linha de produtos cadastrada"]]},
+  { g: "Dados do cliente e da loja", ctx: "LISTING/CUSTOMERSDATA/DATA", f:
+    Object.entries(CUSTOMER).map(([id, l]) => [`CUSTOMERSDATA/DATA[@ID='${id}']/@VALUE`, l]) },
+  { g: "Ambiente e categoria", ctx: "dentro de AMBIENTS/AMBIENT", f: [
+    ["@DESCRIPTION", "Descrição do ambiente (no for-each de AMBIENT)"], ["CATEGORIES/CATEGORY/@DESCRIPTION", "Descrição da categoria"],
+    ["TOTALPRICES/MARGINS/BUDGET/@VALUE", "Total do ambiente (orçamento)"]]},
+  { g: "Item", ctx: "dentro de ITEMS/ITEM", f: [
+    ["@DESCRIPTION", "Descrição do item"], ["@REFERENCE", "Referência completa (barra de status)"], ["@QUANTITY", "Quantidade"], ["@UNIT", "Unidade (un, m², barra…)"],
+    ["@REPETITION", "Repetições"], ["@WIDTH", "Largura"], ["@HEIGHT", "Altura"], ["@DEPTH", "Profundidade"], ["@TEXTDIMENSION", "Dimensões em texto (regra de listagem)"],
+    ["@OBSERVATIONS", "Observações do item no 3D"], ["@FAMILY", "Família (Cozinha, Dormitório…)"], ["@COMPONENT", "É componente de módulo?"],
+    ["@UNIQUEID", "ID único no projeto"], ["@UNIQUEPARENTID", "ID único do pai"]]},
+  { g: "Referências do item", ctx: "ITEM/REFERENCES/<NOME>", f: [
+    ["REFERENCES/COMPLETE/@REFERENCE", "Referência completa"], ["REFERENCES/MATERIAL/@REFERENCE", "Material"],
+    ["REFERENCES/PESO/@REFERENCE", "Peso (se cadastrado como referência PESO)"], ["REFERENCES/VOLUME/@REFERENCE", "Volume"], ["REFERENCES/ITEM_BASE/@REFERENCE", "Item base"]]},
+  { g: "Preço do item", ctx: "ITEM/PRICE", f: [
+    ["PRICE/@TABLE", "Preço de tabela, sem margens"], ["PRICE/@UNIT", "Preço unitário"], ["PRICE/@TOTAL", "Unitário × repetições"],
+    ["PRICE/MARGINS/ORDER/@TOTAL", "Total com margens de pedido"], ["PRICE/MARGINS/BUDGET/@TOTAL", "Total com margens de orçamento (preço ao cliente)"],
+    ["PRICE/MARGINS/BUDGET/@TOTALCOMPONENTS", "Total dos componentes (orçamento)"]]},
+  { g: "Metadados e Builder", ctx: "ITEM/METADATAS, ITEM/ADDITIONAL_INFORMATIONS_BUILDER", f: [
+    ["METADATAS/METADATA[@ID='QUANTIDADE_ALTERADA']/@VALUE", "Quantidade alterada manualmente"],
+    ["METADATAS/METADATA/METADATA.VALUE/INTEGRATIONDATA/ATTRIBUTES/ATTRIBUTE[@NAME='TIPO_PRODUTO']/@VALUE", "Atributo de integração (troque o NAME)"],
+    ["ADDITIONAL_INFORMATIONS_BUILDER/@ID_ERP", "ID no ERP"], ["ADDITIONAL_INFORMATIONS_BUILDER/@PROCESSED_BY_BUILDER", "Processado pelo Builder (Y/N)"],
+    ["ADDITIONAL_INFORMATIONS_BUILDER/@CODE", "Código do desenho"]]},
+  { g: "Totais do projeto", ctx: "LISTING/TOTALPRICES", f: [
+    ["TOTALPRICES/@TABLE", "Total em preço de tabela"], ["TOTALPRICES/MARGINS/ORDER/@VALUE", "Total do pedido"], ["TOTALPRICES/MARGINS/BUDGET/@VALUE", "Total do orçamento (cliente)"],
+    ["TOTALPRICES/MARGINS/BUDGET/MARGIN/@DESCRIPTION", "Margem aplicada: descrição"], ["TOTALPRICES/MARGINS/BUDGET/MARGIN/@VALUE", "Margem aplicada: valor"]]},
+  { g: "Pagamento", ctx: "LISTING/PAYMENTTERMS", f: [
+    ["PAYMENTTERMS/PAYMENTTERMCOLLECTION/PAYMENTTERM/@DESCRIPTION", "Condição: descrição"], ["PAYMENTTERMS/PAYMENTTERMCOLLECTION/PAYMENTTERM/@PARCELQUANTITY", "Condição: nº de parcelas"],
+    ["PAYMENTTERMS/PAYMENTTERMCOLLECTION/PAYMENTTERM/@PARCELVALUE", "Condição: valor da parcela"], ["PAYMENTTERMS/PAYMENTTERMCOLLECTION/PAYMENTTERM/@GENERALTOTAL", "Condição: valor total"],
+    ["PAYMENTTERMS/PAYMENTTERMCOLLECTION/PAYMENTTERM[@SELECTED='Y']/@DESCRIPTION", "Condição selecionada"],
+    ["PAYMENTTERMS/ADITIONALENTRYCOLLECTION/ADITIONALENTRY/@VALUE", "Entrada diferenciada: valor"]]}
+];
+const SECTION_NAMES = { HEADER: "Cabeçalho", CUSTOMERDATA: "Dados do cliente", STOREDATA: "Dados da loja", BODY: "Corpo (itens)", PAYMENTENTRIES: "Entradas diferenciadas",
+  PAYMENTTERMS: "Condições de pagamento", TOTALS: "Totais", OBSERVATIONS: "Observações", SIGNATURES: "Assinaturas", FOOTER: "Rodapé" };
+
+/* ---------- Rótulos legíveis para expressões XPath ---------- */
+function labelFor(expr) {
+  let e = expr.trim(), m;
+  if ((m = e.match(/^format-number\((.+?),\s*'[^']*'/i))) return labelFor(m[1].replace(/^translate\((.+?),.*$/, "$1")) + " (número formatado)";
+  if ((m = e.match(/^translate\((.+?),/))) return labelFor(m[1]);
+  if (e.startsWith("$")) return "Variável " + e;
+  if ((m = e.match(/CUSTOMERSDATA\/DATA\[@ID\s*=\s*'([^']+)'\]/))) return CUSTOMER[m[1]] || "Dado do cliente: " + m[1];
+  if ((m = e.match(/REFERENCES\/([A-Z0-9_]+)\/@REFERENCE/i))) return "Referência do item: " + m[1];
+  if ((m = e.match(/ATTRIBUTE\[@NAME\s*=\s*'([^']+)'\]/))) return "Atributo de integração: " + m[1];
+  if ((m = e.match(/METADATA\[@ID\s*=\s*'([^']+)'\]/))) return "Metadado: " + m[1];
+  if (/TOTALPRICES\/MARGINS\/BUDGET\/@VALUE/.test(e)) return "Total do orçamento";
+  if (/TOTALPRICES\/MARGINS\/ORDER\/@VALUE/.test(e)) return "Total do pedido";
+  if ((m = e.match(/PRICE\/MARGINS\/(ORDER|BUDGET)\/@([A-Z]+)/))) return (m[1] === "BUDGET" ? "Preço orçamento: " : "Preço pedido: ") + (ATTR[m[2]] || m[2]);
+  if ((m = e.match(/^PRICE\/@([A-Z]+)$/))) return "Preço: " + (ATTR[m[1]] || m[1]);
+  if ((m = e.match(/ADDITIONAL_INFORMATIONS_BUILDER\/@([A-Z_]+)/))) return "Builder: " + m[1];
+  if ((m = e.match(/PAYMENTTERM\/?.*@([A-Z]+)$/))) return "Pagamento: " + (ATTR[m[1]] || m[1]);
+  if ((m = e.match(/ADITIONALENTRY\/?.*@([A-Z]+)$/))) return "Entrada diferenciada: " + (ATTR[m[1]] || m[1]);
+  if ((m = e.match(/ABOUTPROMOB\/@([A-Z]+)/))) return "Promob: " + (ATTR[m[1]] || m[1]);
+  if ((m = e.match(/(?:^|\/)@([A-Z_]+)$/))) return ATTR[m[1]] || m[1];
+  if (e === ".") return "Valor atual";
+  return e;
+}
+
+/* ---------- Biblioteca de códigos ---------- */
+const BUILTIN = [
+  { cat: "Campos", t: "Dado do cliente", d: "Mostra um campo da tela Dados do Cliente. Troque o ID (nomecliente, cpfcnpj, cidade…).",
+    c: `<xsl:value-of select="CUSTOMERSDATA/DATA[@ID='nomecliente']/@VALUE" />` },
+  { cat: "Campos", t: "Referência do item pelo nome", d: "Lê uma referência cadastrada no item (ex.: PESO, MATERIAL, VOLUME). Usar dentro do contexto de ITEM.",
+    c: `<xsl:value-of select="REFERENCES/PESO/@REFERENCE" />` },
+  { cat: "Campos", t: "Atributo de integração (INTEGRATIONDATA)", d: "Lê um atributo configurado pelo nome. Troque TIPO_PRODUTO pelo atributo desejado.",
+    c: `<xsl:value-of select="METADATAS/METADATA[@ID='INTEGRATIONDATA']/METADATA.VALUE/INTEGRATIONDATA/ATTRIBUTES/ATTRIBUTE[@NAME='TIPO_PRODUTO']/@VALUE" />` },
+  { cat: "Campos", t: "Referência com valor alternativo", d: "Usa a referência se existir; senão usa o atributo do item. Mesmo padrão que o ERP Start usa para VOLUME.",
+    c: `<xsl:choose>
+  <xsl:when test="count(REFERENCES/VOLUME) &gt; 0">
+    <xsl:value-of select="REFERENCES/VOLUME/@REFERENCE" />
+  </xsl:when>
+  <xsl:otherwise>
+    <xsl:value-of select="@VOLUME" />
+  </xsl:otherwise>
+</xsl:choose>` },
+  { cat: "Formatação", t: "Formato de moeda brasileiro", d: "Declare uma vez no topo (logo após xsl:stylesheet). Habilita 1.234,56 no format-number.",
+    c: `<xsl:decimal-format name="formato" decimal-separator="," grouping-separator="." />` },
+  { cat: "Formatação", t: "Valor em reais (vírgula decimal)", d: "O Promob grava preço com vírgula. O translate troca por ponto antes de formatar.",
+    c: `<xsl:value-of select="format-number(translate(PRICE/MARGINS/BUDGET/@TOTAL, ',', '.'), '###.##0,00', 'formato')" />` },
+  { cat: "Formatação", t: "Destacar referências com erro", d: "Pinta de vermelho as referências da lista. Acrescente outras com 'or'.",
+    c: `<xsl:choose>
+  <xsl:when test="@REFERENCE = 'VERIFICAR TRAVESSA' or @REFERENCE = 'ERRO METRAGEM'">
+    <td style="color:#cc0000;font-weight:bold"><xsl:value-of select="@REFERENCE" /></td>
+  </xsl:when>
+  <xsl:otherwise>
+    <td><xsl:value-of select="@REFERENCE" /></td>
+  </xsl:otherwise>
+</xsl:choose>` },
+  { cat: "Itens", t: "Nova coluna na tabela de itens", d: "Duas partes: o cabeçalho vai no tr id=\"columns\"; a célula vai no template GerarItem, na mesma posição.",
+    c: `<!-- 1) No cabeçalho (tr id="columns") -->
+<th id="peso" width="8%"><b>Peso (kg)</b></th>
+
+<!-- 2) No template GerarItem, na mesma posição -->
+<td align="right">
+  <xsl:value-of select="REFERENCES/PESO/@REFERENCE" />
+</td>` },
+  { cat: "Itens", t: "Percorrer itens e subitens (recursivo)", d: "Lista módulos e seus componentes com recuo por nível. Versão corrigida, com <tr> em cada linha.",
+    c: `<xsl:template name="PercorrerItens">
+  <xsl:param name="nivel" select="0" />
+  <xsl:for-each select="ITEMS/ITEM">
+    <tr>
+      <td style="padding-left:{$nivel * 15 + 4}px"><xsl:value-of select="@DESCRIPTION" /></td>
+      <td align="center"><xsl:value-of select="@QUANTITY" /></td>
+      <td><xsl:value-of select="@REFERENCE" /></td>
+      <td align="center"><xsl:value-of select="@TEXTDIMENSION" /></td>
+    </tr>
+    <xsl:call-template name="PercorrerItens">
+      <xsl:with-param name="nivel" select="$nivel + 1" />
+    </xsl:call-template>
+  </xsl:for-each>
+</xsl:template>` },
+  { cat: "Itens", t: "Ocultar itens com quantidade zerada", d: "Mesmo filtro do orçamento Cinex: pula itens cuja QUANTIDADE_ALTERADA é 0.",
+    c: `<xsl:if test="count(METADATAS/METADATA[@ID='QUANTIDADE_ALTERADA']) = 0 or METADATAS/METADATA[@ID='QUANTIDADE_ALTERADA']/@VALUE &gt; 0">
+  <!-- linha do item aqui -->
+</xsl:if>` },
+  { cat: "Cálculos", t: "Somar valores com vírgula decimal", d: "sum() não entende vírgula. Este template soma qualquer lista de valores do Promob. Cole no fim do arquivo, antes de </xsl:stylesheet>.",
+    c: `<xsl:template name="SomarDecimal">
+  <xsl:param name="nos" />
+  <xsl:param name="acumulado" select="0" />
+  <xsl:choose>
+    <xsl:when test="$nos">
+      <xsl:variable name="v" select="number(translate($nos[1], ',', '.'))" />
+      <xsl:variable name="soma">
+        <xsl:choose>
+          <xsl:when test="$v = $v"><xsl:value-of select="$acumulado + $v" /></xsl:when>
+          <xsl:otherwise><xsl:value-of select="$acumulado" /></xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+      <xsl:call-template name="SomarDecimal">
+        <xsl:with-param name="nos" select="$nos[position() &gt; 1]" />
+        <xsl:with-param name="acumulado" select="number($soma)" />
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise><xsl:value-of select="$acumulado" /></xsl:otherwise>
+  </xsl:choose>
+</xsl:template>` },
+  { cat: "Cálculos", t: "Peso total da categoria", d: "Usa SomarDecimal para somar o PESO de todos os itens e subitens da categoria. Não multiplica pela quantidade.",
+    c: `<xsl:variable name="pesoTotal">
+  <xsl:call-template name="SomarDecimal">
+    <xsl:with-param name="nos" select=".//ITEM/REFERENCES/PESO/@REFERENCE" />
+  </xsl:call-template>
+</xsl:variable>
+<b>Peso total: </b><xsl:value-of select="format-number($pesoTotal, '###.##0,00', 'formato')" /> kg` },
+  { cat: "Cálculos", t: "Valor × quantidade", d: "Multiplica um valor com vírgula pela quantidade do item.",
+    c: `<xsl:value-of select="format-number(number(translate(REFERENCES/PESO/@REFERENCE, ',', '.')) * number(translate(@QUANTITY, ',', '.')), '###.##0,00', 'formato')" />` },
+  { cat: "Seções", t: "Total final do orçamento", d: "Bloco TOTALS com o total de orçamento e o símbolo da moeda.",
+    c: `<tr id="TOTALS">
+  <td align="right">
+    <b>Total final: <xsl:value-of select="/LISTING/@CURRENCYSYMBOL" /> </b>
+    <xsl:value-of select="format-number(translate(TOTALPRICES/MARGINS/BUDGET/@VALUE, ',', '.'), '###.##0,00', 'formato')" />
+  </td>
+</tr>` },
+  { cat: "Seções", t: "Condições de pagamento", d: "Tabela com todas as condições. Para mostrar só a escolhida, use PAYMENTTERM[@SELECTED='Y'].",
+    c: `<xsl:for-each select="PAYMENTTERMS/PAYMENTTERMCOLLECTION/PAYMENTTERM">
+  <tr>
+    <td><xsl:value-of select="@DESCRIPTION" /></td>
+    <td align="center"><xsl:value-of select="@PARCELQUANTITY" />x</td>
+    <td align="right"><xsl:value-of select="format-number(@PARCELVALUE, '###.##0,00', 'formato')" /></td>
+    <td align="right"><xsl:value-of select="format-number(@GENERALTOTAL, '###.##0,00', 'formato')" /></td>
+  </tr>
+</xsl:for-each>` },
+  { cat: "Integração XML", t: "Novo atributo no XML de saída", d: "No ERP Start, acrescenta PESO ao <ITEM> gerado. Coloque junto dos outros xsl:attribute do item.",
+    c: `<xsl:attribute name="PESO">
+  <xsl:value-of select="REFERENCES/PESO/@REFERENCE" />
+</xsl:attribute>` },
+  { cat: "Integração XML", t: "Atributo só quando existir", d: "Só cria o atributo se o item tiver a referência, para não gerar campo vazio.",
+    c: `<xsl:if test="count(REFERENCES/PESO) &gt; 0">
+  <xsl:attribute name="PESO">
+    <xsl:value-of select="REFERENCES/PESO/@REFERENCE" />
+  </xsl:attribute>
+</xsl:if>` },
+  { cat: "Integração XML", t: "Todas as características de integração", d: "Gera um <CARACTERISTICA> para cada atributo de INTEGRATIONDATA, como o ERP Start faz.",
+    c: `<xsl:for-each select="METADATAS/METADATA/METADATA.VALUE/INTEGRATIONDATA/ATTRIBUTES/ATTRIBUTE">
+  <CARACTERISTICA CODIGO="{@NAME}" RESPOSTA="{@VALUE}" />
+</xsl:for-each>` },
+  { cat: "Estrutura", t: "Esqueleto de layout Promob", d: "Ponto de partida para um layout novo, com as marcações de seção que o editor do Promob reconhece.",
+    c: `<?xml version="1.0" encoding="utf-8"?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:decimal-format name="formato" decimal-separator="," grouping-separator="." />
+  <xsl:output method="html" />
+  <xsl:template match="LISTING">
+    <html generator="ProMob.Cadastro">
+      <head><title>Novo layout</title></head>
+      <body>
+        <table align="center" border="0" width="100%">
+          <thead id="HEADER"><tr><td>Data: <xsl:value-of select="@DATE" /></td></tr></thead>
+          <tbody>
+            <tr id="CUSTOMERDATA"><td>Cliente: <xsl:value-of select="CUSTOMERSDATA/DATA[@ID='nomecliente']/@VALUE" /></td></tr>
+            <tr id="BODY" templatetext="Itens"><td>
+              <xsl:for-each select="AMBIENTS/AMBIENT"><h3><xsl:value-of select="@DESCRIPTION" /></h3></xsl:for-each>
+            </td></tr>
+          </tbody>
+          <tfoot id="FOOTER"><tr><td><xsl:value-of select="CUSTOMERSDATA/DATA[@ID='rep_nomeempresa']/@VALUE" /></td></tr></tfoot>
+        </table>
+      </body>
+    </html>
+  </xsl:template>
+</xsl:stylesheet>` }
+];
+
+/* ---------- Estado ---------- */
+const state = { files: [], xsl: null, xml: null, sysName: "Exemplos", root: null, libCat: "Todas", assetCache: new Map() };
+let uid = 0;
+const addFile = f => { f.id = ++uid; f.ext = (f.name.split(".").pop() || "").toLowerCase(); state.files.push(f); return f; };
+
+/* ---------- Leitura e gravação com a codificação original ---------- */
+async function readText(f) {
+  if (f.text != null) return f.text;
+  const blob = f.handle ? await f.handle.getFile() : f.file;
+  const buf = new Uint8Array(await blob.arrayBuffer());
+  f.bom = buf[0] === 0xEF && buf[1] === 0xBB && buf[2] === 0xBF;
+  try { f.text = new TextDecoder("utf-8", { fatal: true }).decode(buf); f.enc = "utf-8"; }
+  catch { f.text = new TextDecoder("windows-1252").decode(buf); f.enc = "windows-1252"; }
+  if (f.text.charCodeAt(0) === 0xFEFF) f.text = f.text.slice(1);
+  f.orig = f.text;
+  return f.text;
+}
+const CP1252 = { 0x20AC: 0x80, 0x201A: 0x82, 0x0192: 0x83, 0x201E: 0x84, 0x2026: 0x85, 0x2020: 0x86, 0x2021: 0x87, 0x02C6: 0x88, 0x2030: 0x89, 0x0160: 0x8A, 0x2039: 0x8B, 0x0152: 0x8C, 0x017D: 0x8E,
+  0x2018: 0x91, 0x2019: 0x92, 0x201C: 0x93, 0x201D: 0x94, 0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97, 0x02DC: 0x98, 0x2122: 0x99, 0x0161: 0x9A, 0x203A: 0x9B, 0x0153: 0x9C, 0x017E: 0x9E, 0x0178: 0x9F };
+function encodeLike(f, text) {
+  if (f.enc === "windows-1252") {
+    const out = new Uint8Array(text.length);
+    for (let i = 0; i < text.length; i++) { const c = text.charCodeAt(i); out[i] = c < 0x80 || (c >= 0xA0 && c < 0x100) ? c : (CP1252[c] || 0x3F); }
+    return out;
+  }
+  const body = new TextEncoder().encode(text);
+  if (!f.bom) return body;
+  const out = new Uint8Array(body.length + 3); out.set([0xEF, 0xBB, 0xBF]); out.set(body, 3); return out;
+}
+
+/* ---------- Mapeamento da pasta do sistema ---------- */
+const WANT_XML = /(layout|budget|listing|orcamento|orçamento|export|integra)/i;
+const WANT_IMG = /(identity|layout)/i;
+const SKIP_DIR = /^(\.git|node_modules|\$recycle\.bin|temp|tmp|cache|backup)$/i;
+function wanted(path, ext) {
+  if (ext === "xsl" || ext === "xslt") return true;
+  if (ext === "xml") return WANT_XML.test(path);
+  if (ext === "css") return /layout/i.test(path);
+  if (/^(png|jpe?g|gif|bmp)$/.test(ext)) return WANT_IMG.test(path);
+  return false;
+}
+async function scanHandle(dir, path, out, st) {
+  for await (const [name, h] of dir.entries()) {
+    if (h.kind === "directory") {
+      if (SKIP_DIR.test(name) || st.dirs > 20000) continue;
+      st.dirs++; if (st.dirs % 50 === 0) prog(`Lendo pastas… ${st.dirs} pastas, ${out.length} arquivos`);
+      await scanHandle(h, path + name + "/", out, st);
+    } else {
+      const ext = (name.split(".").pop() || "").toLowerCase();
+      if (wanted(path + name, ext)) out.push({ name, path: path + name, handle: h, parent: dir, origin: "sistema" });
+    }
+  }
+}
+async function mapFolder(handle) {
+  prog("Lendo pastas…");
+  const out = [], st = { dirs: 0 };
+  try { await scanHandle(handle, "", out, st); }
+  catch (e) { prog(""); toast("Não foi possível ler a pasta: " + e.message); return; }
+  state.files = state.files.filter(f => f.origin !== "sistema");
+  out.forEach(addFile);
+  state.root = handle; state.sysName = handle.name; state.assetCache.clear();
+  $("#sysName").textContent = handle.name;
+  idbSet("root", handle);
+  prog(`${out.filter(f => /xslt?$/.test(f.ext)).length} XSL e ${out.filter(f => f.ext === "xml").length} XML encontrados em ${st.dirs} pastas`);
+  renderTree();
+  const first = out.find(f => /xslt?$/.test(f.ext));
+  if (first && (!state.xsl || state.xsl.origin === "exemplo")) openXsl(first);
+}
+function mapFromInput(list) {
+  const arr = [...list];
+  if (!arr.length) return;
+  const rootName = (arr[0].webkitRelativePath || "").split("/")[0] || "Pasta";
+  state.files = state.files.filter(f => f.origin !== "sistema");
+  let n = 0;
+  for (const file of arr) {
+    const rel = (file.webkitRelativePath || file.name).split("/").slice(1).join("/") || file.name;
+    const ext = (file.name.split(".").pop() || "").toLowerCase();
+    if (wanted(rel, ext)) { addFile({ name: file.name, path: rel, file, origin: "sistema" }); n++; }
+  }
+  state.sysName = rootName; state.root = null; state.assetCache.clear();
+  $("#sysName").textContent = rootName + " (somente leitura)";
+  prog(`${n} arquivos carregados. Para salvar direto na pasta, use Chrome ou Edge.`);
+  renderTree();
+}
+
+/* IndexedDB: lembra a pasta mapeada para reabrir */
+function idb() { return new Promise((res, rej) => { const r = indexedDB.open("editor-xsl-promob", 1); r.onupgradeneeded = () => r.result.createObjectStore("kv"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function idbSet(k, v) { try { const db = await idb(); db.transaction("kv", "readwrite").objectStore("kv").put(v, k); } catch {} }
+async function idbGet(k) { try { const db = await idb(); return await new Promise(res => { const q = db.transaction("kv").objectStore("kv").get(k); q.onsuccess = () => res(q.result); q.onerror = () => res(null); }); } catch { return null; } }
+async function ensurePerm(h, mode = "readwrite") {
+  try { if ((await h.queryPermission({ mode })) === "granted") return true; return (await h.requestPermission({ mode })) === "granted"; } catch { return false; }
+}
+
+/* ---------- Árvore de arquivos ---------- */
+function renderTree() {
+  const q = $("#fFilter").value.trim().toLowerCase();
+  const groups = new Map();
+  for (const f of state.files) {
+    if (!/^(xslt?|xml)$/.test(f.ext)) continue;
+    if (q && !f.path.toLowerCase().includes(q)) continue;
+    const g = f.origin === "exemplo" ? "Exemplos" : f.origin === "import" ? "Importados" : (f.path.includes("/") ? f.path.slice(0, f.path.lastIndexOf("/")) : "(raiz)");
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(f);
+  }
+  const tree = $("#tree");
+  if (!groups.size) { tree.innerHTML = `<p class="empty">${q ? "Nenhum arquivo com esse nome." : "Mapeie a pasta do sistema ou importe arquivos."}</p>`; return; }
+  const order = [...groups.keys()].sort((a, b) => (a === "Exemplos") - (b === "Exemplos") || a.localeCompare(b));
+  tree.innerHTML = order.map(g => `<details class="grp" ${q || groups.size < 8 || g.toLowerCase().includes("layout") ? "open" : ""}>
+    <summary>${esc(g)}</summary>
+    ${groups.get(g).sort((a, b) => a.name.localeCompare(b.name)).map(f => `<button class="file${f === state.xsl || f === state.xml ? " on" : ""}" data-id="${f.id}" type="button" title="${esc(f.path)}">
+      <span class="chip ${f.ext === "xml" ? "xml" : "xsl"}">${f.ext === "xml" ? "XML" : "XSL"}</span><span class="nm">${esc(f.name)}</span>${f.dirty ? '<span class="dot" title="Alterado, não salvo"></span>' : ""}</button>`).join("")}
+  </details>`).join("");
+}
+
+/* ---------- Editor ---------- */
+let cm, analyzeTimer, jumpMark;
+function initEditor() {
+  if (window.CodeMirror) {
+    cm = CodeMirror($("#codebox"), { mode: "xml", lineNumbers: true, lineWrapping: false, tabSize: 2, indentUnit: 2, value: "" });
+    cm.on("change", () => { if (!state.xsl || cm._loading) return; state.xsl.text = cm.getValue(); if (!state.xsl.dirty) { state.xsl.dirty = true; renderTree(); } schedule(); });
+  } else {
+    const ta = document.createElement("textarea");
+    ta.style.cssText = "width:100%;height:100%;border:0;padding:10px;font-family:var(--mono);font-size:12.5px;background:var(--code-bg);color:var(--fg);resize:none";
+    $("#codebox").appendChild(ta);
+    cm = { getValue: () => ta.value, setValue: v => { ta.value = v; }, replaceSelection: s => ta.setRangeText(s, ta.selectionStart, ta.selectionEnd, "end"),
+      getSelection: () => ta.value.slice(ta.selectionStart, ta.selectionEnd), focus: () => ta.focus(), refresh() {}, jumpTo(i) { ta.focus(); ta.setSelectionRange(i, i); } };
+    ta.addEventListener("input", () => { if (!state.xsl) return; state.xsl.text = ta.value; state.xsl.dirty = true; schedule(); });
+  }
+}
+function schedule() { clearTimeout(analyzeTimer); analyzeTimer = setTimeout(analyze, 350); }
+async function openXsl(f) {
+  await readText(f);
+  state.xsl = f;
+  cm._loading = true; cm.setValue(f.text); cm._loading = false;
+  if (cm.clearHistory) cm.clearHistory();
+  $("#edTitle").innerHTML = `${esc(f.name)}<small>${esc(f.origin === "sistema" ? state.sysName + "/" + f.path : f.origin === "exemplo" ? "exemplo" : "importado")}</small>`;
+  $("#pvTitle").textContent = "Visualização: " + f.name;
+  renderTree(); analyze(); showTab("editor");
+  setTimeout(() => cm.refresh && cm.refresh(), 0);
+}
+async function openXml(f) {
+  await readText(f);
+  state.xml = f; renderTree(); fillXmlSelect(); renderFound();
+  toast(`Dados de "${f.name}" carregados. Veja em Visualizar e Campos.`);
+}
+function parseXml(text) {
+  const d = new DOMParser().parseFromString(text, "application/xml");
+  const err = d.getElementsByTagName("parsererror")[0];
+  return { doc: d, error: err ? err.textContent.replace(/\s+/g, " ").trim() : null };
+}
+const XSLNS = "http://www.w3.org/1999/XSL/Transform";
+function analyze() {
+  const box = $("#inspect"), st = $("#edStatus");
+  if (!state.xsl) { box.innerHTML = '<p class="note">Abra um XSL na lista de arquivos.</p>'; return; }
+  const { doc, error } = parseXml(cm.getValue());
+  if (error) { st.className = "status err"; st.textContent = "Erro de estrutura"; box.innerHTML = `<div class="errbox">${esc(error)}</div>` + aiBlock(); bindAi(); return; }
+  let compiled = true;
+  if (window.XSLTProcessor) { try { new XSLTProcessor().importStylesheet(doc); } catch { compiled = false; } }
+  st.className = "status " + (compiled ? "ok" : "err"); st.textContent = compiled ? "XSL válido" : "XSL com erro";
+  const out = doc.getElementsByTagNameNS(XSLNS, "output")[0];
+  const method = (out && out.getAttribute("method")) || "html";
+  const valueOfs = [...doc.getElementsByTagNameNS(XSLNS, "value-of")];
+  const counter = new Map();
+  const rows = valueOfs.map(v => { const sel = v.getAttribute("select") || ""; const n = counter.get(sel) || 0; counter.set(sel, n + 1); return { el: v, sel, n }; });
+  const row = r => `<button class="frow" type="button" data-sel="${esc(r.sel)}" data-n="${r.n}"><span class="lb">${esc(labelFor(r.sel))}</span><code>${esc(r.sel)}</code></button>`;
+  let html = `<div class="note">Saída: <b>${method === "xml" ? "XML (integração)" : "HTML (relatório)"}</b> · ${valueOfs.length} campos · clique num campo para ir até ele no código.</div>`;
+
+  if (method !== "xml") {
+    const secs = [...doc.getElementsByTagName("*")].filter(e => e.namespaceURI !== XSLNS && /^[A-Z][A-Z_]+$/.test(e.getAttribute("id") || ""));
+    const used = new Set();
+    for (const s of secs) {
+      const id = s.getAttribute("id");
+      const inner = rows.filter(r => s.contains(r.el) && !used.has(r)); inner.forEach(r => used.add(r));
+      const cols = id === "BODY" ? [...s.getElementsByTagName("th")].map(th => th.textContent.replace(/\s+/g, " ").trim()).filter(Boolean) : [];
+      html += `<div class="sec"><header><b>${esc(SECTION_NAMES[id] || id)}</b><span class="mono">${esc(id)}</span></header>
+        ${cols.length ? `<div class="frow" style="cursor:default"><span class="lb">Colunas: ${esc(cols.join(" · "))}</span></div>` : ""}
+        ${inner.map(row).join("") || '<div class="frow" style="cursor:default"><span class="note">Sem campos diretos</span></div>'}</div>`;
+    }
+    const tpls = [...doc.getElementsByTagNameNS(XSLNS, "template")].filter(t => t.getAttribute("name"));
+    for (const t of tpls) {
+      const inner = rows.filter(r => t.contains(r.el) && !used.has(r)); inner.forEach(r => used.add(r));
+      if (inner.length) html += `<div class="sec"><header><b>Template ${esc(t.getAttribute("name"))}</b><span class="mono">por item</span></header>${inner.map(row).join("")}</div>`;
+    }
+    const rest = rows.filter(r => !used.has(r));
+    if (rest.length) html += `<div class="sec"><header><b>Outros campos</b></header>${rest.map(row).join("")}</div>`;
+  } else {
+    const attrs = [...doc.getElementsByTagNameNS(XSLNS, "attribute")];
+    const byTpl = new Map();
+    for (const a of attrs) {
+      const v = a.getElementsByTagNameNS(XSLNS, "value-of")[0];
+      if (!v) continue;
+      let p = a.parentNode; while (p && !(p.namespaceURI === XSLNS && p.localName === "template")) p = p.parentNode;
+      const owner = p && p.getAttribute("name") ? "Template " + p.getAttribute("name") : "Estrutura principal";
+      const r = rows.find(x => x.el === v);
+      if (!byTpl.has(owner)) byTpl.set(owner, []);
+      byTpl.get(owner).push(`<button class="frow" type="button" data-sel="${esc(r.sel)}" data-n="${r.n}"><span class="lb"><b>${esc(a.getAttribute("name"))}</b> ← ${esc(labelFor(r.sel))}</span><code>${esc(r.sel)}</code></button>`);
+    }
+    for (const [k, list] of byTpl) html += `<div class="sec"><header><b>${esc(k)}</b><span class="mono">atributo ← campo</span></header>${list.join("")}</div>`;
+  }
+  box.innerHTML = html + aiBlock();
+  bindAi();
+}
+function jumpTo(sel, n) {
+  const text = cm.getValue();
+  const re = new RegExp(`<xsl:value-of[^>]*select\\s*=\\s*"${sel.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`, "g");
+  let m, i = 0, idx = -1;
+  while ((m = re.exec(text))) { if (i++ === n) { idx = m.index; break; } }
+  if (idx < 0) { const k = text.indexOf(sel); idx = k; }
+  if (idx < 0) return;
+  if (cm.posFromIndex) {
+    const from = cm.posFromIndex(idx), to = cm.posFromIndex(idx + (m ? m[0].length : sel.length));
+    if (jumpMark) jumpMark.clear();
+    jumpMark = cm.markText(from, to, { className: "cm-jump" });
+    cm.scrollIntoView({ from, to }, 120); cm.setCursor(to); cm.focus();
+  } else cm.jumpTo(idx);
+}
+function insertCode(code) {
+  if (!state.xsl) { toast("Abra um XSL antes de inserir."); return; }
+  showTab("editor"); cm.replaceSelection(code); cm.focus(); toast("Inserido no ponto do cursor.");
+}
+
+/* ---------- Salvar ---------- */
+function download(name, bytes) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([bytes], { type: "application/xml" })); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+async function save() {
+  const f = state.xsl; if (!f) return;
+  f.text = cm.getValue();
+  const bytes = encodeLike(f, f.text);
+  if (f.handle && f.parent && await ensurePerm(f.parent)) {
+    try {
+      if (!f.backedUp && f.orig != null) {
+        const bh = await f.parent.getFileHandle(f.name + ".bak", { create: true });
+        const w = await bh.createWritable(); await w.write(encodeLike(f, f.orig)); await w.close(); f.backedUp = true;
+      }
+      const w = await f.handle.createWritable(); await w.write(bytes); await w.close();
+      f.dirty = false; renderTree(); toast(`Salvo em ${f.path}. O original está em ${f.name}.bak`); return;
+    } catch (e) { toast("Não foi possível gravar na pasta: " + e.message); }
+  }
+  download(f.name, bytes); f.dirty = false; renderTree();
+  toast("Arquivo enviado para download. Se nada baixou, use Copiar código.");
+}
+async function saveAs(name) {
+  const src = state.xsl; if (!src) return;
+  if (!/\.xslt?$/i.test(name)) name += ".xsl";
+  const text = cm.getValue();
+  const nf = { name, text, orig: null, enc: src.enc || "utf-8", bom: src.bom, origin: src.origin === "sistema" ? "sistema" : "import" };
+  nf.path = src.path && src.path.includes("/") ? src.path.slice(0, src.path.lastIndexOf("/") + 1) + name : name;
+  if (src.parent && await ensurePerm(src.parent)) {
+    try {
+      nf.handle = await src.parent.getFileHandle(name, { create: true }); nf.parent = src.parent;
+      const w = await nf.handle.createWritable(); await w.write(encodeLike(nf, text)); await w.close();
+      addFile(nf); src.text = src.orig ?? src.text; src.dirty = false; await openXsl(nf); toast(`Criado ${nf.path}`); return;
+    } catch (e) { toast("Não foi possível criar na pasta: " + e.message); }
+  }
+  addFile(nf); download(name, encodeLike(nf, text)); await openXsl(nf);
+}
+
+/* ---------- Visualizador ---------- */
+function fillXmlSelect() {
+  const sel = $("#pvXml");
+  const xmls = state.files.filter(f => f.ext === "xml");
+  sel.innerHTML = xmls.map(f => `<option value="${f.id}" ${f === state.xml ? "selected" : ""}>${esc(f.origin === "exemplo" ? "Exemplo: " + f.name : f.name)}</option>`).join("") || "<option>Nenhum XML</option>";
+}
+function findAsset(rel) {
+  const r = rel.replace(/\\/g, "/").replace(/^\/+/, "").toLowerCase();
+  return state.files.find(f => { const p = f.path.toLowerCase(); return p === r || p.endsWith("/" + r); });
+}
+async function assetData(f) {
+  if (state.assetCache.has(f.id)) return state.assetCache.get(f.id);
+  const blob = f.handle ? await f.handle.getFile() : f.file;
+  let v;
+  if (f.ext === "css") v = await blob.text();
+  else v = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob); });
+  state.assetCache.set(f.id, v); return v;
+}
+const PLACEHOLDER = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="40"><rect width="120" height="40" fill="#e6ebea" stroke="#9aa8a5" stroke-dasharray="4 3"/><text x="60" y="25" font-family="Arial" font-size="11" text-anchor="middle" fill="#5b6a67">imagem</text></svg>');
+async function resolveAssets(html) {
+  const linkRe = /<link[^>]*href="%pastasistema%[\\/]([^"]+\.css)"[^>]*>/gi;
+  for (const m of [...html.matchAll(linkRe)]) {
+    const f = findAsset(m[1]);
+    html = html.replace(m[0], f ? `<style>${(await assetData(f)).replace(/<\/style/gi, "")}</style>` : "");
+  }
+  const imgRe = /%pastasistema%[\\/]([^"'<>)\s]+)/gi;
+  for (const m of [...new Set([...html.matchAll(imgRe)].map(x => x[0]))]) {
+    const rel = m.replace(/^%pastasistema%[\\/]/i, "");
+    const f = findAsset(rel);
+    html = html.split(m).join(f ? await assetData(f) : PLACEHOLDER);
+  }
+  return html;
+}
+function prettyXml(xml) {
+  let out = "", pad = 0;
+  xml.replace(/>\s*</g, ">\n<").split("\n").forEach(line => {
+    if (/^<\/\w/.test(line)) pad = Math.max(pad - 1, 0);
+    out += "  ".repeat(pad) + line + "\n";
+    if (/^<\w[^>]*[^/]>$/.test(line) && !/^<\w[^>]*>.*<\/\w/.test(line)) pad++;
+  });
+  return out;
+}
+async function runPreview() {
+  const box = $("#pvOut");
+  if (!state.xsl) { box.innerHTML = '<p class="pv-msg note">Abra um XSL para visualizar.</p>'; return; }
+  const xf = state.files.find(f => String(f.id) === $("#pvXml").value) || state.xml;
+  if (!xf) { box.innerHTML = '<p class="pv-msg note">Carregue um XML de dados (o XML que o Promob gera para o orçamento).</p>'; return; }
+  if (!window.XSLTProcessor) { box.innerHTML = '<div class="pv-msg"><div class="errbox">Este navegador não aplica XSL. Use Chrome, Edge ou Firefox atualizados.</div></div>'; return; }
+  const xsl = parseXml(cm.getValue()), xml = parseXml(await readText(xf));
+  if (xsl.error) { box.innerHTML = `<div class="pv-msg"><div class="errbox">O XSL tem erro de estrutura:\n${esc(xsl.error)}</div></div>`; return; }
+  if (xml.error) { box.innerHTML = `<div class="pv-msg"><div class="errbox">O XML de dados tem erro:\n${esc(xml.error)}</div></div>`; return; }
+  let res;
+  try { const p = new XSLTProcessor(); p.importStylesheet(xsl.doc); res = p.transformToDocument(xml.doc); } catch (e) { res = null; }
+  if (!res || !res.documentElement) {
+    box.innerHTML = '<div class="pv-msg"><div class="errbox">O navegador não conseguiu aplicar este XSL aos dados. Confira se há template, variável ou função inexistente. Funções do MSXML (msxsl:) não rodam no navegador.</div></div>'; return;
+  }
+  const out = xsl.doc.getElementsByTagNameNS(XSLNS, "output")[0];
+  const method = (out && out.getAttribute("method")) || (res.documentElement.nodeName.toLowerCase() === "html" ? "html" : "xml");
+  if (method === "xml") {
+    const s = new XMLSerializer().serializeToString(res);
+    box.innerHTML = `<pre>${esc(prettyXml(s))}</pre>`;
+  } else {
+    const html = await resolveAssets(res.documentElement.outerHTML);
+    box.innerHTML = '<iframe sandbox="" title="Pré-visualização do layout"></iframe>';
+    box.querySelector("iframe").srcdoc = "<!doctype html><meta charset=\"utf-8\">" + html;
+  }
+}
+
+/* ---------- Campos ---------- */
+function fieldHtml(path, label, desc, ex) {
+  return `<div class="field"><span class="lb">${esc(label)}</span>${desc ? `<span class="ds">${esc(desc)}</span>` : ""}<code>${esc(path)}</code>${ex ? `<span class="ex">ex.: ${esc(ex)}</span>` : ""}
+    <span class="acts"><button class="btn small" type="button" data-ins="${esc(path)}">Inserir</button><button class="btn small ghost" type="button" data-cp="${esc(path)}">Copiar</button></span></div>`;
+}
+function renderCatalog() {
+  $("#catalog").innerHTML = CATALOG.map((g, i) => `<details class="fgroup" ${i === 5 ? "open" : ""}><summary>${esc(g.g)} <small>${esc(g.ctx)}</small></summary>
+    ${g.f.map(([p, d]) => fieldHtml(p, labelFor(p), d)).join("")}</details>`).join("");
+}
+function renderFound() {
+  const box = $("#found");
+  if (!state.xml) { box.innerHTML = ""; $("#foundNote").textContent = "Carregue um XML para ver os campos que existem de verdade."; return; }
+  const { doc, error } = parseXml(state.xml.text || "");
+  if (error) { box.innerHTML = `<div class="errbox">${esc(error)}</div>`; return; }
+  $("#foundNote").innerHTML = `Lido de <b>${esc(state.xml.name)}</b>${state.xml.origin === "exemplo" ? " (dados de exemplo)" : ""}. Mostra cada campo com um valor encontrado.`;
+  const refs = new Map(), integ = new Map(), meta = new Map(), cust = new Map(), itemAttr = new Map();
+  for (const r of doc.querySelectorAll("REFERENCES > *")) if (!refs.has(r.nodeName)) refs.set(r.nodeName, r.getAttribute("REFERENCE"));
+  for (const a of doc.querySelectorAll("INTEGRATIONDATA ATTRIBUTE")) if (!integ.has(a.getAttribute("NAME"))) integ.set(a.getAttribute("NAME"), a.getAttribute("VALUE"));
+  for (const m of doc.querySelectorAll("METADATA[ID]")) if (!meta.has(m.getAttribute("ID"))) meta.set(m.getAttribute("ID"), m.getAttribute("VALUE") || "(conteúdo estruturado)");
+  for (const d of doc.querySelectorAll("CUSTOMERSDATA > DATA")) cust.set(d.getAttribute("ID"), d.getAttribute("VALUE"));
+  for (const it of doc.querySelectorAll("ITEM")) for (const a of it.attributes) if (!itemAttr.has(a.name)) itemAttr.set(a.name, a.value);
+  const grp = (title, ctx, entries, mk) => entries.size ? `<details class="fgroup" open><summary>${esc(title)} <small>${esc(ctx)}</small></summary>${[...entries].map(([k, v]) => mk(k, v)).join("")}</details>` : "";
+  box.innerHTML =
+    grp("Referências do item", "ITEM/REFERENCES", refs, (k, v) => fieldHtml(`REFERENCES/${k}/@REFERENCE`, "Referência: " + k, "", v)) +
+    grp("Atributos de integração", "INTEGRATIONDATA/ATTRIBUTES", integ, (k, v) => fieldHtml(`METADATAS/METADATA/METADATA.VALUE/INTEGRATIONDATA/ATTRIBUTES/ATTRIBUTE[@NAME='${k}']/@VALUE`, "Integração: " + k, "", v)) +
+    grp("Metadados", "METADATAS/METADATA", meta, (k, v) => fieldHtml(`METADATAS/METADATA[@ID='${k}']/@VALUE`, "Metadado: " + k, "", v)) +
+    grp("Atributos do item", "ITEM/@…", itemAttr, (k, v) => fieldHtml("@" + k, ATTR[k] || k, "", v)) +
+    grp("Dados do cliente e da loja", "CUSTOMERSDATA/DATA", cust, (k, v) => fieldHtml(`CUSTOMERSDATA/DATA[@ID='${k}']/@VALUE`, CUSTOMER[k] || k, "", v));
+}
+
+/* ---------- Biblioteca ---------- */
+const userSnips = () => lsGet("exsl.snippets", []);
+function allSnips() { return [...BUILTIN.map(s => ({ ...s, builtin: true })), ...userSnips()]; }
+function renderLib() {
+  const list = allSnips();
+  const cats = ["Todas", ...new Set(list.map(s => s.cat))];
+  $("#libFilters").innerHTML = cats.map(c => `<button class="fchip" type="button" aria-pressed="${c === state.libCat}" data-cat="${esc(c)}">${esc(c)}</button>`).join("");
+  const q = $("#libSearch").value.trim().toLowerCase();
+  const shown = list.filter(s => (state.libCat === "Todas" || s.cat === state.libCat) && (!q || (s.t + s.d + s.c + s.cat).toLowerCase().includes(q)));
+  $("#libCards").innerHTML = shown.map(s => {
+    const i = list.indexOf(s);
+    return `<article class="card"><span class="cat">${esc(s.cat)}${s.builtin ? "" : " · seu"}</span><h4>${esc(s.t)}</h4><p>${esc(s.d || "")}</p><pre>${esc(s.c)}</pre>
+      <div class="row"><button class="btn small primary" type="button" data-snip="${i}">Inserir no editor</button><button class="btn small" type="button" data-snipcp="${i}">Copiar</button>
+      ${s.builtin ? "" : `<button class="btn small ghost" type="button" data-snipdel="${i}">Remover</button>`}</div></article>`;
+  }).join("") || '<p class="empty">Nada encontrado.</p>';
+}
+
+/* ---------- Pedido para IA ---------- */
+function aiBlock() {
+  return `<div class="sec ai" id="aiBox" ${aiOpen ? "" : "hidden"}><header><b>Pedir à IA</b></header><div style="padding:9px;display:grid;gap:8px">
+    <p class="note" style="margin:0">Descreva a mudança. O editor monta um pedido completo (regras do Promob, campos disponíveis e o XSL atual) para você colar no Claude.</p>
+    <textarea id="aiAsk" placeholder="Ex.: adicionar uma coluna Peso (kg) na tabela de itens usando a referência PESO, e mostrar o peso total no fim de cada categoria.">${esc(aiDraft)}</textarea>
+    <button class="btn small primary" type="button" id="aiGo">Copiar pedido para o Claude</button></div></div>`;
+}
+let aiOpen = false, aiDraft = "";
+function bindAi() {
+  const ta = $("#aiAsk"); if (ta) ta.addEventListener("input", () => { aiDraft = ta.value; });
+  const go = $("#aiGo"); if (go) go.addEventListener("click", copyAiPrompt);
+}
+async function copyAiPrompt() {
+  const ask = aiDraft.trim();
+  if (!ask) { toast("Escreva o que você quer mudar."); return; }
+  const found = state.xml ? (() => { const { doc } = parseXml(state.xml.text || ""); return [...new Set([...doc.querySelectorAll("REFERENCES > *")].map(n => n.nodeName))].join(", "); })() : "";
+  const prompt = `Você é especialista em XSLT 1.0 para os layouts do Promob (orçamento, listagem e integração ERP).
+Regras:
+- O Promob aplica o XSL ao XML de orçamento cuja raiz é LISTING. Hierarquia: LISTING/AMBIENTS/AMBIENT/CATEGORIES/CATEGORY/ITEMS/ITEM (ITEM é recursivo em ITEMS/ITEM).
+- Dados do cliente: CUSTOMERSDATA/DATA[@ID='...']/@VALUE. Referências do item: REFERENCES/<NOME>/@REFERENCE. Preço: PRICE/@TABLE e PRICE/MARGINS/ORDER|BUDGET/@TOTAL. Totais: TOTALPRICES/MARGINS/BUDGET/@VALUE.
+- Valores do Promob usam vírgula decimal: use translate(valor, ',', '.') antes de format-number ou de contas.
+- Mantenha as marcações de seção (thead id="HEADER", tr id="CUSTOMERDATA", tr id="BODY" templatetext, tr id="TOTALS", tfoot id="FOOTER") e html generator="ProMob.Cadastro" para o editor do Promob continuar abrindo o layout.
+- Use só XSLT 1.0 compatível com MSXML. Não use extensões.
+${found ? "- Referências presentes nos dados: " + found + "\n" : ""}
+Pedido: ${ask}
+
+Devolva o arquivo XSL completo, pronto para salvar, e depois uma lista curta do que mudou.
+
+Arquivo atual (${state.xsl ? state.xsl.name : "sem nome"}):
+${cm.getValue()}`;
+  await copy(prompt, "Pedido copiado. Cole no Claude e traga a resposta para o editor.");
+}
+
+/* ---------- Utilidades de interface ---------- */
+let toastTimer;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 4200); }
+function prog(msg) { $("#prog").textContent = msg; }
+async function copy(text, ok) {
+  try { await navigator.clipboard.writeText(text); toast(ok || "Copiado."); }
+  catch {
+    const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); toast(ok || "Copiado."); } catch { toast("Selecione o texto e copie com Ctrl+C."); } ta.remove();
+  }
+}
+function showTab(name) {
+  document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
+  document.querySelectorAll(".pane").forEach(p => { p.hidden = p.dataset.pane !== name; });
+  lsSet("exsl.tab", name);
+  if (name === "editor" && cm.refresh) setTimeout(() => cm.refresh(), 0);
+  if (name === "preview") runPreview();
+  if (name === "lib") renderLib();
+}
+
+/* ---------- Eventos ---------- */
+function bind() {
+  document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => showTab(t.dataset.tab)));
+  $("#tree").addEventListener("click", e => { const b = e.target.closest(".file"); if (!b) return; const f = state.files.find(x => x.id === +b.dataset.id); if (!f) return; f.ext === "xml" ? openXml(f) : openXsl(f); });
+  $("#fFilter").addEventListener("input", renderTree);
+  $("#btnMap").addEventListener("click", async () => {
+    if (window.showDirectoryPicker) {
+      try { const h = await window.showDirectoryPicker({ id: "promob-sistema", mode: "readwrite" }); await mapFolder(h); return; }
+      catch (e) { if (e.name === "AbortError") return; }
+    }
+    $("#inDir").click();
+  });
+  $("#inDir").addEventListener("change", e => { mapFromInput(e.target.files); e.target.value = ""; });
+  $("#btnReopen").addEventListener("click", async () => { const h = await idbGet("root"); if (h && await ensurePerm(h)) mapFolder(h); else toast("Não foi possível reabrir. Mapeie a pasta de novo."); });
+  const importFiles = async list => {
+    let last;
+    for (const file of list) { const ext = (file.name.split(".").pop() || "").toLowerCase(); if (!/^(xslt?|xml|css|png|jpe?g|gif|bmp)$/.test(ext)) continue; last = addFile({ name: file.name, path: file.name, file, origin: "import" }); }
+    renderTree(); fillXmlSelect();
+    if (last) { if (/xslt?/.test(last.ext)) openXsl(last); else if (last.ext === "xml") openXml(last); toast("Arquivos importados."); }
+  };
+  $("#inFiles").addEventListener("change", e => { importFiles([...e.target.files]); e.target.value = ""; });
+  const drop = $("#drop"), side = document.querySelector(".side");
+  side.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
+  side.addEventListener("dragleave", e => { if (!side.contains(e.relatedTarget)) drop.classList.remove("over"); });
+  side.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("over"); importFiles([...e.dataTransfer.files]); });
+
+  $("#inspect").addEventListener("click", e => { const r = e.target.closest(".frow[data-sel]"); if (r) jumpTo(r.dataset.sel, +r.dataset.n); });
+  $("#btnSave").addEventListener("click", save);
+  $("#btnCopy").addEventListener("click", () => copy(cm.getValue(), "Código copiado."));
+  $("#btnSaveAs").addEventListener("click", () => { $("#saveAsBox").hidden = false; $("#saveAsName").value = state.xsl ? state.xsl.name.replace(/(\.xslt?)$/i, "_novo$1") : "MeuLayout.xsl"; $("#saveAsName").focus(); });
+  $("#saveAsCancel").addEventListener("click", () => { $("#saveAsBox").hidden = true; });
+  $("#saveAsGo").addEventListener("click", async () => { const n = $("#saveAsName").value.trim(); if (!n) return; $("#saveAsBox").hidden = true; await saveAs(n); });
+  $("#btnAI").addEventListener("click", () => { aiOpen = !aiOpen; const b = $("#aiBox"); if (b) { b.hidden = !aiOpen; if (aiOpen) { b.scrollIntoView({ block: "nearest" }); $("#aiAsk").focus(); } } });
+  document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); save(); } });
+
+  $("#btnRun").addEventListener("click", runPreview);
+  $("#pvXml").addEventListener("change", async () => { const f = state.files.find(x => String(x.id) === $("#pvXml").value); if (f) { await readText(f); state.xml = f; renderTree(); renderFound(); } runPreview(); });
+
+  document.querySelector('[data-pane="fields"]').addEventListener("click", e => {
+    const i = e.target.closest("[data-ins]"), c = e.target.closest("[data-cp]");
+    if (i) insertCode(`<xsl:value-of select="${i.dataset.ins}" />`);
+    if (c) copy(c.dataset.cp, "Caminho copiado.");
+  });
+  $("#libFilters").addEventListener("click", e => { const b = e.target.closest("[data-cat]"); if (b) { state.libCat = b.dataset.cat; renderLib(); } });
+  $("#libSearch").addEventListener("input", renderLib);
+  $("#libCards").addEventListener("click", e => {
+    const list = allSnips();
+    const a = e.target.closest("[data-snip]"), c = e.target.closest("[data-snipcp]"), d = e.target.closest("[data-snipdel]");
+    if (a) insertCode(list[+a.dataset.snip].c);
+    if (c) copy(list[+c.dataset.snipcp].c, "Código copiado.");
+    if (d) { const s = list[+d.dataset.snipdel]; lsSet("exsl.snippets", userSnips().filter(u => !(u.t === s.t && u.c === s.c))); renderLib(); toast("Removido da biblioteca."); }
+  });
+  $("#snFromSel").addEventListener("click", () => { const s = cm.getSelection ? cm.getSelection() : ""; if (!s) { toast("Selecione um trecho no editor primeiro."); return; } $("#snCode").value = s; });
+  $("#snAdd").addEventListener("click", () => {
+    const s = { t: $("#snTitle").value.trim(), cat: $("#snCat").value.trim() || "Meus códigos", d: $("#snDesc").value.trim(), c: $("#snCode").value };
+    if (!s.t || !s.c.trim()) { toast("Preencha o título e o código."); return; }
+    lsSet("exsl.snippets", [...userSnips(), s]); ["#snTitle", "#snCat", "#snDesc", "#snCode"].forEach(k => { $(k).value = ""; });
+    state.libCat = s.cat; renderLib(); toast("Salvo na biblioteca deste navegador. Use Exportar para guardar uma cópia.");
+  });
+  $("#libExport").addEventListener("click", () => download("biblioteca-xsl-promob.json", new TextEncoder().encode(JSON.stringify(userSnips(), null, 2))));
+  $("#libImport").addEventListener("change", async e => {
+    const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+    try { const arr = JSON.parse(await f.text()); if (!Array.isArray(arr)) throw 0; lsSet("exsl.snippets", [...userSnips(), ...arr.filter(s => s && s.t && s.c)]); renderLib(); toast(`${arr.length} códigos importados.`); }
+    catch { toast("Arquivo inválido. Use um JSON exportado por este editor."); }
+  });
+}
+
+/* ---------- Início ---------- */
+async function start() {
+  initEditor(); bind(); renderCatalog();
+  let samples = [];
+  try { samples = JSON.parse($("#samples").textContent); } catch {}
+  for (const s of samples) addFile({ name: s.name, path: s.name, text: s.text, orig: s.text, enc: "utf-8", origin: "exemplo" });
+  renderTree(); fillXmlSelect();
+  const firstXml = state.files.find(f => f.ext === "xml");
+  if (firstXml) { state.xml = firstXml; renderFound(); }
+  const firstXsl = state.files.find(f => /^Parceiro_Cinex_Orcamento/i.test(f.name)) || state.files.find(f => /xslt?$/.test(f.ext));
+  if (firstXsl) await openXsl(firstXsl); else analyze();
+  if (!window.showDirectoryPicker) $("#btnMap").title = "Seu navegador abre a pasta em modo leitura. Para salvar direto nela, use Chrome ou Edge.";
+  const saved = await idbGet("root");
+  if (saved && saved.name) { const b = $("#btnReopen"); b.hidden = false; b.textContent = "Reabrir " + saved.name; }
+  const tab = lsGet("exsl.tab", "editor"); if (tab !== "editor") showTab(tab);
+}
+start();
+})();
+</script>
