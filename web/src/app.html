@@ -2845,7 +2845,21 @@ setInterval(() => { const f = state.xsl; if (f && f.dirty) histAdd(f, "rascunho"
 
 /* ---------- Modelos prontos ---------- */
 let MODELS = [];
-try { const m = JSON.parse(document.getElementById("models").textContent); MODELS = m.modelos || []; (m.assets || []).forEach(a => addFile({ name: a.name, path: a.path, text: a.text, orig: a.text, enc: "utf-8", origin: "asset" })); } catch {}
+// O acervo vem compactado (gzip + base64) para o HTML caber no limite de publicação; JSON puro também é aceito.
+async function loadModels() {
+  const raw = (document.getElementById("models").textContent || "").trim();
+  let m = null;
+  try {
+    if (raw.startsWith("{")) m = JSON.parse(raw);
+    else if (raw && window.DecompressionStream) {
+      const bin = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+      m = JSON.parse(await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"))).text());
+    } else if (raw) MODELS_ERR = "Este navegador não abre o acervo compactado. Use Chrome, Edge ou Firefox atualizados.";
+  } catch (e) { MODELS_ERR = "Não foi possível abrir o acervo de modelos: " + e.message; }
+  MODELS = (m && m.modelos) || [];
+  ((m && m.assets) || []).forEach(a => addFile({ name: a.name, path: a.path, text: a.text, orig: a.text, enc: "utf-8", origin: "asset" }));
+}
+let MODELS_ERR = "";
 const MD = { cat: "Todas" };
 const CAT_ORDER = ["Orçamentos", "Pedidos", "Listagens", "Parceiros e fornecedores", "Integração ERP (XML)", "Arquivos texto (TXT/CSV)", "Enviar Para (configuração)", "Outros relatórios", "Testes"];
 function modelGroups() {
@@ -2913,7 +2927,7 @@ function bindModels() {
   const pacs = [...new Set(MODELS.map(m => m.pacote))];
   $("#mdPacote").innerHTML = '<option value="">Todos os pacotes</option>' + pacs.map(p => `<option>${esc(p)}</option>`).join("");
   const total = MODELS.length, grupos = modelGroups().length, copias = MODELS.reduce((n, m) => n + m.tambem.length, 0);
-  $("#mdSummary").textContent = total ? `${grupos} modelos (${total} versões distintas; ${copias} cópias idênticas agrupadas) em ${pacs.length} pacotes` : "Nenhum modelo embutido nesta versão.";
+  $("#mdSummary").textContent = total ? `${grupos} modelos (${total} versões distintas; ${copias} cópias idênticas agrupadas) em ${pacs.length} pacotes` : (MODELS_ERR || "Nenhum modelo embutido nesta versão.");
   $("#mdCats").addEventListener("click", e => { const b = e.target.closest("[data-mcat]"); if (b) { MD.cat = b.dataset.mcat; renderModels(); } });
   ["#mdPacote", "#mdTipo", "#mdSaude"].forEach(k => $(k).addEventListener("change", renderModels));
   $("#mdSearch").addEventListener("input", renderModels);
@@ -3456,6 +3470,7 @@ window.EditorXSL = { audit: auditXsl, applyFixes, interpretXsl, generate, models
 async function start() {
   const savedTab = lsGet("exsl.tab", "builder");
   initEditor(); bind(); renderCatalog();
+  await loadModels();
   let samples = [];
   try { samples = JSON.parse($("#samples").textContent); } catch {}
   for (const s of samples) addFile({ name: s.name, path: s.name, text: s.text, orig: s.text, enc: "utf-8", origin: "exemplo" });

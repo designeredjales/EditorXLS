@@ -31,7 +31,9 @@ if libdir.is_dir():
 libblob = json.dumps(libs, ensure_ascii=False).replace("</", "<\\/")
 import catalogar_modelos
 models = {"modelos": [], "assets": []} if "--sem-modelos" in sys.argv else catalogar_modelos.catalogar(base / "modelos")
-modelblob = json.dumps(models, ensure_ascii=False).replace("</", "<\\/")
+# O acervo vai compactado (gzip + base64): cerca de 5 vezes menor. O navegador descompacta ao abrir.
+import base64, gzip
+modelblob = base64.b64encode(gzip.compress(json.dumps(models, ensure_ascii=False).encode("utf-8"), 9, mtime=0)).decode("ascii")
 page = src.replace("__SAMPLES__", blob).replace("__LIBRARY__", libblob).replace("__MODELS__", modelblob)
 out = base / "dist"
 out.mkdir(exist_ok=True)
@@ -41,4 +43,4 @@ local = ('<!doctype html>\n<html lang="pt-BR">\n<head>\n<meta charset="utf-8">\n
          '<style>:root{color-scheme:light}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>\n'
          '</head>\n<body>\n' + page + '\n</body>\n</html>\n')
 (out / "EditorXSL-Promob.html").write_text(local, encoding="utf-8")
-print(f"{len(models['modelos'])} modelos, {len(samples)} exemplos e {sum(len(l.get('itens', [])) for l in libs)} códigos de biblioteca embutidos -> {out}")
+print(f"{len(page.encode('utf-8')) / 1e6:.1f} MB · {len(models['modelos'])} modelos, {len(samples)} exemplos e {sum(len(l.get('itens', [])) for l in libs)} códigos de biblioteca embutidos -> {out}")
