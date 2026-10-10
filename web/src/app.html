@@ -523,7 +523,7 @@ const CUSTOMER = {
   bairro: "Bairro", cidade: "Cidade", uf: "UF", endentrega: "Endereço de entrega", fone: "Telefone", celular: "Celular",
   email: "E-mail", observacoes: "Observações", rep_nomeempresa: "Loja: nome", rep_enderecoempresa: "Loja: endereço",
   rep_bairroempresa: "Loja: bairro", rep_cepenpresa: "Loja: CEP", rep_cidadeempresa: "Loja: cidade", rep_ufempresa: "Loja: UF",
-  rep_telefoneempresa: "Loja: telefone", rep_emailempresa: "Loja: e-mail", rep_contatoempresa: "Loja: contato"
+  rep_telefoneempresa: "Loja: telefone", rep_codloja: "Loja: código", ambiente: "Ambiente (dados do cliente)", rep_emailempresa: "Loja: e-mail", rep_contatoempresa: "Loja: contato"
 };
 const ATTR = {
   DATE: "Data da listagem", HOUR: "Hora da listagem", CURRENCYSYMBOL: "Símbolo da moeda", CUSTOMERNUMBER: "Número do projeto", UNIT: "Unidade",
@@ -567,6 +567,12 @@ const CATALOG = [
     ["REFERENCES/DOORHOLE/@REFERENCE", "Furo da porta"], ["REFERENCES/HOLESIDE/@REFERENCE", "Lado da furação"], ["REFERENCES/KNOBPOSITION/@REFERENCE", "Posição do puxador"],
     ["REFERENCES/SIDE/@REFERENCE", "Lado"], ["REFERENCES/RECORTE/@REFERENCE", "Recorte"], ["REFERENCES/CHANGEDDIMENSION/@REFERENCE", "Medida alterada (marca)"],
     ["REFERENCES/LEGEND/@REFERENCE", "Legenda"], ["REFERENCES/NICKNAME/@REFERENCE", "Apelido do item"]]},
+  { g: "Margens de pedido por ID", ctx: "…/MARGINS/ORDER/MARGIN[@ID]", f: [
+    ["PRICE/MARGINS/ORDER/MARGIN[@ID='desc_1']/@VALUE", "Desconto 1 do item"], ["PRICE/MARGINS/ORDER/MARGIN[@ID='icms']/@VALUE", "ICMS do item"],
+    ["PRICE/MARGINS/ORDER/MARGIN[@ID='IPI']/@VALUE", "IPI do item"], ["TOTALPRICES/MARGINS/ORDER/MARGIN[@ID='IPI']/@VALUE", "IPI do projeto"]]},
+  { g: "Referências de pedido para fábrica", ctx: "ITEM/REFERENCES/<NOME>", f: [
+    ["REFERENCES/PEDIDO_ESPECIAL/@REFERENCE", "Pedido especial (SIM/NAO)"], ["REFERENCES/DIMENSAO_EDITAVEL_1/@REFERENCE", "Dimensão editável 1"],
+    ["REFERENCES/DIMENSAO_EDITAVEL_2/@REFERENCE", "Dimensão editável 2"], ["REFERENCES/LETRA_PUXADOR/@REFERENCE", "Letra do puxador"]]},
   { g: "Pedras e tampos", ctx: "ITEM/REFERENCES/<NOME>", f: [
     ["REFERENCES/AREA/@REFERENCE", "Área (m²)"], ["REFERENCES/DESC_COR_PAI_ESP/@REFERENCE", "Descrição especial do material"]]},
   { g: "Dados do pedido (metadados da listagem)", ctx: "LISTING/METADATAS", f: [
@@ -606,6 +612,7 @@ function labelFor(expr) {
   if ((m = e.match(/METADATA\[@ID\s*=\s*'([^']+)'\]/))) return "Metadado: " + m[1];
   if (/TOTALPRICES\/MARGINS\/BUDGET\/@VALUE/.test(e)) return "Total do orçamento";
   if (/TOTALPRICES\/MARGINS\/ORDER\/@VALUE/.test(e)) return "Total do pedido";
+  if ((m = e.match(/MARGIN\[@ID\s*=\s*'([^']+)'\]/))) return "Margem: " + m[1];
   if ((m = e.match(/PRICE\/MARGINS\/(ORDER|BUDGET)\/@([A-Z]+)/))) return (m[1] === "BUDGET" ? "Preço orçamento: " : "Preço pedido: ") + (ATTR[m[2]] || m[2]);
   if ((m = e.match(/^PRICE\/@([A-Z]+)$/))) return "Preço: " + (ATTR[m[1]] || m[1]);
   if ((m = e.match(/ADDITIONAL_INFORMATIONS_BUILDER\/@([A-Z_]+)/))) return "Builder: " + m[1];

@@ -8,6 +8,7 @@ Cada modelo recebido é lido, classificado e desmontado em padrões reutilizáve
 | 2 | `02_pedido_chapas_txt_integracao.json` | 25 |
 | 3 | `03_pedidos_sendto.json` | 14 |
 | 4 | `04_portas_pedras.json` | 5 |
+| 5 | `05_pedido_fabrica_txt.json` | 7 |
 
 ## Tipos de layout encontrados
 
@@ -79,3 +80,16 @@ Outra instalação da pasta `Budget\Layouts\Listing`, com versões diferentes do
 **Parceiro_Cosentino.xsl** · pedras: área (`AREA`) e alerta "PREENCHER INFORMAÇÕES" quando a descrição do material ficou com o marcador `$MATERIALUSERDESCRIPTION$`.
 
 Arquivos que vieram danificados no `.rar` e não puderam ser lidos: Listagem_Builder_Fabrica.pt, Listagem_Builder_Loja.pt, parceiro_Smeg, Parceiro_tramontina.en (versão nova) e dois arquivos vazios.
+
+### Lote 5 — SendTo de pedido para fábrica (Electrolux, Cata, Tramontina)
+
+Pacote completo (8 de 8 arquivos). `sendTo.xml` liga as categorias Pedido_Electrolux, Pedido_Cata, Pedido_tramontina, pedido, pedido_especiais, orcamento e listagem a layouts TXT.
+
+**Pedido.xsl / Listagem.xsl** · TXT em registros numerados (layout EDI): cada linha começa com um código (21 desconto, 88 ICMS, 92/93 versão da biblioteca "cozinhas", 94 ambiente, 99 total). Itens com código do fornecedor pela família (Alumistar, Ancezki, Casavitra, Lapividros, OMP, Rubinettos, Treviso), dimensões editáveis e letra do puxador. Listagem = Pedido sem o preço total.
+Risco: desconto e ICMS são lidos do primeiro item do projeto, assumindo o mesmo valor para todos.
+
+**Pedido_Fabrica_Geral.xsl / Pedido_Fabrica_Especiais.xsl** · o mesmo TXT filtrado pela referência PEDIDO_ESPECIAL (NAO × SIM). Os dois arquivos só diferem nessa palavra.
+
+**Orcamento.xsl** · TXT simples do orçamento. Problema: item sem preço de orçamento sai com "0.00" e "0,00" seguidos.
+
+**sendTo.xml** · a opção de e-mail aponta para `Fabrica.xsl`, que não veio no pacote.

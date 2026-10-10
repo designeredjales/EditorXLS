@@ -1,0 +1,62 @@
+{
+  "lote": "Lote 5: pedido TXT para fábrica (Electrolux, Cata, Tramontina)",
+  "recebido": "2026-10-10",
+  "itens": [
+    {
+      "cat": "Texto (TXT)",
+      "t": "Registro numerado (layout EDI)",
+      "d": "Cada linha do TXT começa com um código de registro de 2 dígitos que o ERP da fábrica reconhece (ex.: 21 = desconto, 88 = ICMS, 94 = ambiente).",
+      "c": "<xsl:text>94</xsl:text>\n<xsl:value-of select=\"substring(concat(CUSTOMERSDATA/DATA[@ID='ambiente']/@VALUE, $espaco), 1, 20)\" />\n<xsl:call-template name=\"QuebrarLinha\" />",
+      "origem": "SendTo Fábrica (Pedido.xsl, Pedido_Fabrica_*.xsl)",
+      "tags": "edi registro código linha txt fábrica"
+    },
+    {
+      "cat": "Preços",
+      "t": "Margem de pedido pelo ID (desconto, ICMS, IPI)",
+      "d": "Lê o valor de uma margem específica do pedido. No total do projeto use TOTALPRICES; no item, PRICE/MARGINS/ORDER/MARGIN.",
+      "c": "<!-- Total do projeto -->\n<xsl:value-of select=\"translate(TOTALPRICES/MARGINS/ORDER/MARGIN[@ID='IPI']/@VALUE, ',', '.')\" />\n\n<!-- Item atual -->\n<xsl:value-of select=\"translate(PRICE/MARGINS/ORDER/MARGIN[@ID='desc_1']/@VALUE, ',', '.')\" />",
+      "origem": "SendTo Fábrica (Pedido.xsl, Pedido_Fabrica_*.xsl)",
+      "tags": "margem desconto icms ipi imposto"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Código do fornecedor pela família",
+      "d": "Converte a família do item no código de biblioteca/fornecedor que o ERP da fábrica espera.",
+      "c": "<xsl:choose>\n  <xsl:when test=\"@FAMILY = 'Alumistar'\">05</xsl:when>\n  <xsl:when test=\"@FAMILY = 'Rubinettos'\">07</xsl:when>\n  <xsl:when test=\"@FAMILY = 'OMP'\">08</xsl:when>\n  <xsl:otherwise>01</xsl:otherwise>\n</xsl:choose>",
+      "origem": "SendTo Fábrica (Pedido.xsl, Pedido_Fabrica_*.xsl)",
+      "tags": "família fornecedor código parceiro"
+    },
+    {
+      "cat": "Cálculos",
+      "t": "Valor absoluto",
+      "d": "Template para tirar o sinal de um número (margens de desconto vêm negativas).",
+      "c": "<xsl:template name=\"Absoluto\">\n  <xsl:param name=\"valor\" />\n  <xsl:choose>\n    <xsl:when test=\"$valor &lt; 0\"><xsl:value-of select=\"$valor * -1\" /></xsl:when>\n    <xsl:otherwise><xsl:value-of select=\"$valor\" /></xsl:otherwise>\n  </xsl:choose>\n</xsl:template>",
+      "origem": "SendTo Fábrica (Pedido.xsl, Pedido_Fabrica_*.xsl)",
+      "tags": "absoluto sinal negativo desconto"
+    },
+    {
+      "cat": "Pedidos",
+      "t": "Pedido especial x pedido geral",
+      "d": "A referência PEDIDO_ESPECIAL (SIM/NAO) separa itens especiais num pedido próprio. Os dois arquivos originais só diferem nesse valor.",
+      "c": "<xsl:variable name=\"especial\" select=\"'NAO'\" /> <!-- 'SIM' no pedido de especiais -->\n\n<xsl:if test=\"REFERENCES/PEDIDO_ESPECIAL/@REFERENCE = $especial\">\n  <!-- linha do item -->\n</xsl:if>",
+      "origem": "SendTo Fábrica (Pedido.xsl, Pedido_Fabrica_*.xsl)",
+      "tags": "especial separar pedido"
+    },
+    {
+      "cat": "Campos",
+      "t": "Versão da biblioteca do fabricante",
+      "d": "Lê a versão de uma linha de produtos cadastrada no Promob (aqui 'cozinhas') e separa as partes.",
+      "c": "<xsl:variable name=\"versao\" select=\"ABOUTPROMOB/LIBRARIES/LIBRARY[@LINE='cozinhas']/@VERSION\" />\n<xsl:value-of select=\"substring($versao, 1, 6)\" />",
+      "origem": "SendTo Fábrica (Pedido.xsl, Pedido_Fabrica_*.xsl)",
+      "tags": "versão biblioteca linha"
+    },
+    {
+      "cat": "Itens",
+      "t": "Dimensões editáveis e letra do puxador",
+      "d": "Medidas editadas em tamponamentos e frentes e a letra do puxador, enviadas à fábrica.",
+      "c": "<xsl:value-of select=\"REFERENCES/DIMENSAO_EDITAVEL_1/@REFERENCE\" />\n<xsl:text> x </xsl:text>\n<xsl:value-of select=\"REFERENCES/DIMENSAO_EDITAVEL_2/@REFERENCE\" />\n<xsl:text> | Puxador: </xsl:text>\n<xsl:value-of select=\"REFERENCES/LETRA_PUXADOR/@REFERENCE\" />",
+      "origem": "SendTo Fábrica (Pedido.xsl, Pedido_Fabrica_*.xsl)",
+      "tags": "dimensão editável puxador letra tamponamento frente"
+    }
+  ]
+}

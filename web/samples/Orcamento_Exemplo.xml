@@ -4,6 +4,7 @@
   <ABOUTPROMOB VERSION="5" REVISION="29" BUILD="2" SYSTEM="Cinex" DISTRIBUTION="Studio" SYSTEMREVISION="12" SERIALNUMBER="PMB-000000">
     <LIBRARIES>
       <LIBRARY LINE="Cinex Planejados" VERSION="3" REVISION="8" />
+      <LIBRARY LINE="cozinhas" VERSION="2026.10.03" REVISION="4" />
     </LIBRARIES>
     <VERSIONPLUGINS>
       <PLUGIN NAME="Builder" />
@@ -23,6 +24,8 @@
     <DATA ID="celular" VALUE="(48) 99999-1234" />
     <DATA ID="email" VALUE="mariana@exemplo.com.br" />
     <DATA ID="observacoes" VALUE="Entrega após 15/11" />
+    <DATA ID="ambiente" VALUE="Cozinha" />
+    <DATA ID="rep_codloja" VALUE="0457" />
     <DATA ID="rep_nomeempresa" VALUE="Marcenaria Exemplo Ltda" />
     <DATA ID="rep_enderecoempresa" VALUE="Av. Industrial, 1200" />
     <DATA ID="rep_telefoneempresa" VALUE="(48) 3333-4444" />
@@ -54,7 +57,11 @@
                   <EXTRAINFORMATION ID="NCM" TABLEVALUE="9403.40.00" TOTALVALUE="9403.40.00" />
                 </EXTRAINFORMATIONS>
                 <MARGINS>
-                  <ORDER UNIT="1595,00" TOTAL="1595,00" TOTALCOMPONENTS="0" />
+                  <ORDER UNIT="1595,00" TOTAL="1595,00" TOTALCOMPONENTS="0">
+                    <MARGIN ID="desc_1" DESCRIPTION="Desconto loja" OPERATOR="-" VALUE="-5" />
+                    <MARGIN ID="icms" DESCRIPTION="ICMS" OPERATOR="+" VALUE="12" />
+                    <MARGIN ID="IPI" DESCRIPTION="IPI" OPERATOR="+" VALUE="3,25" />
+                  </ORDER>
                   <BUDGET UNIT="2392,50" TOTAL="2392,50" TOTALCOMPONENTS="0" />
                 </MARGINS>
               </PRICE>
@@ -146,6 +153,7 @@
     <MARGINS>
       <ORDER VALUE="3878,60">
         <MARGIN ID="1" DESCRIPTION="Frete" VALUE="352,60" />
+        <MARGIN ID="IPI" DESCRIPTION="IPI" VALUE="126,06" />
       </ORDER>
       <BUDGET VALUE="5817,90">
         <MARGIN ID="2" DESCRIPTION="Margem loja" VALUE="1939,30" />

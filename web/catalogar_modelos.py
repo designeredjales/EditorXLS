@@ -77,6 +77,17 @@ DESCRICOES = {
     "Listagem.NovaPasta": ("Cópia da listagem encontrada numa subpasta \"Nova pasta\".", []),
     "parceiro_finotoc_detalhado": ("Pedido Finotoc detalhado: uma coluna para cada configuração da porta (espessura, face, cor, puxador, cava, iluminação, frisos…).", []),
 }
+DESCRICOES_PACOTE = {
+    ("SendTo Fabrica Electrolux Cata Tramontina", "Pedido"): ("TXT de pedido para a fábrica em registros numerados (EDI): cabeçalho com loja, cliente, descontos, ICMS, IPI e versão da biblioteca; itens com código do fornecedor pela família, dimensões editáveis e letra do puxador.",
+        ["Lê desconto e ICMS do primeiro item do projeto (assume o mesmo valor para todos)."]),
+    ("SendTo Fabrica Electrolux Cata Tramontina", "Listagem"): ("Mesmo TXT do Pedido, sem o preço total (versão para a listagem).", []),
+    ("SendTo Fabrica Electrolux Cata Tramontina", "Pedido_Fabrica_Geral"): ("TXT do pedido geral para a fábrica: só itens com PEDIDO_ESPECIAL = NAO.", ["Idêntico ao Pedido_Fabrica_Especiais exceto o filtro SIM/NAO."]),
+    ("SendTo Fabrica Electrolux Cata Tramontina", "Pedido_Fabrica_Especiais"): ("TXT do pedido de especiais: só itens com PEDIDO_ESPECIAL = SIM.", ["Idêntico ao Pedido_Fabrica_Geral exceto o filtro SIM/NAO."]),
+    ("SendTo Fabrica Electrolux Cata Tramontina", "Orcamento"): ("TXT simples do orçamento: número, quantidade, referência, descrição e preço com componentes.",
+        ["Quando o item não tem preço de orçamento, escreve 0.00 e 0,00 seguidos (valor duplicado)."]),
+    ("SendTo Fabrica Electrolux Cata Tramontina", "sendTo"): ("Enviar Para deste pacote: TXT de pedido, pedido geral, especiais, orçamento e listagem; XML bruto do orçamento; e-mail.",
+        ["A opção de e-mail aponta para Fabrica.xsl, que não veio neste pacote."]),
+}
 IDIOMA = {"pt": "PT", "pt-BR": "PT", "es": "ES", "en": "EN"}
 
 
@@ -172,7 +183,7 @@ def catalogar(raiz):
                 continue
             mm = re.search(r'<xsl:output[^>]*method="(\w+)"', texto)
             metodo = mm.group(1) if mm else ("config" if ext == ".xml" else "html")
-            desc, alertas = DESCRICOES.get(base, (None, []))
+            desc, alertas = DESCRICOES_PACOTE.get((nome_pacote, base)) or DESCRICOES.get(base, (None, []))
             if desc is None:
                 pm = re.match(r"^parceiro_(.+)$", base, re.I)
                 desc = (f"Orçamento/pedido do parceiro {pm.group(1).replace('_', ' ')}." if pm else
