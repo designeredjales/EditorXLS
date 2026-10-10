@@ -31,6 +31,37 @@ if libdir.is_dir():
 libblob = json.dumps(libs, ensure_ascii=False).replace("</", "<\\/")
 import catalogar_modelos
 models = {"modelos": [], "assets": []} if "--sem-modelos" in sys.argv else catalogar_modelos.catalogar(base / "modelos")
+# Dicionário pt -> es/en aprendido das versões de idioma do acervo (só pares que de fato mudam).
+def aprender_dicionario(pasta):
+    import re as _re, collections as _c, xml.etree.ElementTree as ET
+    XSLT = "{http://www.w3.org/1999/XSL/Transform}"
+    def textos(f):
+        try: raiz = ET.parse(f).getroot()
+        except Exception: return None
+        est, txt = [], []
+        for e in raiz.iter():
+            est.append(e.tag)
+            for t in (e.text, e.tail):
+                if t and t.strip() and _re.search(r"[A-Za-zÀ-ú]", t): txt.append(" ".join(t.split()))
+        return est, txt
+    grupos = _c.defaultdict(dict)
+    for f in pasta.glob("*/*.xsl"):
+        m = _re.match(r"^(.*?)\.(pt-BR|pt|es|en)\.xsl$", f.name, _re.I)
+        base, lang = (m.group(1), m.group(2).lower()[:2]) if m else (f.stem, "pt0")
+        grupos[(f.parent.name, base.lower())][lang] = f
+    pares = {"es": _c.defaultdict(_c.Counter), "en": _c.defaultdict(_c.Counter)}
+    for g in grupos.values():
+        src = g.get("pt") or g.get("pt0")
+        A = src and textos(src)
+        if not A: continue
+        for lang in ("es", "en"):
+            B = lang in g and textos(g[lang])
+            if not B or A[0] != B[0] or len(A[1]) != len(B[1]): continue
+            for a, b in zip(A[1], B[1]):
+                if a != b and len(a) < 200: pares[lang][a][b] += 1
+    return {lang: {a: c.most_common(1)[0][0] for a, c in d.items()} for lang, d in pares.items()}
+if "--sem-modelos" not in sys.argv: models["dicionario"] = aprender_dicionario(base / "modelos")
+
 # O acervo vai compactado (gzip + base64): cerca de 5 vezes menor. O navegador descompacta ao abrir.
 import base64, gzip
 modelblob = base64.b64encode(gzip.compress(json.dumps(models, ensure_ascii=False).encode("utf-8"), 9, mtime=0)).decode("ascii")

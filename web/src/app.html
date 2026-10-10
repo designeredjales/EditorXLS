@@ -505,12 +505,15 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
           <button class="btn small" id="btnHist" type="button" title="Versões, comparar e restaurar">Histórico</button>
           <button class="btn small" id="btnAI" type="button">Pedir à IA</button>
           <button class="btn small" id="btnSaveAs" type="button">Salvar como</button>
+          <button class="btn small" id="btnLang" type="button" title="Gerar a versão em espanhol ou inglês deste layout">Idiomas</button>
           <button class="btn small" id="btnPub" type="button" title="Gravar este layout na pasta do Promob mapeada, com backup">Publicar no Promob</button>
           <button class="btn small primary" id="btnSave" type="button">Salvar</button>
           <button class="btn small" id="btnExport" type="button" title="Salvar uma cópia no computador">Exportar</button>
           <button class="btn small" id="btnCopy" type="button">Copiar código</button>
         </div>
         <div class="pop" id="pubBox" hidden></div>
+        <div class="pop" id="langBox" hidden><span>Gerar a versão deste layout em</span><button class="btn small primary" type="button" data-lang="es">Espanhol (.es)</button><button class="btn small primary" type="button" data-lang="en">Inglês (.en)</button>
+          <span class="note">Usa o glossário de orçamento e as traduções das versões do acervo. O que faltar fica listado no painel.</span><button class="btn small ghost" type="button" data-pubcancel>Fechar</button></div>
         <div class="pop" id="saveAsBox" hidden>
           <span>Novo nome:</span><input id="saveAsName" type="text" value="MeuLayout.xsl">
           <button class="btn small primary" id="saveAsGo" type="button">Criar arquivo</button>
@@ -1144,7 +1147,7 @@ function analyzeInto(box) {
     }
     for (const [k, list] of byTpl) { const tg = k.startsWith("Template ") ? "tpl:" + k.slice(9) : "tpl:#main"; html += `<div class="sec" data-target="${esc(tg)}"><header><b>${esc(k)}</b><span class="mono">atributo ← campo</span><button class="addsec" type="button" data-addsec="${esc(tg)}" title="Inserir um código da biblioteca aqui">+ Código</button></header>${pickerHtml(tg)}${list.join("")}</div>`; }
   }
-  box.innerHTML = HH + html + aiBlock();
+  box.innerHTML = HH + tradHtml(state.xsl) + html + aiBlock();
   bindAi();
 }
 function jumpTo(sel, n) {
@@ -3131,6 +3134,7 @@ async function loadModels() {
     } else if (raw) MODELS_ERR = "Este navegador não abre o acervo compactado. Use Chrome, Edge ou Firefox atualizados.";
   } catch (e) { MODELS_ERR = "Não foi possível abrir o acervo de modelos: " + e.message; }
   MODELS = (m && m.modelos) || [];
+  if (m && m.dicionario) LANG_DICT = { es: m.dicionario.es || {}, en: m.dicionario.en || {} };
   ((m && m.assets) || []).forEach(a => addFile({ name: a.name, path: a.path, text: a.text, orig: a.text, enc: "utf-8", origin: "asset" }));
 }
 let MODELS_ERR = "";
@@ -3492,6 +3496,8 @@ function bindAudit() {
   $("#auList").addEventListener("click", e => { const b = e.target.closest("[data-aact]"); if (b) audAction(b.closest(".aurow").dataset.akey, b.dataset.aact); });
   $("#auFixAll").addEventListener("click", audFixAll);
   $("#auReport").addEventListener("click", audReport);
+  $("#btnLang").addEventListener("click", () => { if (!state.xsl) { toast("Abra um layout antes."); return; } $("#langBox").hidden = !$("#langBox").hidden; });
+  $("#langBox").addEventListener("click", e => { const b = e.target.closest("[data-lang]"); if (b) { $("#langBox").hidden = true; makeLangVersion(b.dataset.lang); } });
   $("#btnPub").addEventListener("click", () => { if (!state.xsl) { toast("Abra um layout antes."); return; } openPubBox($("#pubBox"), "cur", state.xsl.name); });
   $("#pgPub").addEventListener("click", () => openPubBox($("#pgPubBox"), "pg", null));
   document.addEventListener("click", e => {
@@ -3500,6 +3506,7 @@ function bindAudit() {
   });
   $("#inspect").addEventListener("click", e => {
     const sa = e.target.closest("[data-stadd]"); if (sa) { sendToAdd(sa.closest(".stform")); return; }
+    if (e.target.closest("[data-trai]")) { tradWithAi(); return; }
     const g = e.target.closest("[data-hgo]"); if (g) { goLine(+g.dataset.hgo); return; }
     const f = e.target.closest("[data-hfix]"); if (f) { fixCurrent(+f.dataset.hfix); return; }
     if (e.target.closest("[data-hfixall]")) fixCurrent("all");
@@ -3851,8 +3858,110 @@ function sendToAdd(box) {
   toast(`Opção "${desc}" incluída. Confira e clique em Salvar.`);
 }
 
+/* ---------- Versões de idioma: um layout em português gera as versões .es e .en ---------- */
+// Glossário de orçamento moveleiro (tem prioridade); depois vêm os pares aprendidos das versões do acervo.
+const GLOSS = {
+  "Dados do cliente": ["Datos del cliente", "Customer data"], "Dados da loja": ["Datos de la tienda", "Store data"], "Dados do parceiro": ["Datos del proveedor", "Partner data"],
+  "Nome": ["Nombre", "Name"], "Endereço": ["Dirección", "Address"], "End. Entrega": ["Dirección de entrega", "Delivery address"], "Endereço de entrega": ["Dirección de entrega", "Delivery address"],
+  "Bairro": ["Barrio", "District"], "Cidade": ["Ciudad", "City"], "Estado": ["Estado", "State"], "UF": ["Provincia", "State"], "CEP": ["Código postal", "ZIP code"],
+  "Telefone": ["Teléfono", "Phone"], "Fone": ["Teléfono", "Phone"], "Celular": ["Celular", "Mobile"], "Contato": ["Contacto", "Contact"], "Website": ["Sitio web", "Website"], "Site": ["Sitio web", "Website"],
+  "CPF": ["Documento", "ID"], "CNPJ": ["CUIT", "Tax ID"], "CPF/CNPJ": ["Documento", "Tax ID"], "Data": ["Fecha", "Date"], "Hora": ["Hora", "Time"],
+  "Orçamento": ["Presupuesto", "Quote"], "Pedido": ["Pedido", "Order"], "Listagem": ["Listado", "List"], "Projeto": ["Proyecto", "Project"], "Cliente": ["Cliente", "Customer"], "Loja": ["Tienda", "Store"], "Vendedor": ["Vendedor", "Salesperson"],
+  "Ambiente": ["Ambiente", "Room"], "Categoria": ["Categoría", "Category"], "Item": ["Ítem", "Item"], "Quantidade": ["Cantidad", "Quantity"], "Qtd": ["Cant.", "Qty"], "Qtde": ["Cant.", "Qty"], "Unidade": ["Unidad", "Unit"], "Un": ["Un", "Unit"],
+  "Referência": ["Referencia", "Reference"], "Descrição": ["Descripción", "Description"], "Dimensões": ["Dimensiones", "Dimensions"], "Largura": ["Ancho", "Width"], "Altura": ["Alto", "Height"], "Profundidade": ["Profundidad", "Depth"],
+  "Preço": ["Precio", "Price"], "Preço unitário": ["Precio unitario", "Unit price"], "Preço total": ["Precio total", "Total price"], "Valor": ["Valor", "Amount"], "Valor total": ["Valor total", "Total amount"],
+  "Total": ["Total", "Total"], "Subtotal": ["Subtotal", "Subtotal"], "Total final": ["Total final", "Grand total"], "Total geral": ["Total general", "Grand total"], "Desconto": ["Descuento", "Discount"],
+  "Condições de pagamento": ["Condiciones de pago", "Payment terms"], "Forma de pagamento": ["Forma de pago", "Payment method"], "Entrada": ["Anticipo", "Down payment"], "Entradas diferenciadas": ["Anticipos", "Down payments"], "Parcelas": ["Cuotas", "Installments"],
+  "Observações": ["Observaciones", "Notes"], "Observação": ["Observación", "Note"], "Assinatura do cliente": ["Firma del cliente", "Customer signature"], "Assinatura Cliente": ["Firma del cliente", "Customer signature"], "Assinatura": ["Firma", "Signature"],
+  "Peso": ["Peso", "Weight"], "Peso total": ["Peso total", "Total weight"], "Cor": ["Color", "Color"], "Acabamento": ["Acabado", "Finish"], "Material": ["Material", "Material"], "Matéria Prima": ["Materia prima", "Raw material"], "Espessura": ["Espesor", "Thickness"],
+  "Repetição": ["Repetición", "Repetition"], "Página": ["Página", "Page"], "Validade": ["Validez", "Validity"], "Prazo de entrega": ["Plazo de entrega", "Delivery time"], "Total ferragens": ["Total herrajes", "Hardware total"], "Total modulação": ["Total modulación", "Modules total"],
+  "Consultor de Negócios": ["Asesor comercial", "Sales consultant"], "E-mail": ["Correo electrónico", "E-mail"], "Email": ["Correo electrónico", "E-mail"], "Preço Tabela": ["Precio de lista", "List price"], "Código": ["Código", "Code"], "Fornecedor": ["Proveedor", "Supplier"], "Parceiro": ["Proveedor", "Partner"]
+};
+let LANG_DICT = { es: {}, en: {} };
+const LANG_NAME = { es: "espanhol", en: "inglês" };
+function trLookup(core, lang) {
+  const k = lang === "es" ? 0 : 1, m = core.match(/^(.*?)(\s*:)?$/), key = m[1], colon = m[2] || "";
+  if (GLOSS[key]) return GLOSS[key][k] + colon;
+  if (LANG_DICT[lang][core]) return LANG_DICT[lang][core];
+  if (colon && LANG_DICT[lang][key + ":"]) return LANG_DICT[lang][key + ":"];
+  const g = Object.keys(GLOSS).find(x => x.toLowerCase() === key.toLowerCase());
+  if (g) return GLOSS[g][k] + colon;
+  // Títulos como "Parceiro Accord" ou "Pedido Fábrica": traduz a primeira palavra e mantém o nome.
+  const t = key.match(/^(Parceiro|Pedido|Orçamento|Listagem|Projeto)\s+(.+)$/);
+  return t ? GLOSS[t[1]][k] + " " + t[2] + colon : null;
+}
+const needsTr = core => /[A-Za-zÀ-ú]{2,}/.test(core) && !/^(https?:|www\.)|@\S+\.\S+|^[\w.%-]+\.(png|jpe?g|gif|css|xsl)$/i.test(core) && !/^\$|^%/.test(core);
+// Percorre só o texto entre marcações (aspas dentro das marcações, comentários e CDATA respeitados).
+// fn recebe o texto e a marcação-pai; texto de <style>, <script> e valores de variáveis/parâmetros não é traduzido.
+function mapTexts(text, fn) {
+  let out = "", i = 0; const stack = [];
+  while (i < text.length) {
+    const lt = text.indexOf("<", i), seg = lt < 0 ? text.slice(i) : text.slice(i, lt), parent = stack[stack.length - 1] || "";
+    out += /^(style|script|xsl:variable|xsl:param|xsl:with-param|xsl:sort|xsl:key)$/i.test(parent) ? seg : fn(seg, parent);
+    if (lt < 0) break;
+    if (text.startsWith("<!--", lt)) { const e = text.indexOf("-->", lt), end = e < 0 ? text.length : e + 3; out += text.slice(lt, end); i = end; continue; }
+    if (text.startsWith("<![CDATA[", lt)) { const e = text.indexOf("]]>", lt), end = e < 0 ? text.length : e + 3; out += text.slice(lt, end); i = end; continue; }
+    let j = lt + 1, q = "";
+    while (j < text.length) { const c = text[j]; if (q) { if (c === q) q = ""; } else if (c === '"' || c === "'") q = c; else if (c === ">") break; j++; }
+    const tag = text.slice(lt, j + 1), nm = (tag.match(/^<\/?([\w:.-]+)/) || [])[1] || "";
+    if (nm && !/^<[?!]/.test(tag)) {
+      if (tag[1] === "/") { const k = stack.lastIndexOf(nm); if (k >= 0) stack.length = k; }
+      else if (!/\/\s*>$/.test(tag)) stack.push(nm);
+    }
+    out += tag; i = j + 1;
+  }
+  return out;
+}
+function translateLayout(text, lang, extra = {}, only = false) {
+  const missing = new Set(); let n = 0;
+  const out = mapTexts(text, seg => {
+    if (!seg.trim()) return seg;
+    const raw = xdec(seg), core = raw.replace(/\s+/g, " ").trim();
+    if (!needsTr(core)) return seg;
+    const tr = extra[core] || (only ? null : trLookup(core, lang));
+    if (!tr && only) return seg;
+    if (!tr) { missing.add(core); return seg; }
+    if (tr === core) return seg;
+    n++;
+    const lead = raw.match(/^\s*/)[0], trail = raw.match(/\s*$/)[0];
+    return xenc(lead + tr + trail).replace(/>/g, "&gt;");
+  });
+  return { text: out, n, missing: [...missing] };
+}
+function langName(name, lang) { return name.replace(/(\.(pt-BR|pt|es|en))?(\.xslt?)$/i, `.${lang}$3`); }
+async function makeLangVersion(lang) {
+  const f = state.xsl; if (!f) { toast("Abra um layout antes."); return; }
+  const r = translateLayout(cm.getValue(), lang), name = langName(f.name, lang);
+  let nf = state.files.find(x => x.langOf === f.id && x.lang === lang);
+  if (nf) { nf.text = r.text; nf.dirty = true; } else nf = addFile({ name, path: name, text: r.text, orig: null, enc: f.enc || "utf-8", origin: "import", dirty: true, langOf: f.id, lang });
+  nf.trad = { lang, missing: r.missing };
+  await openXsl(nf);
+  toast(`Versão em ${LANG_NAME[lang]} criada: ${r.n} texto(s) traduzido(s)${r.missing.length ? `, ${r.missing.length} sem tradução (veja no painel)` : ""}. Use Salvar como ou Publicar no Promob.`);
+}
+function tradHtml(f) {
+  if (!f || !f.trad || !f.trad.missing.length) return "";
+  const can = AI.ns && !AI.off;
+  return `<div class="sec"><header><b>Textos sem tradução (${f.trad.missing.length})</b><span class="mono">${esc(LANG_NAME[f.trad.lang])}</span>${can ? '<button class="addsec" type="button" data-trai>Traduzir com o Claude</button>' : ""}</header>
+    ${f.trad.missing.slice(0, 40).map(t => `<div class="frow" style="cursor:default"><span class="lb">${esc(t)}</span></div>`).join("")}
+    <div class="frow" style="cursor:default"><span class="note">${can ? "O Claude traduz só estes textos; o resto do arquivo não muda." : "Traduza direto no código; no editor aberto pelo claude.ai, o Claude faz isso por você."}</span></div></div>`;
+}
+async function tradWithAi() {
+  const f = state.xsl; if (!f || !f.trad || !AI.ns) return;
+  const lang = f.trad.lang, list = f.trad.missing.slice(0, 120);
+  toast("Traduzindo com o Claude…");
+  try {
+    const map = await AI.ns.json(`Traduza do português para o ${LANG_NAME[lang]} os textos abaixo, que aparecem num orçamento ou pedido de móveis planejados (marcenaria). Mantenha nomes próprios, marcas, códigos, e-mails e telefones como estão. Responda só com um objeto JSON no formato {"texto original": "tradução"}, com todas as chaves exatamente como foram dadas.\n\n${JSON.stringify(list)}`, { modelTier: "quick" });
+    if (!map || typeof map !== "object") throw { code: "invalid_json" };
+    const extra = {}; for (const k of list) if (typeof map[k] === "string" && map[k].trim()) extra[k] = map[k].trim();
+    const before = cm.getValue(), r = translateLayout(before, lang, extra, true), rest = f.trad.missing.filter(k => !extra[k]);
+    await histAdd(f, "antes", before, "antes da tradução pelo Claude");
+    f.trad = { lang, missing: rest }; editorReplaceAll(r.text);
+    toast(`${Object.keys(extra).length} texto(s) traduzido(s) pelo Claude${rest.length ? `; ${rest.length} ainda sem tradução` : ""}. Confira em Visualizar.`);
+  } catch (e) { toast(AI_ERR[e && e.code] || "Não foi possível traduzir agora. Tente de novo."); if (e && /^(not_granted|sampling_disabled|not_declared)$/.test(e.code)) AI.off = true; }
+}
+
 /* Ganchos para os testes automáticos (web/tests). */
-window.EditorXSL = { audit: auditXsl, applyFixes, interpretXsl, generate, models: () => MODELS, builtin: () => BUILTIN, partnerInfo, partnerApply, canonDist, mapFolder, publishText };
+window.EditorXSL = { audit: auditXsl, applyFixes, interpretXsl, generate, models: () => MODELS, builtin: () => BUILTIN, partnerInfo, partnerApply, canonDist, mapFolder, publishText, translateLayout };
 
 /* ---------- Início ---------- */
 async function start() {

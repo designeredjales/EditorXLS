@@ -151,6 +151,17 @@ function chromiumPath() {
     assert(!codes(await audit(g, "Parceiro_Diametro.xsl")).length, "o gerado tem problema na auditoria");
   });
 
+  console.log("\nVersões de idioma");
+  await test("traduz textos do layout sem tocar em código nem em valores de variáveis", async () => {
+    const src = fx("parceiro_base.xsl").replace("<xsl:template match=\"LISTING\">", "<xsl:template match=\"LISTING\"><xsl:variable name=\"modo\">Orçamento</xsl:variable>");
+    const r = await page.evaluate(([t]) => { const es = window.EditorXSL.translateLayout(t, "es"), en = window.EditorXSL.translateLayout(t, "en"); return { es: es.text, en: en.text, miss: es.missing }; }, [src]);
+    for (const [k, v] of [["Datos del proveedor", r.es], ["Nombre: ", r.es], ["Teléfono: ", r.es], ["<title>Proveedor Exemplo</title>", r.es], ["Partner data", r.en], ["Phone: ", r.en]]) assert(v.includes(k), `faltou "${k}"`);
+    assert(r.es.includes('<xsl:variable name="modo">Orçamento</xsl:variable>'), "traduziu o valor de uma variável");
+    assert(r.es.includes("CUSTOMERSDATA/DATA[@ID='nomecliente']/@VALUE") && r.es.includes("'###.##0,00', 'formato'"), "mexeu em código");
+    const o = await transform(r.es, SAMPLE); assert(!o.error && /Datos del proveedor/.test(o.text) && /Mariana/.test(o.text), o.error || "não renderiza");
+    assert(r.miss.includes("Exemplo Ferragens"), "nomes próprios deveriam ficar listados: " + r.miss);
+  });
+
   console.log("\nInterface");
   await test("arquivo com erro: status, Saúde do arquivo e trava do Salvar", async () => {
     await page.setInputFiles("#inFiles", path.join(FIX, "template_falta.xsl")); await page.waitForTimeout(500);
