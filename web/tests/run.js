@@ -51,9 +51,9 @@ function chromiumPath() {
   const build = (xsl, name) => page.evaluate(([t, n]) => { const E = window.EditorXSL; const r = E.interpretXsl(t, n); return { types: r.model.blocks.map(b => b.type), pv: E.generate(r.model, true), full: E.generate(r.model, false) }; }, [xsl, name]);
 
   console.log("\nPágina");
-  await test("abre sem erro de script e com as 8 abas", async () => {
+  await test("abre sem erro de script e com as 9 abas", async () => {
     assert(!pageErrors.length, "Erros: " + pageErrors.join(" | "));
-    const n = await page.$$eval(".tab", a => a.length); assert(n === 8, `abas: ${n}`);
+    const n = await page.$$eval(".tab", a => a.length); assert(n === 9, `abas: ${n}`);
   });
   await test("todos os códigos da biblioteca são XML válido", async () => {
     const bad = await page.evaluate(() => {
@@ -123,6 +123,26 @@ function chromiumPath() {
     const o = await transform((await build(t, "css.xsl")).pv, SAMPLE); assert(!o.error, o.error);
   });
 
+  console.log("\nGerador de parceiros");
+  await test("lê a ficha do parceiro (dados, logo, cor, CSS, moeda)", async () => {
+    const i = await page.evaluate(t => { const { _rows, _logo, _ti, ...f } = window.EditorXSL.partnerInfo(t); return f; }, fx("parceiro_base.xsl"));
+    assert(i.titulo === "Parceiro Exemplo" && i.logo.endsWith("parceiro_exemplo.png") && i.largura === "100" && i.cor === "#556982" && i.moeda === "R$" && /formatacao\.css$/.test(i.css), JSON.stringify(i));
+    assert(JSON.stringify(i.campos) === JSON.stringify([{ label: "Nome", value: "Exemplo Ferragens" }, { label: "Telefone", value: "(48) 3000-0000" }]), JSON.stringify(i.campos));
+  });
+  await test("regerar com a própria ficha não muda nada", async () => {
+    const d = await page.evaluate(t => { const E = window.EditorXSL, { _rows, _logo, _ti, ...f } = E.partnerInfo(t); return E.canonDist(E.partnerApply(t, f), t); }, fx("parceiro_base.xsl"));
+    assert(d === 0, `${d} diferença(s)`);
+  });
+  await test("gera parceiro novo com outros dados, cor e logo", async () => {
+    const g = await page.evaluate(t => window.EditorXSL.partnerApply(t, { titulo: "Parceiro Diâmetro", logo: "%pastasistema%/identity/diametro.png", largura: "120", altura: "40", cor: "#0e6e6a", css: "", moeda: "R$",
+      campos: [{ label: "Nome", value: "Diâmetro & Cia <Design>" }, { label: "E-mail", value: "contato@diametro.com.br" }, { label: "Site", value: "diametro.com.br" }] }), fx("parceiro_base.xsl"));
+    const o = await transform(g, SAMPLE);
+    assert(!o.error, o.error);
+    assert(o.text.includes("Diâmetro & Cia <Design>") && o.text.includes("contato@diametro.com.br") && /Mariana/.test(o.text), o.text.slice(0, 300));
+    assert(/diametro\.png" width="120" height="40"/.test(g) && !/#556982/i.test(g) && /#0e6e6a/.test(g) && !/Exemplo Ferragens/.test(g), "logo, cor ou dados antigos não foram trocados");
+    assert(!codes(await audit(g, "Parceiro_Diametro.xsl")).length, "o gerado tem problema na auditoria");
+  });
+
   console.log("\nInterface");
   await test("arquivo com erro: status, Saúde do arquivo e trava do Salvar", async () => {
     await page.setInputFiles("#inFiles", path.join(FIX, "template_falta.xsl")); await page.waitForTimeout(500);
@@ -150,6 +170,15 @@ function chromiumPath() {
   const nModels = await page.evaluate(() => window.EditorXSL.models().length);
   if (nModels) {
     console.log(`\nAcervo (${nModels} modelos)`);
+    await test("aba Parceiros importa o acervo e gera os marcados num .zip", async () => {
+      await page.evaluate(() => localStorage.removeItem("exsl.parceiros"));
+      await page.click('[data-tab="partners"]'); await page.click("#pgImport"); await page.waitForFunction(() => /parceiros importados/.test(document.querySelector("#toast").textContent), null, { timeout: 15000 });
+      const n = await page.$$eval(".pgt tbody tr", a => a.length), pad = await page.$$eval(".pgt .sevc", a => a.filter(x => x.textContent === "Padrão").length);
+      assert(n > 50 && pad > 20, `${n} parceiros, ${pad} padrão`);
+      const [d] = await Promise.all([page.waitForEvent("download"), page.click("#pgGenAll")]);
+      assert(d.suggestedFilename() === "parceiros_gerados.zip", d.suggestedFilename());
+      await page.evaluate(() => localStorage.removeItem("exsl.parceiros"));
+    });
     await test("todo modelo de relatório sem erro de auditoria abre e renderiza no construtor", async () => {
       const r = await page.evaluate(xml => {
         const E = window.EditorXSL, xd = new DOMParser().parseFromString(xml, "application/xml"), falhas = [];

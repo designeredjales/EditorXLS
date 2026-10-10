@@ -16,6 +16,7 @@ Editor de layouts XSL do Promob (orçamento, listagem e integração ERP), em um
 - **+ Código nas seções:** insere um trecho da biblioteca ou um campo direto na seção escolhida do layout.
 - **Comparar (estilo WinMerge):** dois arquivos lado a lado com linhas alinhadas, destaque do trecho alterado, navegação entre diferenças, cópia de blocos (→ ←), ignorar espaços, só diferenças, e aplicar o resultado no arquivo. Modo Pacotes compara dois conjuntos de modelos arquivo por arquivo.
 
+- **Parceiros (gerador):** cada parceiro vira uma ficha (arquivo, título, logo, cor, CSS, moeda e dados de contato) e o layout é gerado de uma base (Accord, com seções do Promob, ou Adipar/Leo Madeiras, por templates, ou o XSL aberto no editor). Importa o acervo e classifica cada parceiro em Padrão (sai igual da base), Quase igual ou Personalizado; edita por planilha (.csv); compara o gerado com o original; gera os marcados num .zip. Alterar a base e gerar de novo atualiza todos.
 - **Auditoria:** confere cada layout antes de ele chegar ao Promob: erro de estrutura, template, variável, chave ou formato que faltam, teste sem `$`, `sum()` que dá NaN com vírgula, `parent::node()` fixo, senha em texto aberto e arquivo citado que não existe. Correções seguras com um clique, em lote (.zip) e relatório (.csv). O Salvar pede confirmação quando o arquivo tem erro.
 
 Os modelos ficam em `web/modelos/<pacote>/` (fora do git) e são catalogados por `web/catalogar_modelos.py` durante o build.

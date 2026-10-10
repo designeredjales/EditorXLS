@@ -288,6 +288,24 @@ pre.diff .add{background:var(--ok-soft);color:var(--ok)} pre.diff .del{backgroun
 .aurow>header .sp{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
 #auRules .fchip{display:inline-flex;align-items:center}
 
+/* ---------- Parceiros ---------- */
+.pgwrap{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:980px){.pgwrap{grid-template-columns:minmax(0,1fr)}}
+.pglist{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:70vh}
+.pgt{width:100%;border-collapse:collapse;font-size:12.5px}
+.pgt th{position:sticky;top:0;background:var(--sunk);text-align:left;padding:6px 8px;font-weight:600;border-bottom:1px solid var(--line);z-index:1}
+.pgt td{padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
+.pgt tr[data-pg]{cursor:pointer} .pgt tr[data-pg]:hover,.pgt tr.on{background:var(--accent-soft)}
+.pgt b{overflow-wrap:anywhere;font-weight:600}
+.pgform{border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:9px}
+.pfhead{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.pfhead h3{font-family:var(--display);font-weight:600;font-size:18px;margin:0;overflow-wrap:anywhere;min-width:0}
+.pf{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted);min-width:0}
+.pf input,.pf select{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:5px 8px;color:var(--fg);font-size:13px;width:100%;min-width:0}
+.pgform .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.crow{display:flex;gap:6px} .crow input[type=color]{width:42px;padding:2px;flex:none}
+.pcampo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr) auto;gap:6px;margin-top:4px}
+
 /* ---------- Construtor visual ---------- */
 .bwrap{flex:1;min-height:0;display:grid;grid-template-columns:200px minmax(0,1fr) 320px}
 .palette{border-right:1px solid var(--line);overflow:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
@@ -385,6 +403,7 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" aria-selected="true" data-tab="builder" type="button">Construtor visual</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="models" type="button">Modelos</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="partners" type="button">Parceiros</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="editor" type="button">Editor de código</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="compare" type="button">Comparar</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="audit" type="button">Auditoria</button>
@@ -430,6 +449,25 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
             <input class="search" id="mdSearch" type="search" placeholder="Buscar por nome, parceiro, campo ou referência">
           </div>
           <div id="mdList"></div>
+        </div>
+      </section>
+
+      <section class="pane" data-pane="partners" hidden>
+        <div class="lib">
+          <div class="mhead"><h3>Gerador de layouts de parceiro</h3><span class="note" id="pgSummary"></span></div>
+          <p class="note">Uma base e uma ficha por parceiro (nome, logo, cor e contatos). Mude a base uma vez e gere todos de novo, em vez de editar arquivo por arquivo.</p>
+          <div class="mtools">
+            <label class="note" for="pgBase">Base para novos:</label><select class="sel" id="pgBase"></select>
+            <button class="btn small" id="pgOpenBase" type="button">Abrir a base no editor</button>
+            <button class="btn small" id="pgImport" type="button">Importar do acervo</button>
+            <button class="btn small" id="pgAdd" type="button">+ Novo parceiro</button>
+            <label class="btn small" for="pgCsvIn">Importar planilha</label><input id="pgCsvIn" type="file" accept=".csv,.txt" hidden>
+            <button class="btn small" id="pgCsvOut" type="button">Exportar planilha</button>
+            <button class="btn small ghost" id="pgClear" type="button">Limpar lista</button>
+            <button class="btn small primary" id="pgGenAll" type="button">Gerar marcados (.zip)</button>
+          </div>
+          <input class="search" id="pgSearch" type="search" placeholder="Filtrar parceiros">
+          <div class="pgwrap"><div class="pglist" id="pgList"></div><div class="pgform" id="pgForm"></div></div>
         </div>
       </section>
 
@@ -1433,6 +1471,7 @@ function showTab(name) {
   if (name === "lib") renderLib();
   if (name === "builder" && BD.model) renderCanvas();
   if (name === "audit") renderAudit();
+  if (name === "partners") renderPartners();
   if (name === "compare") fillCmpSelects().then(() => CMP.mode === "packs" ? renderPacks() : runCompare());
 }
 
@@ -3172,8 +3211,246 @@ function bindAudit() {
   });
 }
 
+/* ---------- Gerador de layouts de parceiro: uma base + uma ficha por parceiro ---------- */
+const PG_ROW = /<tr>\s*<td\b[^>]*>\s*<b>([^<]*?)<\/b>([^<]*?)<\/td>\s*<\/tr>/gd;
+const xdec = s => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#(\d+);/g, (m, n) => String.fromCharCode(+n)).replace(/&amp;/g, "&");
+const xenc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+const tagAttr = (tag, a) => { const m = tag.match(new RegExp(`\\b${a}\\s*=\\s*"([^"]*)"`, "i")); return m ? m[1] : ""; };
+// Lê o bloco "Dados do parceiro" e os parâmetros visuais de um layout de parceiro.
+function partnerInfo(t) {
+  if (!t) return null;
+  const i = t.toLowerCase().indexOf("dados do parceiro"); if (i < 0) return null;
+  const ts = t.lastIndexOf("<table", i), te = t.indexOf("</table>", i); if (ts < 0 || te < 0) return null;
+  const rows = []; PG_ROW.lastIndex = ts; let m;
+  while ((m = PG_ROW.exec(t)) && m.index < te) rows.push(m);
+  if (!rows.length) return null;
+  const imgs = [...t.slice(0, i).matchAll(/<img\b[^>]*>/gi)], lg = imgs[imgs.length - 1];
+  const td = t.lastIndexOf("<td", i), tdTag = t.slice(td, t.indexOf(">", td) + 1);
+  const col = tdTag.match(/color\s*:\s*(#[0-9a-f]{3,6})/i), css = t.match(/<link\b[^>]*href\s*=\s*"([^"]*\.css)"/i), moeda = t.match(/<b>\s*(R\$|US\$|\$|€)\s/), ti = t.match(/<title>([\s\S]*?)<\/title>/);
+  return {
+    titulo: ti ? xdec(ti[1].replace(/\s+/g, " ").trim()) : "", css: css ? css[1] : "", moeda: moeda ? moeda[1] : "", cor: col ? col[1] : "",
+    logo: lg ? tagAttr(lg[0], "src") : "", largura: lg ? tagAttr(lg[0], "width") : "", altura: lg ? tagAttr(lg[0], "height") : "",
+    campos: rows.map(r => ({ label: xdec(r[1].replace(/\s+/g, " ").trim().replace(/:$/, "").trim()), value: xdec(r[2].replace(/\s+/g, " ").trim()) })),
+    _rows: rows, _logo: lg, _ti: ti
+  };
+}
+function partnerApply(base, f) {
+  const B = partnerInfo(base); if (!B) throw new Error("A base não tem o bloco \"Dados do parceiro\".");
+  const r0 = B._rows[0], tpl = r0[0], [g1s, g1e] = r0.indices[1].map(x => x - r0.index), [g2s, g2e] = r0.indices[2].map(x => x - r0.index);
+  const gap = B._rows.length > 1 ? base.slice(r0.index + r0[0].length, B._rows[1].index) : "\n";
+  const rows = f.campos.filter(c => c.label || c.value).map(c => tpl.slice(0, g1s) + xenc(c.label) + ": " + tpl.slice(g1e, g2s) + xenc(c.value) + tpl.slice(g2e)).join(gap);
+  const last = B._rows[B._rows.length - 1];
+  let out = base.slice(0, r0.index) + rows + base.slice(last.index + last[0].length);
+  if (B._logo) {
+    let tag = B._logo[0].replace(/\bsrc\s*=\s*"[^"]*"/i, `src="${f.logo || ""}"`);
+    for (const [a, v] of [["width", f.largura], ["height", f.altura]]) {
+      if (new RegExp(`\\b${a}\\s*=`, "i").test(tag)) tag = tag.replace(new RegExp(`\\s${a}\\s*=\\s*"[^"]*"`, "i"), v ? ` ${a}="${v}"` : "");
+      else if (v) tag = tag.replace(/^<img/i, `<img ${a}="${v}"`);
+    }
+    out = out.slice(0, B._logo.index) + tag + out.slice(B._logo.index + B._logo[0].length);
+  }
+  if (B._ti) out = out.replace(/<title>[\s\S]*?<\/title>/, `<title>${xenc(f.titulo || "")}</title>`);
+  if (B.cor && f.cor && B.cor.toLowerCase() !== f.cor.toLowerCase()) out = out.replace(new RegExp(reEsc(B.cor), "gi"), f.cor);
+  if (B.css && f.css && B.css !== f.css) out = out.replace(B.css, f.css);
+  if (B.moeda && f.moeda && B.moeda !== f.moeda) out = out.replace(new RegExp(`(<b>\\s*)${reEsc(B.moeda)}(\\s)`, "g"), (m, a, b) => a + f.moeda + b);
+  return out;
+}
+// Comparação que ignora ordem de atributos, ordem do CSS, espaços e comentários.
+function canonToks(text) {
+  const { doc, error } = parseXml(text);
+  if (error) return text.replace(/\s+/g, " ").split(">");
+  const out = [], st = v => v.split(";").map(p => p.trim().toLowerCase().replace(/\s+/g, "")).filter(Boolean).sort().join(";");
+  const walk = n => {
+    for (const c of n.childNodes) {
+      if (c.nodeType === 3 || c.nodeType === 4) { const t = c.nodeValue.replace(/\s+/g, " ").trim().replace(/:/g, ""); if (t) out.push("T:" + t); }
+      else if (c.nodeType === 1) {
+        out.push("<" + c.nodeName + " " + [...c.attributes].filter(a => !/^xmlns/.test(a.name)).map(a => a.name + "=" + (a.name.toLowerCase() === "style" ? st(a.value) : a.value.replace(/\s+/g, " ").trim())).sort().join(" "));
+        walk(c); out.push("</" + c.nodeName);
+      }
+    }
+  };
+  walk(doc); return out;
+}
+function canonDist(a, b) { const d = lineDiff(canonToks(a).join("\n"), canonToks(b).join("\n")); return d.add + d.del; }
+
+const PG = { rows: [], sel: -1, base: "accord", q: "" };
+const PG_BASES = [{ key: "accord", re: /^Parceiro_Accord\.xsl$/i, label: "Com seções do Promob (base Accord)" }, { key: "adipar", re: /^Parceiro_Adipar\.xsl$/i, label: "Por templates (base Adipar / Leo Madeiras)" }];
+const pgBaseModel = key => { const b = PG_BASES.find(x => x.key === key); return b ? MODELS.filter(m => b.re.test(m.name)).pop() : null; };
+function pgBaseText(key) {
+  if (key === "editor") return state.xsl && partnerInfo(cm.getValue()) ? cm.getValue() : null;
+  const m = pgBaseModel(key); if (!m) return null;
+  const f = state.files.find(x => x.modelId === m.id);
+  return f ? (f === state.xsl ? cm.getValue() : f.text) : m.text;
+}
+const pgBaseLabel = key => key === "editor" ? "XSL aberto no editor" : (PG_BASES.find(b => b.key === key) || {}).label || key;
+function pgBasesAvail() { return PG_BASES.filter(b => pgBaseModel(b.key)).map(b => b.key).concat("editor"); }
+function pgSave() { lsSet("exsl.parceiros", { base: PG.base, rows: PG.rows.map(r => ({ ...r })) }); }
+function pgLoad() { const v = lsGet("exsl.parceiros", null); if (v && Array.isArray(v.rows)) { PG.rows = v.rows; PG.base = v.base || PG.base; } }
+const pgStatus = r => r.dist == null ? { c: "ok", t: "Novo" } : r.dist <= 2 ? { c: "ok", t: "Padrão" } : r.dist <= 10 ? { c: "alerta", t: `Quase igual · ${r.dist} dif.` } : { c: "erro", t: `Personalizado · ${r.dist} dif.` };
+const pgSlug = s => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
+function pgNew(name) {
+  const B = partnerInfo(pgBaseText(PG.base) || "") || { campos: [{ label: "Nome" }, { label: "Telefone" }, { label: "E-mail" }, { label: "Website" }] };
+  return { arquivo: `Parceiro_${pgSlug(name) || "Novo"}.xsl`, titulo: `Parceiro ${name || ""}`.trim(), base: PG.base, logo: `%pastasistema%/identity/parceiro_${pgSlug(name) || "novo"}.png`, largura: B.largura || "100", altura: B.altura || "100", cor: B.cor || "", css: B.css || "", moeda: B.moeda || "",
+    campos: B.campos.map(c => ({ label: c.label, value: /^nome$/i.test(c.label) ? name || "" : "" })), incluir: true, dist: null, origem: "", auto: true };
+}
+async function pgImport() {
+  toast("Importando os parceiros e comparando com as bases…"); await new Promise(r => setTimeout(r, 40));
+  const avail = pgBasesAvail().filter(k => k !== "editor"); if (!avail.length) { toast("Esta versão não tem as bases de parceiro embutidas. Abra um layout de parceiro no editor e use a base \"XSL aberto no editor\"."); return; }
+  const bases = avail.map(k => [k, pgBaseText(k)]), have = new Set(PG.rows.map(r => r.origem).filter(Boolean));
+  let n = 0;
+  for (const g of modelGroups()) {
+    const m = g[0]; if (m.tipo !== "HTML" || !/^parceiro/i.test(m.base) || have.has(m.id)) continue;
+    const inf = partnerInfo(m.text); if (!inf) continue;
+    let best = null;
+    for (const [k, bt] of bases) { try { const d = canonDist(partnerApply(bt, inf), m.text); if (!best || d < best.d) best = { k, d }; } catch {} }
+    if (!best) continue;
+    const { _rows, _logo, _ti, ...ficha } = inf;
+    PG.rows.push({ arquivo: m.name, ...ficha, base: best.k, incluir: best.d <= 10, dist: best.d, origem: m.id, pacote: m.pacote }); n++;
+  }
+  PG.rows.sort((a, b) => a.arquivo.localeCompare(b.arquivo)); pgSave(); renderPartners();
+  const s = PG.rows.filter(r => r.origem), pad = s.filter(r => r.dist <= 2).length, quase = s.filter(r => r.dist > 2 && r.dist <= 10).length;
+  toast(n ? `${n} parceiros importados: ${pad} saem iguais da base, ${quase} quase iguais e ${n - pad - quase} personalizados (desmarcados).` : "Nenhum parceiro novo para importar.");
+}
+function pgGenerate(r) { const bt = pgBaseText(r.base); if (!bt) throw new Error(`Base indisponível: ${pgBaseLabel(r.base)}.`); return partnerApply(bt, r); }
+function renderPartners() {
+  const sel = $("#pgBase"), avail = pgBasesAvail();
+  sel.innerHTML = avail.map(k => `<option value="${k}"${k === PG.base ? " selected" : ""}>${esc(pgBaseLabel(k))}</option>`).join("");
+  if (!avail.includes(PG.base)) PG.base = avail[0];
+  const q = PG.q.toLowerCase(), rows = PG.rows.map((r, i) => ({ r, i })).filter(x => !q || (x.r.arquivo + " " + x.r.titulo).toLowerCase().includes(q));
+  const marc = PG.rows.filter(r => r.incluir).length;
+  $("#pgSummary").textContent = PG.rows.length ? `${PG.rows.length} parceiro(s) na lista · ${marc} marcado(s) para gerar` : "Nenhum parceiro na lista ainda.";
+  $("#pgList").innerHTML = rows.length ? `<table class="pgt"><thead><tr><th><input type="checkbox" id="pgAll" title="Marcar todos" ${marc === PG.rows.length ? "checked" : ""}></th><th>Arquivo</th><th>Base</th><th>Situação</th></tr></thead><tbody>${rows.map(({ r, i }) => { const s = pgStatus(r);
+      return `<tr data-pg="${i}" class="${i === PG.sel ? "on" : ""}"><td><input type="checkbox" data-pginc="${i}" ${r.incluir ? "checked" : ""} aria-label="Gerar ${esc(r.arquivo)}"></td><td><b>${esc(r.arquivo)}</b><br><span class="note">${esc(r.titulo)}${r.pacote ? " · " + esc(r.pacote) : ""}</span></td><td class="note">${r.base === "accord" ? "Accord" : r.base === "adipar" ? "Adipar" : "Editor"}</td><td><span class="sevc ${s.c}">${esc(s.t)}</span></td></tr>`; }).join("")}</tbody></table>`
+    : `<p class="empty">${PG.rows.length ? "Nenhum parceiro com esse filtro." : "Clique em <b>Importar do acervo</b> para trazer os parceiros dos modelos, ou em <b>+ Novo parceiro</b>."}</p>`;
+  renderPartnerForm();
+}
+function renderPartnerForm() {
+  const box = $("#pgForm"), r = PG.rows[PG.sel];
+  if (!r) { box.innerHTML = `<div class="hnote"><b>Como funciona</b><br>Cada parceiro é uma ficha: nome do arquivo, título, logo, cor e os dados de contato. O layout é gerado a partir da base. Para mudar todos os parceiros (uma coluna nova, outro rodapé), abra a base no editor, altere e gere de novo: a base usada é a versão aberta, com as suas alterações.<br><br><b>Padrão</b>: sai igual ao original. <b>Quase igual</b>: pequenas diferenças (confira em Comparar). <b>Personalizado</b>: o original tem regras próprias; gerar da base perde essas regras, por isso vem desmarcado.</div>`; return; }
+  let gen = "", aud = null;
+  try { gen = pgGenerate(r); aud = auditCount(auditXsl(gen, r.arquivo, {})); } catch (e) { gen = ""; }
+  const inp = (k, lb, ph = "") => `<label class="pf"><span>${lb}</span><input type="text" data-pgk="${k}" value="${esc(r[k] || "")}" placeholder="${esc(ph)}"></label>`;
+  box.innerHTML = `<div class="pfhead"><h3>${esc(r.arquivo)}</h3>${aud ? sevChip(aud) : '<span class="sevc erro">Base indisponível</span>'}</div>
+    ${inp("arquivo", "Arquivo")}${inp("titulo", "Título da página")}
+    <label class="pf"><span>Base</span><select data-pgk="base">${pgBasesAvail().map(k => `<option value="${k}"${k === r.base ? " selected" : ""}>${esc(pgBaseLabel(k))}</option>`).join("")}</select></label>
+    ${inp("logo", "Logo", "%pastasistema%/identity/parceiro_x.png")}
+    <div class="two">${inp("largura", "Largura do logo")}${inp("altura", "Altura do logo")}</div>
+    <div class="two"><label class="pf"><span>Cor de destaque</span><span class="crow"><input type="color" data-pgk="cor" value="${/^#[0-9a-f]{6}$/i.test(r.cor) ? r.cor : "#556982"}"><input type="text" data-pgk="cor" value="${esc(r.cor || "")}"></span></label>${inp("moeda", "Moeda escrita", "R$")}</div>
+    ${inp("css", "Estilo (CSS)")}
+    <div class="pf"><span>Dados do parceiro</span>${r.campos.map((c, j) => `<div class="pcampo"><input type="text" data-pgc="${j}" data-pgf="label" value="${esc(c.label)}" aria-label="Rótulo"><input type="text" data-pgc="${j}" data-pgf="value" value="${esc(c.value)}" aria-label="Valor"><button class="ibtn" type="button" data-pgdel="${j}" title="Remover">✕</button></div>`).join("")}
+      <button class="btn small ghost" type="button" data-pgact="campo">+ Campo</button></div>
+    <div class="row" style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn small primary" type="button" data-pgact="view">Visualizar</button>
+      <button class="btn small" type="button" data-pgact="open">Abrir no editor</button>
+      ${r.origem ? '<button class="btn small" type="button" data-pgact="cmp">Comparar com o original</button>' : ""}
+      <button class="btn small ghost" type="button" data-pgact="del">Remover da lista</button>
+    </div>`;
+}
+async function pgOpenGenerated(r, then) {
+  let text; try { text = pgGenerate(r); } catch (e) { toast(e.message); return; }
+  let f = state.files.find(x => x.pgGen && x.name === r.arquivo);
+  if (f) { f.text = text; f.dirty = true; } else f = addFile({ name: r.arquivo, path: r.arquivo, text, orig: null, enc: "utf-8", origin: "import", pgGen: true, dirty: true });
+  await openXsl(f);
+  if (then === "view") { if (!state.xml) state.xml = state.files.find(x => x.ext === "xml") || null; fillXmlSelect(); showTab("preview"); }
+  if (then === "cmp" && r.origem) { await openCompare("model:" + r.origem, "file:" + f.id); toast("Esquerda: original do acervo. Direita: gerado da base."); }
+  return f;
+}
+async function pgGenAll() {
+  const sel = PG.rows.filter(r => r.incluir); if (!sel.length) { toast("Marque ao menos um parceiro."); return; }
+  const entries = [], rel = ["Layouts de parceiro gerados pelo Editor XSL Promob", `Data: ${new Date().toLocaleString("pt-BR")}`, ""], used = new Set();
+  for (const r of sel) {
+    let text; try { text = pgGenerate(r); } catch (e) { rel.push(`${r.arquivo}: NÃO GERADO (${e.message})`); continue; }
+    let nm = r.arquivo; while (used.has(nm.toLowerCase())) nm = nm.replace(/(\.xslt?)?$/i, "_2$1"); used.add(nm.toLowerCase());
+    const c = auditCount(auditXsl(text, nm, {}));
+    entries.push({ name: nm, bytes: new TextEncoder().encode(text) });
+    rel.push(`${nm} · base ${pgBaseLabel(r.base)}${r.dist != null ? ` · ${pgStatus(r).t}` : " · novo"}${c.erro ? ` · ATENÇÃO: ${c.erro} erro(s) na auditoria` : ""}`);
+  }
+  rel.push("", "Copie os arquivos para Budget\\Layouts\\Listing e confira um orçamento no Promob antes de substituir os originais.");
+  entries.push({ name: "LEIA-ME_parceiros.txt", bytes: new TextEncoder().encode(rel.join("\r\n")) });
+  await exportFiles(entries, "parceiros_gerados.zip");
+}
+function pgCsvOut() {
+  const max = Math.max(1, ...PG.rows.map(r => r.campos.length));
+  const head = ["arquivo", "titulo", "base", "logo", "largura", "altura", "cor", "moeda", "css", "gerar"]; for (let i = 1; i <= max; i++) head.push(`campo${i}`, `valor${i}`);
+  const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const lines = [head.map(q).join(";")].concat(PG.rows.map(r => [r.arquivo, r.titulo, r.base, r.logo, r.largura, r.altura, r.cor, r.moeda, r.css, r.incluir ? "sim" : "não", ...r.campos.flatMap(c => [c.label, c.value])].map(q).join(";")));
+  exportFiles([{ name: "parceiros.csv", bytes: new TextEncoder().encode("﻿" + lines.join("\r\n")) }, { name: "LEIA-ME.txt", bytes: new TextEncoder().encode("Edite parceiros.csv no Excel (separador ponto e vírgula) e importe de volta na aba Parceiros.\r\nCada par campoN/valorN vira uma linha em Dados do parceiro.") }], "parceiros_planilha.zip");
+}
+function pgCsvParse(text) {
+  const rows = [], s = text.replace(/^﻿/, ""); let row = [], cur = "", q = false;
+  const sep = (s.split(/\r?\n/)[0].match(/;/g) || []).length >= (s.split(/\r?\n/)[0].match(/,/g) || []).length ? ";" : ",";
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (q) { if (c === '"') { if (s[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; continue; }
+    if (c === '"') q = true; else if (c === sep) { row.push(cur); cur = ""; } else if (c === "\n" || c === "\r") { if (c === "\r" && s[i + 1] === "\n") i++; row.push(cur); rows.push(row); row = []; cur = ""; } else cur += c;
+  }
+  if (cur || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter(r => r.some(v => v.trim()));
+}
+async function pgCsvIn(file) {
+  const rows = pgCsvParse(await file.text()); if (rows.length < 2) { toast("Planilha vazia."); return; }
+  const h = rows[0].map(x => x.trim().toLowerCase()), col = k => h.indexOf(k);
+  if (col("arquivo") < 0) { toast("A planilha precisa da coluna \"arquivo\". Exporte uma planilha para ver o formato."); return; }
+  let novos = 0, atual = 0;
+  for (const v of rows.slice(1)) {
+    const get = k => col(k) >= 0 ? (v[col(k)] || "").trim() : "";
+    const arq = get("arquivo"); if (!arq) continue;
+    const campos = []; for (let i = 1; col(`campo${i}`) >= 0; i++) { const l = get(`campo${i}`), val = get(`valor${i}`); if (l || val) campos.push({ label: l, value: val }); }
+    let r = PG.rows.find(x => x.arquivo.toLowerCase() === arq.toLowerCase());
+    if (!r) { r = pgNew(""); r.arquivo = arq; PG.rows.push(r); novos++; } else atual++;
+    for (const k of ["titulo", "logo", "largura", "altura", "cor", "moeda", "css"]) if (col(k) >= 0) r[k] = get(k);
+    if (col("base") >= 0 && pgBasesAvail().includes(get("base"))) r.base = get("base");
+    if (col("gerar") >= 0) r.incluir = !/^n/i.test(get("gerar"));
+    if (campos.length) r.campos = campos;
+  }
+  pgSave(); renderPartners(); toast(`Planilha importada: ${novos} parceiro(s) novo(s) e ${atual} atualizado(s).`);
+}
+function bindPartners() {
+  pgLoad();
+  $("#pgBase").addEventListener("change", e => { PG.base = e.target.value; pgSave(); });
+  $("#pgSearch").addEventListener("input", e => { PG.q = e.target.value.trim(); renderPartners(); });
+  $("#pgImport").addEventListener("click", pgImport);
+  $("#pgAdd").addEventListener("click", () => { const r = pgNew(""); PG.rows.unshift(r); PG.sel = 0; PG.q = ""; $("#pgSearch").value = ""; pgSave(); renderPartners(); const i = $("#pgForm [data-pgk='arquivo']"); if (i) i.focus(); });
+  $("#pgOpenBase").addEventListener("click", async () => { const m = pgBaseModel(PG.base); if (!m) { toast("Selecione uma base do acervo, ou abra o layout que quer usar como base no editor."); return; } await openModel(m); toast("Base aberta no editor. Altere e gere de novo: os parceiros usam esta versão."); });
+  $("#pgGenAll").addEventListener("click", pgGenAll);
+  $("#pgCsvOut").addEventListener("click", pgCsvOut);
+  $("#pgCsvIn").addEventListener("change", e => { const f = e.target.files[0]; if (f) pgCsvIn(f); e.target.value = ""; });
+  $("#pgClear").addEventListener("click", e => { if (!PG.rows.length) return; if (e.target.dataset.armed) { PG.rows = []; PG.sel = -1; pgSave(); renderPartners(); e.target.textContent = "Limpar lista"; delete e.target.dataset.armed; return; } e.target.dataset.armed = "1"; e.target.textContent = "Confirmar limpeza"; setTimeout(() => { e.target.textContent = "Limpar lista"; delete e.target.dataset.armed; }, 5000); });
+  $("#pgList").addEventListener("click", e => {
+    const all = e.target.closest("#pgAll"); if (all) { PG.rows.forEach(r => { r.incluir = all.checked; }); pgSave(); renderPartners(); return; }
+    const inc = e.target.closest("[data-pginc]"); if (inc) { PG.rows[+inc.dataset.pginc].incluir = inc.checked; pgSave(); $("#pgSummary").textContent = `${PG.rows.length} parceiro(s) na lista · ${PG.rows.filter(r => r.incluir).length} marcado(s) para gerar`; return; }
+    const tr = e.target.closest("[data-pg]"); if (tr) { PG.sel = +tr.dataset.pg; renderPartners(); }
+  });
+  let pgT;
+  const onEdit = e => {
+    const r = PG.rows[PG.sel]; if (!r) return;
+    const k = e.target.dataset.pgk, c = e.target.dataset.pgc;
+    if (c != null && r.auto && e.target.dataset.pgf === "value" && /^nome$/i.test(r.campos[+c].label)) {
+      // Parceiro novo: o nome preenche arquivo, título e logo até você mexer neles.
+      const nm = e.target.value.trim(), sl = pgSlug(nm) || "Novo";
+      Object.assign(r, { arquivo: `Parceiro_${sl}.xsl`, titulo: `Parceiro ${nm}`.trim(), logo: `%pastasistema%/identity/parceiro_${sl.toLowerCase()}.png` });
+      for (const k2 of ["arquivo", "titulo", "logo"]) { const x = $(`#pgForm [data-pgk="${k2}"]`); if (x) x.value = r[k2]; }
+    }
+    if (k && ["arquivo", "titulo", "logo"].includes(k)) r.auto = false;
+    if (k) { r[k] = e.target.value; if (k === "cor") $("#pgForm").querySelectorAll("[data-pgk='cor']").forEach(x => { if (x !== e.target) x.value = e.target.value; }); }
+    else if (c != null) r.campos[+c][e.target.dataset.pgf] = e.target.value; else return;
+    pgSave(); clearTimeout(pgT); pgT = setTimeout(() => { const tr = $(`#pgList [data-pg="${PG.sel}"]`); if (tr) tr.querySelector("b").textContent = r.arquivo; const h = $("#pgForm .pfhead"); if (h) { let a = null; try { a = auditCount(auditXsl(pgGenerate(r), r.arquivo, {})); } catch {} h.innerHTML = `<h3>${esc(r.arquivo)}</h3>${a ? sevChip(a) : '<span class="sevc erro">Base indisponível</span>'}`; } }, 300);
+  };
+  $("#pgForm").addEventListener("input", onEdit);
+  $("#pgForm").addEventListener("change", e => { if (e.target.tagName === "SELECT") { onEdit(e); renderPartnerForm(); } });
+  $("#pgForm").addEventListener("click", async e => {
+    const r = PG.rows[PG.sel]; if (!r) return;
+    const d = e.target.closest("[data-pgdel]"); if (d) { r.campos.splice(+d.dataset.pgdel, 1); pgSave(); renderPartnerForm(); return; }
+    const a = e.target.closest("[data-pgact]"); if (!a) return;
+    const act = a.dataset.pgact;
+    if (act === "campo") { r.campos.push({ label: "", value: "" }); pgSave(); renderPartnerForm(); return; }
+    if (act === "del") { PG.rows.splice(PG.sel, 1); PG.sel = -1; pgSave(); renderPartners(); return; }
+    await pgOpenGenerated(r, act === "view" ? "view" : act === "cmp" ? "cmp" : "");
+  });
+}
+
 /* Ganchos para os testes automáticos (web/tests). */
-window.EditorXSL = { audit: auditXsl, applyFixes, interpretXsl, generate, models: () => MODELS, builtin: () => BUILTIN };
+window.EditorXSL = { audit: auditXsl, applyFixes, interpretXsl, generate, models: () => MODELS, builtin: () => BUILTIN, partnerInfo, partnerApply, canonDist };
 
 /* ---------- Início ---------- */
 async function start() {
@@ -3193,6 +3470,7 @@ async function start() {
   if (lsGet("exsl.sideCollapsed", false)) setCollapsed(true);
   bindModels();
   bindAudit();
+  bindPartners();
   bindCompare();
   builderInit();
   showTab(savedTab);
