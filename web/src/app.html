@@ -181,6 +181,19 @@ span.CodeMirror-selectedtext{background:none}
 .cm-comment{color:var(--muted);font-style:italic}.cm-bracket{color:var(--muted)}.cm-error{color:var(--err)}
 .cm-jump{background:var(--hl)}
 
+/* ---------- Recolher painel de arquivos ---------- */
+.work{transition:grid-template-columns .18s ease}
+.rail{display:none;border:0;background:transparent;cursor:pointer;color:var(--muted);padding:10px 0;width:100%;height:100%;flex-direction:column;align-items:center;gap:10px;font-size:12px}
+.rail:hover{color:var(--accent);background:var(--sunk)}
+.rail .vt{writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.rail .n{font-family:var(--mono);font-size:11px;background:var(--sunk);border:1px solid var(--line);border-radius:999px;padding:1px 5px}
+.collapse{border:1px solid var(--line);background:var(--panel);border-radius:6px;cursor:pointer;padding:2px 8px;color:var(--muted);font-size:13px;line-height:1.4}
+.collapse:hover{color:var(--accent);border-color:var(--accent)}
+.work.collapsed{grid-template-columns:38px minmax(0,1fr)}
+.work.collapsed .side>:not(.rail){display:none}
+.work.collapsed .rail{display:flex}
+@media (max-width:900px){.work.collapsed{grid-template-columns:minmax(0,1fr)}.work.collapsed .rail{flex-direction:row;justify-content:center;padding:8px}.work.collapsed .rail .vt{writing-mode:horizontal-tb;transform:none}}
+
 /* ---------- Comparador ---------- */
 .cmp{flex:1;min-height:0;display:flex;flex-direction:column}
 .cmpbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--sunk)}
@@ -340,9 +353,10 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
 
   <div class="work">
     <aside class="side" aria-label="Arquivos do sistema">
+      <button class="rail" id="btnExpand" type="button" title="Mostrar o painel de arquivos (Ctrl+B)" aria-label="Mostrar o painel de arquivos"><span aria-hidden="true">»</span><span class="vt">Arquivos</span><span class="n" id="railCount"></span></button>
       <div class="side-head">
         <div style="display:flex;align-items:center;gap:6px;justify-content:space-between"><span class="label">Arquivos</span>
-          <span class="side-acts"><button class="btn small" id="btnExportAll" type="button" title="Baixa todos os XSL alterados ou criados num .zip">Exportar tudo</button><button class="btn small ghost" id="btnCloseAll" type="button">Fechar todos</button></span></div>
+          <span class="side-acts"><button class="collapse" id="btnCollapse" type="button" title="Recolher o painel de arquivos (Ctrl+B)" aria-label="Recolher o painel de arquivos">«</button><button class="btn small" id="btnExportAll" type="button" title="Baixa todos os XSL alterados ou criados num .zip">Exportar tudo</button><button class="btn small ghost" id="btnCloseAll" type="button">Fechar todos</button></span></div>
         <input class="search" id="fFilter" type="search" placeholder="Filtrar por nome ou pasta">
         <span class="prog" id="prog"></span>
       </div>
@@ -1352,11 +1366,22 @@ function showTab(name) {
   if (name === "compare") fillCmpSelects().then(() => CMP.mode === "packs" ? renderPacks() : runCompare());
 }
 
+/* ---------- Recolher painel de arquivos ---------- */
+function setCollapsed(on) {
+  document.querySelector(".work").classList.toggle("collapsed", on);
+  lsSet("exsl.sideCollapsed", on);
+  $("#railCount").textContent = state.files.filter(f => /^(xslt?|xml)$/.test(f.ext)).length || "";
+  setTimeout(() => { if (cm && cm.refresh) cm.refresh(); }, 200);
+}
+
 /* ---------- Eventos ---------- */
 function bind() {
   document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => showTab(t.dataset.tab)));
   $("#tree").addEventListener("click", e => { const x = e.target.closest("[data-close]"); if (x) { closeFile(+x.dataset.close); return; } const b = e.target.closest(".file"); if (!b) return; const f = state.files.find(x => x.id === +b.dataset.id); if (!f) return; f.ext === "xml" ? openXml(f) : openXsl(f); });
   $("#fFilter").addEventListener("input", renderTree);
+  $("#btnCollapse").addEventListener("click", () => setCollapsed(true));
+  $("#btnExpand").addEventListener("click", () => { setCollapsed(false); $("#fFilter").focus(); });
+  document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "b") { e.preventDefault(); setCollapsed(!document.querySelector(".work").classList.contains("collapsed")); } });
   $("#btnMap").addEventListener("click", async () => {
     if (window.showDirectoryPicker) {
       try { const h = await window.showDirectoryPicker({ id: "promob-sistema", mode: "readwrite" }); await mapFolder(h); return; }
@@ -2730,6 +2755,7 @@ async function start() {
   if (!window.showDirectoryPicker) $("#btnMap").title = "Seu navegador abre a pasta em modo leitura. Para salvar direto nela, use Chrome ou Edge.";
   const saved = await idbGet("root");
   if (saved && saved.name) { const b = $("#btnReopen"); b.hidden = false; b.textContent = "Reabrir " + saved.name; }
+  if (lsGet("exsl.sideCollapsed", false)) setCollapsed(true);
   bindModels();
   bindCompare();
   builderInit();
