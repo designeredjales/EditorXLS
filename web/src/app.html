@@ -591,7 +591,7 @@ const CATALOG = [
     ["@CLIENTLOGO", "Logo do cliente/loja (na listagem)"], ["@PRICECANMODIFY", "Preço pode ser editado? (Y/N)"], ["@IMAGE", "Imagem padrão do item"],
     ["@SUPPLIERREFERENCE", "Código do item no fornecedor"], ["@IDPRICEPROVIDER", "Fornecedor do preço"], ["REFERENCES/IMAGE/@REFERENCE", "Imagem do item (referência)"],
     ["REFERENCES/BOXQUANTITY/@REFERENCE", "Quantidade por caixa (revestimento)"], ["REFERENCES/NAO_DISPONIVEL/@REFERENCE", "Não disponível no parceiro"],
-    ["REFERENCES/MODEL_EXT/@REFERENCE", "Modelo (descrição estendida)"], ["REFERENCES/PRICE/@REFERENCE", "Referência de preço"]]},
+    ["REFERENCES/MODEL_EXT/@REFERENCE", "Modelo (descrição estendida)"], ["REFERENCES/FERRAGEM/@REFERENCE", "É ferragem? (SIM/NAO)"], ["REFERENCES/PRICE/@REFERENCE", "Referência de preço"]]},
   { g: "Porta para ERP (Perfar)", ctx: "ITEM/REFERENCES/ERP_*", f: [
     ["REFERENCES/ERP_COD/@REFERENCE", "Código ERP"], ["REFERENCES/ERP_MOD/@REFERENCE", "Modelo ERP"], ["REFERENCES/ERP_COR/@REFERENCE", "Cor ERP"],
     ["REFERENCES/ERP_ACA/@REFERENCE", "Acabamento ERP"], ["REFERENCES/ERP_FACE/@REFERENCE", "Face ERP"], ["REFERENCES/ERP_RAIO/@REFERENCE", "Raio ERP"],
@@ -2103,7 +2103,7 @@ async function renderCanvas() {
 
 /* ---------- Painel de propriedades ---------- */
 function scanFields() {
-  const r = { refs: new Set(["COMPLETE", "MATERIAL", "PESO", "VOLUME", "ITEM_BASE", "THICKNESS", "MODEL", "CODE", "SUPPLIER", "COLOR", "BUILDER_CODE", "BUILDER_ACABAMENTO", "DOORHOLE", "HOLESIDE", "KNOBPOSITION", "RECORTE", "AREA", "IMAGE", "BOXQUANTITY", "MODEL_EXT", "NAO_DISPONIVEL"]), integ: new Set(), meta: new Set(), cust: new Set(Object.keys(CUSTOMER)), extra: new Set(["Peso", "NCM"]) };
+  const r = { refs: new Set(["COMPLETE", "MATERIAL", "PESO", "VOLUME", "ITEM_BASE", "THICKNESS", "MODEL", "CODE", "SUPPLIER", "COLOR", "BUILDER_CODE", "BUILDER_ACABAMENTO", "DOORHOLE", "HOLESIDE", "KNOBPOSITION", "RECORTE", "AREA", "IMAGE", "BOXQUANTITY", "MODEL_EXT", "NAO_DISPONIVEL", "FERRAGEM"]), integ: new Set(), meta: new Set(), cust: new Set(Object.keys(CUSTOMER)), extra: new Set(["Peso", "NCM"]) };
   if (state.xml && state.xml.text) {
     const { doc, error } = parseXml(state.xml.text);
     if (!error) {

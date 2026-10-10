@@ -75,6 +75,11 @@ DESCRICOES = {
     "parceiro_Falmec": ("Orçamento do parceiro Falmec (coifas).", []),
     "Listagem.OLD": ("Versão antiga da listagem com ficha de porta (furo, puxador, recorte).", []),
     "Listagem.NovaPasta": ("Cópia da listagem encontrada numa subpasta \"Nova pasta\".", []),
+    "OrcamentoExplodidoSimples": ("Orçamento explodido simplificado: sem as colunas de matéria-prima e preço de venda.", []),
+    "pedido_loja": ("Pedido da loja: mesmo layout do orçamento explodido sem preço por item, com o total pelo valor de pedido (ORDER).", []),
+    "Parceiro_Criativa_Puxadores": ("Orçamento do parceiro Criativa Puxadores (base Leo Madeiras/Adipar).", []),
+    "Parceiro_Estitech": ("Orçamento do parceiro Estitech (base Leo Madeiras/Adipar).", []),
+    "parceiro_dancamac": ("Orçamento do parceiro Dancamac.", []),
     "OrcamentoMontadoComEdicao": ("Orçamento de módulos montados em que o preço é clicável: abre a janela de alteração de preço do Promob (external.InvokeVSAComMensagem), respeitando PRICECANMODIFY.", []),
     "OrcamentoExplodidoComEdicao": ("Orçamento explodido com preço clicável para alterar no Promob (external.InvokeVSAComMensagem).", []),
     "OrcamentoMontadoSemEdicao": ("Orçamento de módulos montados, preço só para leitura.", []),
@@ -93,6 +98,11 @@ DESCRICOES = {
     "parceiro_finotoc_detalhado": ("Pedido Finotoc detalhado: uma coluna para cada configuração da porta (espessura, face, cor, puxador, cava, iluminação, frisos…).", []),
 }
 DESCRICOES_PACOTE = {
+    ("Listing pacote 4", "orcamento_ferragens"): ("Orçamento que separa o total de ferragens (referência FERRAGEM = SIM) do total da modulação e lista as ferragens sem repetição.",
+        ["Não funciona como está: chama os templates PercorrerItens e GerarItemFerragem e a chave key('iguais'), que não existem no arquivo. O Promob mostra erro ao abrir.",
+         "Soma o preço com sum(), que dá NaN quando o valor vem com vírgula. A biblioteca tem a versão corrigida (Totais › Total de ferragens separado da modulação)."]),
+    ("Listing pacote 4", "pedido"): ("Pedido HTML da loja (versão desta instalação, sem o filtro SEPARACAO_PEDIDO).", []),
+    ("Listing pacote 4", "Orcamento"): ("Orçamento HTML padrão desta instalação.", []),
     ("SendTo Fabrica Electrolux Cata Tramontina", "Pedido"): ("TXT de pedido para a fábrica em registros numerados (EDI): cabeçalho com loja, cliente, descontos, ICMS, IPI e versão da biblioteca; itens com código do fornecedor pela família, dimensões editáveis e letra do puxador.",
         ["Lê desconto e ICMS do primeiro item do projeto (assume o mesmo valor para todos)."]),
     ("SendTo Fabrica Electrolux Cata Tramontina", "Listagem"): ("Mesmo TXT do Pedido, sem o preço total (versão para a listagem).", []),

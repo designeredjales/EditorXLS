@@ -10,6 +10,7 @@ Cada modelo recebido é lido, classificado e desmontado em padrões reutilizáve
 | 4 | `04_portas_pedras.json` | 5 |
 | 5 | `05_pedido_fabrica_txt.json` | 7 |
 | 6 | `06_listing_pacote3.json` | 9 |
+| 7 | `07_listing_pacote4.json` | 4 |
 
 ## Tipos de layout encontrados
 
@@ -118,3 +119,16 @@ Risco: desconto e ICMS são lidos do primeiro item do projeto, assumindo o mesmo
 **MCMIntegration.xsl** · novos atributos `PRODUCTIVESCRIPT`, `KIT_AGRUPADOR`, `PRICEUNIT`.
 
 Arquivos danificados no `.rar`: Parceiro_Perfar, Listagem_Revest.en, parceiro_Mekal, Parceiro_debacco, parceiro_Zen, parceiro_Zen.pt, parceiro_Lofra, OrcamentoCondicoes.
+
+### Lote 7 — Listing pacote 4
+
+19 arquivos: 7 novos, 8 versões diferentes de modelos já catalogados (anteriores ao logo dinâmico `CLIENTLOGO`, com `Orcamento.css`), 3 idênticos e 1 danificado (`OrcamentoMontado.xsl`, vazio no `.rar`).
+
+**orcamento_ferragens.xsl** · separa o total de ferragens (`FERRAGEM = SIM`) do total da modulação e lista as ferragens sem repetição.
+Problemas: **não roda** — chama `PercorrerItens`, `GerarItemFerragem` e `key('iguais')`, que não existem no arquivo; soma o preço com `sum()` (NaN com vírgula). A biblioteca traz a versão corrigida e o agrupamento com `xsl:key` declarado.
+
+**pedido_loja.xsl** · orçamento explodido sem preço por item, total pelo valor de pedido (`ORDER`).
+
+**OrcamentoExplodidoSimples.xsl** · explodido sem matéria-prima e preço de venda. **OrcamentoExplodidoComEdicao.xsl** (desta instalação) ganhou a coluna Matéria-prima (`MATERIAL`).
+
+Parceiros novos: Criativa Puxadores, Estitech, Dancamac.

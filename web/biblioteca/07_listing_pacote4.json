@@ -1,0 +1,38 @@
+{
+  "lote": "Lote 7: Listing pacote 4 (ferragens, pedido da loja)",
+  "recebido": "2026-10-10",
+  "itens": [
+    {
+      "cat": "Totais",
+      "t": "Total de ferragens separado da modulação",
+      "d": "Mostra quanto do orçamento é ferragem (itens com a referência FERRAGEM = SIM) e quanto é modulação (total menos ferragens). Usa SomarDecimal (Biblioteca › Cálculos) porque sum() não entende vírgula; cole esse template no fim do arquivo.",
+      "c": "<xsl:variable name=\"valorFerragens\">\n  <xsl:call-template name=\"SomarDecimal\">\n    <xsl:with-param name=\"nos\" select=\"//ITEM[REFERENCES/FERRAGEM/@REFERENCE = 'SIM']/PRICE/MARGINS/BUDGET/@TOTAL\" />\n  </xsl:call-template>\n</xsl:variable>\n<xsl:variable name=\"valorTotal\" select=\"number(translate(TOTALPRICES/MARGINS/BUDGET/@VALUE, ',', '.'))\" />\n<tr id=\"TOTALS\">\n  <td align=\"right\">\n    <span style=\"color:#535353\">Total ferragens: </span>\n    <xsl:value-of select=\"/LISTING/@CURRENCYSYMBOL\" /><xsl:text> </xsl:text>\n    <xsl:value-of select=\"format-number($valorFerragens, '###.##0,00', 'formato')\" /><br />\n    <span style=\"color:#535353\">Total modulação: </span>\n    <xsl:value-of select=\"/LISTING/@CURRENCYSYMBOL\" /><xsl:text> </xsl:text>\n    <xsl:value-of select=\"format-number($valorTotal - $valorFerragens, '###.##0,00', 'formato')\" /><br />\n    <b>Total final: </b>\n    <xsl:value-of select=\"/LISTING/@CURRENCYSYMBOL\" /><xsl:text> </xsl:text>\n    <xsl:value-of select=\"format-number($valorTotal, '###.##0,00', 'formato')\" />\n  </td>\n</tr>",
+      "origem": "orcamento_ferragens.xsl (corrigido)",
+      "tags": "ferragens modulação total separado"
+    },
+    {
+      "cat": "Agrupamento",
+      "t": "Lista de itens sem repetição (agrupar por código)",
+      "d": "Lista cada código uma vez só, com a quantidade somada (agrupamento de Muench). A linha xsl:key vai no topo do arquivo, fora dos templates. O original usava key('iguais') sem declarar a chave.",
+      "c": "<!-- No topo do arquivo, junto do xsl:output: -->\n<!-- <xsl:key name=\"porCodigo\" match=\"ITEM[REFERENCES/FERRAGEM/@REFERENCE = 'SIM']\" use=\"@REFERENCE\" /> -->\n<xsl:for-each select=\"//ITEM[REFERENCES/FERRAGEM/@REFERENCE = 'SIM'][count(. | key('porCodigo', @REFERENCE)[1]) = 1]\">\n  <xsl:sort select=\"@DESCRIPTION\" />\n  <tr>\n    <td><xsl:value-of select=\"@REFERENCE\" /></td>\n    <td><xsl:value-of select=\"@DESCRIPTION\" /></td>\n    <td align=\"center\"><xsl:value-of select=\"sum(key('porCodigo', @REFERENCE)/@QUANTITY)\" /></td>\n  </tr>\n</xsl:for-each>",
+      "origem": "orcamento_ferragens.xsl (corrigido)",
+      "tags": "agrupar unico repetidos key muench ferragens compra"
+    },
+    {
+      "cat": "Colunas",
+      "t": "Coluna Matéria-prima",
+      "d": "Coluna do material do item (referência MATERIAL), usada no orçamento explodido.",
+      "c": "<td align=\"left\"><xsl:value-of select=\"REFERENCES/MATERIAL/@REFERENCE\" /></td>",
+      "origem": "OrcamentoExplodidoComEdicao.xsl (pacote 4)",
+      "tags": "material matéria-prima coluna"
+    },
+    {
+      "cat": "Totais",
+      "t": "Total pelo preço de pedido (ORDER)",
+      "d": "Versão do total para pedido da loja: usa o valor de pedido (ORDER) em vez do valor de orçamento (BUDGET).",
+      "c": "<tr id=\"TOTALS\">\n  <td align=\"right\">\n    <b>Total do pedido: </b><xsl:value-of select=\"/LISTING/@CURRENCYSYMBOL\" /><xsl:text> </xsl:text>\n    <xsl:choose>\n      <xsl:when test=\"count(TOTALPRICES/MARGINS/ORDER) &gt; 0\">\n        <xsl:value-of select=\"format-number(translate(TOTALPRICES/MARGINS/ORDER/@VALUE, ',', '.'), '###.##0,00', 'formato')\" />\n      </xsl:when>\n      <xsl:otherwise>0,00</xsl:otherwise>\n    </xsl:choose>\n  </td>\n</tr>",
+      "origem": "pedido_loja.xsl",
+      "tags": "pedido total order loja"
+    }
+  ]
+}
