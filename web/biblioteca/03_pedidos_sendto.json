@@ -1,0 +1,118 @@
+{
+  "lote": "Lote 3: pedidos separados e Enviar Para (SendTo)",
+  "recebido": "2026-10-10",
+  "itens": [
+    {
+      "cat": "Pedidos",
+      "t": "Separar pedido por referência do item",
+      "d": "Cada item tem a referência SEPARACAO_PEDIDO (ex.: pedido_geral, pedido_laca). O layout mostra só os itens daquele pedido. Troque o valor para gerar o outro pedido.",
+      "c": "<xsl:variable name=\"pedido\" select=\"'pedido_geral'\" /> <!-- ou 'pedido_laca' -->\n\n<xsl:for-each select=\"ITEMS/ITEM[REFERENCES/SEPARACAO_PEDIDO/@REFERENCE = $pedido]\">\n  <!-- linha do item -->\n</xsl:for-each>",
+      "origem": "pedido.xsl / pedido_separado.xsl",
+      "tags": "separar pedido laca geral fornecedor dividir"
+    },
+    {
+      "cat": "Pedidos",
+      "t": "Total só dos itens de um pedido",
+      "d": "Soma preço + componentes apenas dos itens do pedido escolhido. Atenção: sum() só funciona se o Promob gravar o valor com ponto decimal; com vírgula, use o template de soma da biblioteca.",
+      "c": "<xsl:variable name=\"itensPedido\" select=\"//ITEM[REFERENCES/SEPARACAO_PEDIDO/@REFERENCE = $pedido]\" />\n<xsl:value-of select=\"format-number(sum($itensPedido/PRICE/MARGINS/ORDER/@TOTAL) + sum($itensPedido/PRICE/MARGINS/ORDER/@TOTALCOMPONENTS), '###.##0,00', 'formato')\" />",
+      "origem": "pedido.xsl / pedido_separado.xsl",
+      "tags": "total filtrado soma pedido"
+    },
+    {
+      "cat": "Pedidos",
+      "t": "Um arquivo por destino (geral, laca, Blum, acessórios)",
+      "d": "Cada item tem a referência EXPORTXML dizendo para qual arquivo vai. Um template vazio descarta os itens dos outros destinos. Os 4 arquivos TXT/XML do SendTo só diferem nessas linhas.",
+      "c": "<!-- Este arquivo gera o destino 'tabela_laca'. Itens de outros destinos são descartados: -->\n<xsl:template match=\"ITEM[REFERENCES/EXPORTXML/@REFERENCE = 'tabela_geral']\" />\n<xsl:template match=\"ITEM[REFERENCES/EXPORTXML/@REFERENCE = 'tabela_blum']\" />\n<xsl:template match=\"ITEM[REFERENCES/EXPORTXML/@REFERENCE = 'tabela_acessorios']\" />",
+      "origem": "SendTo (TXTtabela*, XMLtabela*)",
+      "tags": "destino exportxml arquivo separado blum laca acessórios"
+    },
+    {
+      "cat": "Pedidos",
+      "t": "Gerar arquivo só se houver itens do destino",
+      "d": "Evita arquivo vazio: só escreve cabeçalho, itens e rodapé quando existe pelo menos um item do destino.",
+      "c": "<xsl:if test=\"count(//ITEM[REFERENCES/EXPORTXML/@REFERENCE = 'tabela_laca']) &gt; 0\">\n  <xsl:call-template name=\"GerarCabecalho\" />\n  <!-- itens -->\n  <xsl:call-template name=\"GerarRodape\" />\n</xsl:if>",
+      "origem": "SendTo (TXTtabela*, XMLtabela*)",
+      "tags": "arquivo vazio condição destino"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Cópia do XML sem as margens da loja",
+      "d": "Copia o XML do Promob inteiro e remove os nós BUDGET. A fábrica recebe o pedido sem ver o preço de venda ao cliente final.",
+      "c": "<xsl:template match=\"*\">\n  <xsl:if test=\"local-name() != 'BUDGET'\">\n    <xsl:copy>\n      <xsl:copy-of select=\"@*\" />\n      <xsl:apply-templates select=\"*\" />\n    </xsl:copy>\n  </xsl:if>\n</xsl:template>",
+      "origem": "SendTo/StudioB.xsl",
+      "tags": "copiar xml remover margem orçamento budget fábrica sigilo"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Cópia do XML sem certos itens",
+      "d": "Copia todo o XML e descarta itens por regra (aqui: ferragens). Base para enviar à fábrica só o que ela produz.",
+      "c": "<xsl:template match=\"@* | node()\">\n  <xsl:copy><xsl:apply-templates select=\"@* | node()\" /></xsl:copy>\n</xsl:template>\n\n<xsl:template match=\"ITEM[@GROUP = 'Ferragens']\" />",
+      "origem": "SendTo (TXTtabela*, XMLtabela*) / SendTo/StudioB.xsl",
+      "tags": "identidade copiar filtrar remover itens"
+    },
+    {
+      "cat": "Texto (TXT)",
+      "t": "Referência com * quando há observação",
+      "d": "Marca com asterisco a referência de itens com observação e escreve a observação na linha seguinte.",
+      "c": "<xsl:if test=\"string(@OBSERVATIONS) != ''\"><xsl:text>*</xsl:text></xsl:if>\n<xsl:value-of select=\"REFERENCES/COMPLETE/@REFERENCE\" />\n<xsl:if test=\"string(@OBSERVATIONS) != ''\">\n  <xsl:call-template name=\"QuebrarLinha\" />\n  <xsl:text>Observacao: </xsl:text>\n  <xsl:value-of select=\"@OBSERVATIONS\" />\n</xsl:if>",
+      "origem": "SendTo (TXTtabela*, XMLtabela*) / SendTo/DefaultBartzen*.xsl",
+      "tags": "observação asterisco"
+    },
+    {
+      "cat": "Campos",
+      "t": "Código composto com medidas (paramétrico)",
+      "d": "Monta o código do painel juntando a referência base com largura e comprimento em 4 dígitos. Ex.: PNL.0450.2100.",
+      "c": "<xsl:value-of select=\"concat(REFERENCES/REF/@REFERENCE, '.', format-number(REFERENCES/LARG_PAINEL/@REFERENCE, '0000'), '.', format-number(REFERENCES/COMP_PAINEL/@REFERENCE, '0000'))\" />",
+      "origem": "SendTo/DefaultBartzen*.xsl",
+      "tags": "código paramétrico medida painel largura comprimento sku"
+    },
+    {
+      "cat": "Cabeçalho",
+      "t": "ID do projeto e versão do Promob",
+      "d": "Identifica o projeto (GUID) e a versão exata do Promob no arquivo. Ajuda a rastrear pedidos e problemas.",
+      "c": "<xsl:text>ID do Projeto = </xsl:text><xsl:value-of select=\"PROJECTGUID/@GUID\" />\n<xsl:text> | Promob = </xsl:text><xsl:value-of select=\"concat(ABOUTPROMOB/@VERSION, '.', ABOUTPROMOB/@REVISION, '.', ABOUTPROMOB/@BUILD)\" />\n<xsl:text> | System = </xsl:text><xsl:value-of select=\"ABOUTPROMOB/@SYSTEMREVISION\" />",
+      "origem": "SendTo/Fabrica.xsl",
+      "tags": "projeto guid versão rastreio"
+    },
+    {
+      "cat": "Cálculos",
+      "t": "Quantidade total (quantidade × repetição)",
+      "d": "Quantidade real enviada à fábrica quando o item se repete.",
+      "c": "<xsl:value-of select=\"number(translate(@QUANTITY, ',', '.')) * number(@REPETITION)\" />",
+      "origem": "SendTo/Fabrica.xsl",
+      "tags": "quantidade repetição multiplicar"
+    },
+    {
+      "cat": "Texto (TXT)",
+      "t": "Exportar CSV (ponto e vírgula)",
+      "d": "Uma linha por item, com campos separados por ;. Abre direto no Excel.",
+      "c": "<xsl:output method=\"text\" />\n<xsl:template match=\"LISTING\">\n  <xsl:text>Item;Qtd;Referência;Descrição;Largura;Altura;Profundidade&#13;&#10;</xsl:text>\n  <xsl:for-each select=\"//ITEM\">\n    <xsl:number level=\"any\" /><xsl:text>;</xsl:text>\n    <xsl:value-of select=\"@QUANTITY\" /><xsl:text>;</xsl:text>\n    <xsl:value-of select=\"@REFERENCE\" /><xsl:text>;</xsl:text>\n    <xsl:value-of select=\"@DESCRIPTION\" /><xsl:text>;</xsl:text>\n    <xsl:value-of select=\"@WIDTH\" /><xsl:text>;</xsl:text>\n    <xsl:value-of select=\"@HEIGHT\" /><xsl:text>;</xsl:text>\n    <xsl:value-of select=\"@DEPTH\" /><xsl:text>&#13;&#10;</xsl:text>\n  </xsl:for-each>\n</xsl:template>",
+      "origem": "SendTo/Default.xsl",
+      "tags": "csv excel planilha exportar"
+    },
+    {
+      "cat": "Configuração Enviar Para",
+      "t": "Arquivo no menu Enviar Para",
+      "d": "Entrada do sendTo.xml (pasta Budget\\SendTo) que cria a opção de exportar um arquivo com um layout XSL. CATEGORIES liga a opção a categorias de orçamento.",
+      "c": "<SENDTOFILE ID=\"ArquivoTXT\" DESCRIPTION=\"Arquivo Texto\"\n            XSLLAYOUT=\"%PastaBudget%\\SendTo\\MeuLayout.xsl\"\n            CATEGORIES=\"enviar_pedido\"\n            FILENAME=\"#savefilename#\" FILEEXTENSION=\".txt\" FILEPATH=\"c:\\\"\n            SHOWSAVEDIALOG=\"Y\" ENCODING=\"ASCII\" ORDERBY=\"Nenhuma\"\n            SENDCONTENTONLY=\"Y\" DEFAULT=\"N\" />",
+      "origem": "SendTo/sendTo.xml",
+      "tags": "sendto enviar para configuração exportar arquivo"
+    },
+    {
+      "cat": "Configuração Enviar Para",
+      "t": "Pacote .zip com vários arquivos",
+      "d": "Gera um .zip com vários arquivos de uma vez (cada um com seu XSL) e anexa o projeto.",
+      "c": "<SENDTOPACKAGE ID=\"PCT_FABRICA\" DESCRIPTION=\"Pacote\" CATEGORIES=\"enviar_pedido\"\n               FILENAME=\"#savefilename#\" FILEEXTENSION=\".zip\" FILEPATH=\"c:\\\"\n               SHOWSAVEDIALOG=\"Y\" ATTACHPROJECT=\"Y\" NEEDSAVE=\"Y\" ASKVIEWFILE=\"N\" ENCODING=\"Default\" ORDERBY=\"Nenhuma\">\n  <SENDTOCOLLECTION>\n    <SENDTOFILE ID=\"PCT_TXT\" DESCRIPTION=\"TXT Geral\" XSLLAYOUT=\"%PastaBudget%\\SendTo\\TXTGeral.xsl\"\n                FILENAME=\"#savefilename#_geral\" FILEEXTENSION=\".txt\" FILEPATH=\"c:\\\"\n                SHOWSAVEDIALOG=\"Y\" SENDCONTENTONLY=\"Y\" ENCODING=\"Default\" ORDERBY=\"Nenhuma\" ASKVIEWFILE=\"N\" />\n    <SENDTOFILE ID=\"PCT_XML\" DESCRIPTION=\"XML Geral\" XSLLAYOUT=\"%PastaBudget%\\SendTo\\XMLGeral.xsl\"\n                FILENAME=\"#savefilename#_geral\" FILEEXTENSION=\".xml\" FILEPATH=\"c:\\\"\n                SHOWSAVEDIALOG=\"Y\" SENDCONTENTONLY=\"Y\" ENCODING=\"Default\" ORDERBY=\"Nenhuma\" ASKVIEWFILE=\"N\" />\n  </SENDTOCOLLECTION>\n</SENDTOPACKAGE>",
+      "origem": "SendTo/sendTo.xml",
+      "tags": "sendto pacote zip vários arquivos fábrica"
+    },
+    {
+      "cat": "Configuração Enviar Para",
+      "t": "Envio por e-mail ou FTP",
+      "d": "Opções do Enviar Para que mandam o arquivo gerado por e-mail ou para um FTP.",
+      "c": "<SENDTOEMAIL ID=\"Email\" DESCRIPTION=\"E-Mail\" CATEGORIES=\"enviar_pedido\"\n             XSLLAYOUT=\"%PastaBudget%\\SendTo\\Default.xsl\" FILENAME=\"#savefilename#\" FILEEXTENSION=\".txt\"\n             FILEPATH=\"c:\\\" SHOWSAVEDIALOG=\"Y\" ASKVIEWFILE=\"N\" ORDERBY=\"Nenhuma\" DEFAULT=\"Y\" ENCODING=\"ASCII\" />\n<SENDTOFTP ID=\"ftp\" DESCRIPTION=\"FTP\" CATEGORIES=\"enviar_pedido\"\n           XSLLAYOUT=\"%PastaBudget%\\SendTo\\Default.xsl\" FILENAME=\"#savefilename#\" FILEEXTENSION=\".txt\"\n           FILEPATH=\"c:\\\" SHOWSAVEDIALOG=\"Y\" ASKVIEWFILE=\"N\" ORDERBY=\"Nenhuma\" DEFAULT=\"N\" ENCODING=\"ASCII\" />",
+      "origem": "SendTo/sendTo.xml",
+      "tags": "sendto email ftp"
+    }
+  ]
+}

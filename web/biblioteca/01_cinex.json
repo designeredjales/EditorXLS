@@ -1,0 +1,158 @@
+{
+  "lote": "Modelos Cinex (orçamento, listagem e integração ERP Start)",
+  "recebido": "2026-10-10",
+  "itens": [
+    {
+      "cat": "Itens",
+      "t": "Quantidade alterada manualmente",
+      "d": "Mostra a quantidade digitada pelo vendedor (metadado QUANTIDADE_ALTERADA) quando existir; senão, a quantidade calculada pelo Promob.",
+      "c": "<td align=\"center\">\n  <xsl:choose>\n    <xsl:when test=\"count(METADATAS/METADATA[@ID='QUANTIDADE_ALTERADA']) &gt; 0\">\n      <xsl:value-of select=\"METADATAS/METADATA[@ID='QUANTIDADE_ALTERADA']/@VALUE\" />\n    </xsl:when>\n    <xsl:otherwise>\n      <xsl:value-of select=\"@QUANTITY\" />\n    </xsl:otherwise>\n  </xsl:choose>\n</td>",
+      "origem": "Parceiro_Cinex_Orcamento.xsl",
+      "tags": "quantidade metadado"
+    },
+    {
+      "cat": "Itens",
+      "t": "Unidade só quando não for peça",
+      "d": "Esconde a unidade quando é 'un' e mostra quantidade + unidade para m, m², barra etc.",
+      "c": "<td align=\"center\">\n  <xsl:if test=\"@UNIT != 'un'\">\n    <xsl:value-of select=\"@QUANTITY\" />\n    <xsl:text> </xsl:text>\n    <xsl:value-of select=\"@UNIT\" />\n  </xsl:if>\n</td>",
+      "origem": "Parceiro_Cinex_Orcamento.xsl",
+      "tags": "unidade metro"
+    },
+    {
+      "cat": "Preços",
+      "t": "Mostrar preço só quando permitido",
+      "d": "Respeita o atributo SHOWPRICE do item e a referência SHOWPRICE. Item sem preço mostra 0,00.",
+      "c": "<td align=\"right\">\n  <xsl:if test=\"not(@SHOWPRICE) or @SHOWPRICE = 'Y'\">\n    <xsl:if test=\"count(REFERENCES/SHOWPRICE) = 0 or REFERENCES/SHOWPRICE/@REFERENCE = 'Y'\">\n      <xsl:choose>\n        <xsl:when test=\"count(PRICE) &gt; 0\">\n          <xsl:value-of select=\"format-number(translate(PRICE/MARGINS/BUDGET/@TOTAL, ',', '.'), '###.##0,00', 'formato')\" />\n        </xsl:when>\n        <xsl:otherwise>0,00</xsl:otherwise>\n      </xsl:choose>\n    </xsl:if>\n  </xsl:if>\n</td>",
+      "origem": "Parceiro_Cinex_Orcamento.xsl",
+      "tags": "preço showprice ocultar"
+    },
+    {
+      "cat": "Preços",
+      "t": "Atenção: preço da linha × total",
+      "d": "No orçamento Cinex a linha usa PRICE/@TABLE (sem margem) e o total usa a margem de orçamento. Para as linhas fecharem com o total, use o mesmo nível de preço nos dois.",
+      "c": "<!-- Linha do item: preço com margem de orçamento -->\n<xsl:value-of select=\"format-number(translate(PRICE/MARGINS/BUDGET/@TOTAL, ',', '.'), '###.##0,00', 'formato')\" />\n\n<!-- Total do projeto: mesmo nível de preço -->\n<xsl:value-of select=\"format-number(translate(TOTALPRICES/MARGINS/BUDGET/@VALUE, ',', '.'), '###.##0,00', 'formato')\" />",
+      "origem": "Parceiro_Cinex_Orcamento.xsl",
+      "tags": "preço margem tabela total diferença"
+    },
+    {
+      "cat": "Cabeçalho",
+      "t": "Logos da loja e do Promob",
+      "d": "Usa %pastasistema% para apontar para a pasta System do Promob. Troque o nome do arquivo do logo.",
+      "c": "<table width=\"100%\" border=\"0\">\n  <tr>\n    <td height=\"70\"><img src=\"%pastasistema%/identity/logoLoja.png\" alt=\"\" border=\"0\" /></td>\n    <td width=\"1%\"><img src=\"%pastasistema%/identity/logoPromob.png\" alt=\"\" border=\"0\" /></td>\n  </tr>\n</table>",
+      "origem": "Parceiro_Cinex_Orcamento.xsl",
+      "tags": "logo imagem pastasistema"
+    },
+    {
+      "cat": "Cabeçalho",
+      "t": "Link que abre site ou programa",
+      "d": "Recurso do navegador do Promob: external.ProcessStart abre uma URL ou programa no Windows. O endereço vem de um metadado da listagem.",
+      "c": "<script type=\"text/javascript\">\n  function abrirLink() {\n    external.ProcessStart('<xsl:value-of select=\"METADATAS/METADATA[@ID='Ws_Argument_1']/@VALUE\" />');\n  }\n</script>\n<a href=\"javascript:void(0)\" onclick=\"abrirLink()\">Abrir configurador</a>",
+      "origem": "Parceiro_Cinex.xsl",
+      "tags": "link url programa externo javascript"
+    },
+    {
+      "cat": "Seções",
+      "t": "Aviso no fim da listagem",
+      "d": "Mensagem destacada abaixo dos itens, como o \"Produtos apenas para visualização\" da listagem Cinex.",
+      "c": "<tr>\n  <td align=\"center\" style=\"padding-top:20px;font-size:12px;color:#cc0000;font-weight:bold\">\n    **Produtos apenas para visualização\n  </td>\n</tr>",
+      "origem": "Parceiro_Cinex.xsl",
+      "tags": "aviso mensagem rodapé"
+    },
+    {
+      "cat": "Itens",
+      "t": "Ambiente e categoria do item",
+      "d": "Pega o nome do ambiente e da categoria a partir de qualquer item, em qualquer nível. Mais seguro que parent::node()/parent::node()/…, que quebra quando o item é subitem.",
+      "c": "<xsl:value-of select=\"ancestor::AMBIENT[1]/@DESCRIPTION\" />\n<xsl:text> / </xsl:text>\n<xsl:value-of select=\"ancestor::CATEGORY[1]/@DESCRIPTION\" />",
+      "origem": "PromobERPStartIntegration.xsl",
+      "tags": "ambiente categoria ancestor hierarquia"
+    },
+    {
+      "cat": "Campos",
+      "t": "Busca em cascata (referência → atributo → integração)",
+      "d": "Procura um valor em três lugares, na ordem: referência do item, atributo do item e atributo de integração. Troque VOLUME pelo campo desejado.",
+      "c": "<xsl:choose>\n  <xsl:when test=\"count(REFERENCES/VOLUME) &gt; 0\">\n    <xsl:value-of select=\"REFERENCES/VOLUME/@REFERENCE\" />\n  </xsl:when>\n  <xsl:when test=\"string-length(normalize-space(@VOLUME)) &gt; 0\">\n    <xsl:value-of select=\"@VOLUME\" />\n  </xsl:when>\n  <xsl:otherwise>\n    <xsl:value-of select=\"METADATAS/METADATA/METADATA.VALUE/INTEGRATIONDATA/ATTRIBUTES/ATTRIBUTE[@NAME='VOLUME']/@VALUE\" />\n  </xsl:otherwise>\n</xsl:choose>",
+      "origem": "PromobERPStartIntegration.xsl",
+      "tags": "volume fallback cascata integração"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "ID do item conforme estrutura",
+      "d": "Itens de estrutura usam STRUCTUREKEY como ID; os demais usam o ID normal.",
+      "c": "<xsl:attribute name=\"ID\">\n  <xsl:choose>\n    <xsl:when test=\"@STRUCTURE = 'Y'\"><xsl:value-of select=\"@STRUCTUREKEY\" /></xsl:when>\n    <xsl:otherwise><xsl:value-of select=\"@ID\" /></xsl:otherwise>\n  </xsl:choose>\n</xsl:attribute>",
+      "origem": "PromobERPStartIntegration.xsl",
+      "tags": "id estrutura structurekey"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Só itens que vão para a fábrica",
+      "d": "Filtra os itens com a referência PEDIDOFABRICA = True (ou sem essa referência). Parênteses explícitos evitam o erro de precedência do arquivo original.",
+      "c": "<xsl:for-each select=\"AMBIENTS/AMBIENT/CATEGORIES/CATEGORY/ITEMS/ITEM[count(REFERENCES) &gt; 0 and (count(REFERENCES/PEDIDOFABRICA) = 0 or REFERENCES/PEDIDOFABRICA/@REFERENCE = 'True')]\">\n  <!-- item que vai para o pedido de fábrica -->\n</xsl:for-each>",
+      "origem": "PromobERPStartIntegration.xsl",
+      "tags": "pedido fábrica filtro"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Preço total do módulo com componentes",
+      "d": "Soma o preço do módulo com o dos componentes, nas margens de pedido.",
+      "c": "<xsl:attribute name=\"PRECO_TOTAL\">\n  <xsl:value-of select=\"format-number(PRICE/MARGINS/ORDER/@TOTALCOMPONENTS + PRICE/MARGINS/ORDER/@TOTAL, '#0.00')\" />\n</xsl:attribute>",
+      "origem": "PromobERPStartIntegration.xsl",
+      "tags": "preço componentes pedido"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "De-para de nomes de atributo",
+      "d": "Renomeia atributos de integração na saída (ex.: LARGURA_AMBIENTE vira LARGURA) e repete o nome original nos demais.",
+      "c": "<xsl:attribute name=\"CODIGO\">\n  <xsl:choose>\n    <xsl:when test=\"@NAME = 'LARGURA_AMBIENTE'\">LARGURA</xsl:when>\n    <xsl:when test=\"@NAME = 'ALTURA_AMBIENTE'\">ALTURA</xsl:when>\n    <xsl:when test=\"@NAME = 'PROFUNDIDADE_AMBIENTE'\">PROFUNDIDADE</xsl:when>\n    <xsl:otherwise><xsl:value-of select=\"@NAME\" /></xsl:otherwise>\n  </xsl:choose>\n</xsl:attribute>",
+      "origem": "PromobERPStartIntegration.xsl",
+      "tags": "renomear mapear depara"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Características exceto uma lista",
+      "d": "Gera as características de integração ignorando atributos que já saem em outro lugar.",
+      "c": "<xsl:for-each select=\"METADATAS/METADATA/METADATA.VALUE/INTEGRATIONDATA/ATTRIBUTES/ATTRIBUTE[@NAME != 'UF' and @NAME != 'FANTASMA' and @NAME != 'ITEM_BASE' and @NAME != 'VOLUME']\">\n  <CARACTERISTICA CODIGO=\"{@NAME}\" RESPOSTA=\"{@VALUE}\" />\n</xsl:for-each>",
+      "origem": "PromobERPStartIntegration.xsl",
+      "tags": "excluir filtrar atributos"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Roteiro produtivo do Builder",
+      "d": "Lista as operações de produção (ordem, código, unidade, quantidade, preço) geradas pelo Builder.",
+      "c": "<xsl:if test=\"count(ADDITIONAL_INFORMATIONS_BUILDER/PRODUCTIVE_SCRIPT/OPERATION) &gt; 0\">\n  <ROTEIRO>\n    <xsl:for-each select=\"ADDITIONAL_INFORMATIONS_BUILDER/PRODUCTIVE_SCRIPT/OPERATION\">\n      <OPERACAO ORDEM=\"{@ORDER}\" CODIGO=\"{@CODE}\" DESCRICAO=\"{@DESCRIPTION}\" UNIDADE=\"{@UNIT}\" QUANTIDADE=\"{@QUANTITY}\" PRECO_UNIT=\"{@UNIT_PRICE}\" />\n    </xsl:for-each>\n  </ROTEIRO>\n</xsl:if>",
+      "origem": "PromobERPStartIntegration.xsl",
+      "tags": "roteiro operação produção builder"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Medidas de corte da chapa",
+      "d": "Lê as medidas de corte (X e Y) das operações do tipo CUT do Builder.",
+      "c": "<xsl:for-each select=\"ADDITIONAL_INFORMATIONS_BUILDER/PRODUCTIVE_SCRIPT/OPERATION[@TYPE = 'CUT']\">\n  <OTIMIZACAO_CORTE>\n    <OTIMIZACAO CODIGO=\"ALTURA_CORTE\" RESPOSTA=\"{PLATE_CUTTING/@Y}\" />\n    <OTIMIZACAO CODIGO=\"LARGURA_CORTE\" RESPOSTA=\"{PLATE_CUTTING/@X}\" />\n  </OTIMIZACAO_CORTE>\n</xsl:for-each>",
+      "origem": "PromobERPStartIntegration.xsl",
+      "tags": "corte chapa otimização plano"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Processado pelo Builder (S/N)",
+      "d": "Converte a marca PROCESSED_BY_BUILDER em S ou N para o ERP.",
+      "c": "<xsl:attribute name=\"BUILDER\">\n  <xsl:choose>\n    <xsl:when test=\"ADDITIONAL_INFORMATIONS_BUILDER/@PROCESSED_BY_BUILDER = 'Y'\">S</xsl:when>\n    <xsl:otherwise>N</xsl:otherwise>\n  </xsl:choose>\n</xsl:attribute>",
+      "origem": "PromobERPStartIntegration.xsl",
+      "tags": "builder flag"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Plugins do Promob como comentário",
+      "d": "Escreve no XML de saída os plugins instalados, como comentário. Útil para suporte e diagnóstico.",
+      "c": "<xsl:for-each select=\"ABOUTPROMOB/VERSIONPLUGINS/PLUGIN\">\n  <xsl:comment><xsl:value-of select=\"@NAME\" /></xsl:comment>\n</xsl:for-each>",
+      "origem": "PromobERPStartIntegration.xsl",
+      "tags": "plugins diagnóstico versão"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Dados do cliente como atributos",
+      "d": "Transforma os campos da tela Dados do Cliente em atributos de um elemento do XML de saída.",
+      "c": "<CLIENTE_LOJA CODIGO=\"{CUSTOMERSDATA/DATA[@ID='codcliente']/@VALUE}\"\n              NOME=\"{CUSTOMERSDATA/DATA[@ID='nomecliente']/@VALUE}\"\n              CPF_CNPJ=\"{CUSTOMERSDATA/DATA[@ID='cpfcnpj']/@VALUE}\"\n              CIDADE=\"{CUSTOMERSDATA/DATA[@ID='cidade']/@VALUE}\"\n              UF=\"{CUSTOMERSDATA/DATA[@ID='uf']/@VALUE}\" />",
+      "origem": "PromobERPStartIntegration.xsl",
+      "tags": "cliente atributos erp"
+    }
+  ]
+}

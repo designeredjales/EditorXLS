@@ -22,7 +22,13 @@ for folder in ("private", "samples"):
                     text = raw.decode("cp1252")
                 samples.append({"name": f.name, "text": text})
 blob = json.dumps(samples, ensure_ascii=False).replace("</", "<\\/")
-page = src.replace("__SAMPLES__", blob)
+libs = []
+libdir = base / "biblioteca"
+if libdir.is_dir():
+    for f in sorted(libdir.glob("*.json")):
+        libs.append(json.loads(f.read_text(encoding="utf-8")))
+libblob = json.dumps(libs, ensure_ascii=False).replace("</", "<\\/")
+page = src.replace("__SAMPLES__", blob).replace("__LIBRARY__", libblob)
 out = base / "dist"
 out.mkdir(exist_ok=True)
 (out / "editor-xsl-promob.html").write_text(page, encoding="utf-8")
@@ -31,4 +37,4 @@ local = ('<!doctype html>\n<html lang="pt-BR">\n<head>\n<meta charset="utf-8">\n
          '<style>:root{color-scheme:light}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>\n'
          '</head>\n<body>\n' + page + '\n</body>\n</html>\n')
 (out / "EditorXSL-Promob.html").write_text(local, encoding="utf-8")
-print(f"{len(samples)} exemplos embutidos -> {out}")
+print(f"{len(samples)} exemplos e {sum(len(l.get('itens', [])) for l in libs)} códigos de biblioteca embutidos -> {out}")

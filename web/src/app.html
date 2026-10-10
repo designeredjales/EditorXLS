@@ -131,6 +131,7 @@ select.sel{border:1px solid var(--line);background:var(--panel);border-radius:6p
 .card .cat{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--wood);font-weight:600}
 .card h4{margin:0;font-size:14.5px;font-weight:600}
 .card p{margin:0;font-size:12.5px;color:var(--muted)}
+.card p.orig{font-size:11.5px;color:var(--wood)}
 .card pre{margin:0;background:var(--code-bg);border:1px solid var(--line);border-radius:6px;padding:8px;overflow:auto;max-height:150px;font-size:11.5px}
 .card .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
 .form{border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;gap:8px;background:var(--sunk)}
@@ -382,6 +383,7 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
 <div class="toast" id="toast" hidden></div>
 
 <script id="samples" type="application/json">__SAMPLES__</script>
+<script id="library" type="application/json">__LIBRARY__</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
 <script>
@@ -430,6 +432,16 @@ const CATALOG = [
   { g: "Referências do item", ctx: "ITEM/REFERENCES/<NOME>", f: [
     ["REFERENCES/COMPLETE/@REFERENCE", "Referência completa"], ["REFERENCES/MATERIAL/@REFERENCE", "Material"],
     ["REFERENCES/PESO/@REFERENCE", "Peso (se cadastrado como referência PESO)"], ["REFERENCES/VOLUME/@REFERENCE", "Volume"], ["REFERENCES/ITEM_BASE/@REFERENCE", "Item base"]]},
+  { g: "Informações extras da tabela de preço", ctx: "ITEM/PRICE/EXTRAINFORMATIONS", f: [
+    ["PRICE/EXTRAINFORMATIONS/EXTRAINFORMATION[@ID='Peso']/@TOTALVALUE", "Peso total do item (kg)"], ["PRICE/EXTRAINFORMATIONS/EXTRAINFORMATION[@ID='Peso']/@TABLEVALUE", "Peso unitário cadastrado"],
+    ["PRICE/EXTRAINFORMATIONS/EXTRAINFORMATION[@ID='NCM']/@TABLEVALUE", "NCM (código fiscal)"]]},
+  { g: "Referências de chapa e pedido", ctx: "ITEM/REFERENCES/<NOME>", f: [
+    ["REFERENCES/THICKNESS/@REFERENCE", "Espessura"], ["REFERENCES/MODEL/@REFERENCE", "Acabamento / modelo"], ["REFERENCES/MAXWIDTH/@REFERENCE", "Largura máxima da chapa"],
+    ["REFERENCES/MAXDEPTH/@REFERENCE", "Profundidade máxima da chapa"], ["REFERENCES/CODE/@REFERENCE", "Código do item"], ["REFERENCES/SUPPLIER/@REFERENCE", "Fornecedor"],
+    ["REFERENCES/POSITION/@REFERENCE", "Posição"], ["REFERENCES/SEPARACAO_PEDIDO/@REFERENCE", "Pedido em que o item entra"], ["REFERENCES/EXPORTXML/@REFERENCE", "Arquivo de destino na exportação"]]},
+  { g: "Dados do pedido (metadados da listagem)", ctx: "LISTING/METADATAS", f: [
+    ["METADATAS/METADATA[@ID='ORDERNUMBER']/@VALUE", "Número do pedido"], ["METADATAS/METADATA[@ID='PAYMENTTERMS']/@VALUE", "Condição de pagamento"],
+    ["METADATAS/METADATA[@ID='TOCLIENT']/@VALUE", "Cliente final"], ["METADATAS/METADATA[@ID='SPECIALDISCOUNT']/@VALUE", "Desconto especial"], ["PROJECTGUID/@GUID", "ID do projeto"]]},
   { g: "Preço do item", ctx: "ITEM/PRICE", f: [
     ["PRICE/@TABLE", "Preço de tabela, sem margens"], ["PRICE/@UNIT", "Preço unitário"], ["PRICE/@TOTAL", "Unitário × repetições"],
     ["PRICE/MARGINS/ORDER/@TOTAL", "Total com margens de pedido"], ["PRICE/MARGINS/BUDGET/@TOTAL", "Total com margens de orçamento (preço ao cliente)"],
@@ -459,6 +471,7 @@ function labelFor(expr) {
   if (e.startsWith("$")) return "Variável " + e;
   if ((m = e.match(/CUSTOMERSDATA\/DATA\[@ID\s*=\s*'([^']+)'\]/))) return CUSTOMER[m[1]] || "Dado do cliente: " + m[1];
   if ((m = e.match(/REFERENCES\/([A-Z0-9_]+)\/@REFERENCE/i))) return "Referência do item: " + m[1];
+  if ((m = e.match(/EXTRAINFORMATION\[@ID\s*=\s*'([^']+)'\]\/@(TOTALVALUE|TABLEVALUE)/))) return m[1] + (m[2] === "TOTALVALUE" ? " (total)" : " (unitário)");
   if ((m = e.match(/ATTRIBUTE\[@NAME\s*=\s*'([^']+)'\]/))) return "Atributo de integração: " + m[1];
   if ((m = e.match(/METADATA\[@ID\s*=\s*'([^']+)'\]/))) return "Metadado: " + m[1];
   if (/TOTALPRICES\/MARGINS\/BUDGET\/@VALUE/.test(e)) return "Total do orçamento";
@@ -478,7 +491,7 @@ function labelFor(expr) {
 const BUILTIN = [
   { cat: "Campos", t: "Dado do cliente", d: "Mostra um campo da tela Dados do Cliente. Troque o ID (nomecliente, cpfcnpj, cidade…).",
     c: `<xsl:value-of select="CUSTOMERSDATA/DATA[@ID='nomecliente']/@VALUE" />` },
-  { cat: "Campos", t: "Referência do item pelo nome", d: "Lê uma referência cadastrada no item (ex.: PESO, MATERIAL, VOLUME). Usar dentro do contexto de ITEM.",
+  { cat: "Campos", t: "Referência do item pelo nome", d: "Lê uma referência cadastrada no item (ex.: MATERIAL, VOLUME, CODE). Para o peso da tabela de preço, veja \"Peso da peça\". Usar dentro do contexto de ITEM.",
     c: `<xsl:value-of select="REFERENCES/PESO/@REFERENCE" />` },
   { cat: "Campos", t: "Atributo de integração (INTEGRATIONDATA)", d: "Lê um atributo configurado pelo nome. Troque TIPO_PRODUTO pelo atributo desejado.",
     c: `<xsl:value-of select="METADATAS/METADATA[@ID='INTEGRATIONDATA']/METADATA.VALUE/INTEGRATIONDATA/ATTRIBUTES/ATTRIBUTE[@NAME='TIPO_PRODUTO']/@VALUE" />` },
@@ -1083,10 +1096,13 @@ function renderFound() {
   for (const a of doc.querySelectorAll("INTEGRATIONDATA ATTRIBUTE")) if (!integ.has(a.getAttribute("NAME"))) integ.set(a.getAttribute("NAME"), a.getAttribute("VALUE"));
   for (const m of doc.querySelectorAll("METADATA[ID]")) if (!meta.has(m.getAttribute("ID"))) meta.set(m.getAttribute("ID"), m.getAttribute("VALUE") || "(conteúdo estruturado)");
   for (const d of doc.querySelectorAll("CUSTOMERSDATA > DATA")) cust.set(d.getAttribute("ID"), d.getAttribute("VALUE"));
+  const extra = new Map();
+  for (const x of doc.querySelectorAll("EXTRAINFORMATION[ID]")) if (!extra.has(x.getAttribute("ID"))) extra.set(x.getAttribute("ID"), x.getAttribute("TOTALVALUE") || x.getAttribute("TABLEVALUE"));
   for (const it of doc.querySelectorAll("ITEM")) for (const a of it.attributes) if (!itemAttr.has(a.name)) itemAttr.set(a.name, a.value);
   const grp = (title, ctx, entries, mk) => entries.size ? `<details class="fgroup" open><summary>${esc(title)} <small>${esc(ctx)}</small></summary>${[...entries].map(([k, v]) => mk(k, v)).join("")}</details>` : "";
   box.innerHTML =
     grp("Referências do item", "ITEM/REFERENCES", refs, (k, v) => fieldHtml(`REFERENCES/${k}/@REFERENCE`, "Referência: " + k, "", v)) +
+    grp("Informações extras da tabela de preço", "PRICE/EXTRAINFORMATIONS", extra, (k, v) => fieldHtml(`PRICE/EXTRAINFORMATIONS/EXTRAINFORMATION[@ID='${k}']/@TOTALVALUE`, k + " (total)", "", v)) +
     grp("Atributos de integração", "INTEGRATIONDATA/ATTRIBUTES", integ, (k, v) => fieldHtml(`METADATAS/METADATA/METADATA.VALUE/INTEGRATIONDATA/ATTRIBUTES/ATTRIBUTE[@NAME='${k}']/@VALUE`, "Integração: " + k, "", v)) +
     grp("Metadados", "METADATAS/METADATA", meta, (k, v) => fieldHtml(`METADATAS/METADATA[@ID='${k}']/@VALUE`, "Metadado: " + k, "", v)) +
     grp("Atributos do item", "ITEM/@…", itemAttr, (k, v) => fieldHtml("@" + k, ATTR[k] || k, "", v)) +
@@ -1095,16 +1111,18 @@ function renderFound() {
 
 /* ---------- Biblioteca ---------- */
 const userSnips = () => lsGet("exsl.snippets", []);
-function allSnips() { return [...BUILTIN.map(s => ({ ...s, builtin: true })), ...userSnips()]; }
+let LIBRARY = [];
+try { LIBRARY = JSON.parse(document.getElementById("library").textContent).flatMap(l => (l.itens || []).map(s => ({ ...s, lote: l.lote, builtin: true }))); } catch {}
+function allSnips() { return [...BUILTIN.map(s => ({ ...s, builtin: true })), ...LIBRARY, ...userSnips()]; }
 function renderLib() {
   const list = allSnips();
   const cats = ["Todas", ...new Set(list.map(s => s.cat))];
   $("#libFilters").innerHTML = cats.map(c => `<button class="fchip" type="button" aria-pressed="${c === state.libCat}" data-cat="${esc(c)}">${esc(c)}</button>`).join("");
   const q = $("#libSearch").value.trim().toLowerCase();
-  const shown = list.filter(s => (state.libCat === "Todas" || s.cat === state.libCat) && (!q || (s.t + s.d + s.c + s.cat).toLowerCase().includes(q)));
+  const shown = list.filter(s => (state.libCat === "Todas" || s.cat === state.libCat) && (!q || (s.t + s.d + s.c + s.cat + (s.tags || "") + (s.origem || "")).toLowerCase().includes(q)));
   $("#libCards").innerHTML = shown.map(s => {
     const i = list.indexOf(s);
-    return `<article class="card"><span class="cat">${esc(s.cat)}${s.builtin ? "" : " · seu"}</span><h4>${esc(s.t)}</h4><p>${esc(s.d || "")}</p><pre>${esc(s.c)}</pre>
+    return `<article class="card"><span class="cat">${esc(s.cat)}${s.builtin ? "" : " · seu"}</span><h4>${esc(s.t)}</h4><p>${esc(s.d || "")}</p>${s.origem ? `<p class="orig">Origem: ${esc(s.origem)}</p>` : ""}<pre>${esc(s.c)}</pre>
       <div class="row"><button class="btn small primary" type="button" data-snip="${i}">Inserir no editor</button><button class="btn small" type="button" data-snipcp="${i}">Copiar</button>
       ${s.builtin ? "" : `<button class="btn small ghost" type="button" data-snipdel="${i}">Remover</button>`}</div></article>`;
   }).join("") || '<p class="empty">Nada encontrado.</p>';
@@ -1267,12 +1285,13 @@ const COLP = {
   desc: { label: "Descrição", kind: "desc", path: "@DESCRIPTION", fmt: "text", w: "", align: "left" },
   dim: { label: "Dimensões", path: "@TEXTDIMENSION", fmt: "text", w: "14%", align: "center" },
   material: { label: "Material", path: "REFERENCES/MATERIAL/@REFERENCE", fmt: "text", w: "14%", align: "left" },
-  peso: { label: "Peso (kg)", path: "REFERENCES/PESO/@REFERENCE", fmt: "num", w: "8%", align: "right", sum: true },
-  pesoTotal: { label: "Peso total (kg)", path: "REFERENCES/PESO/@REFERENCE", fmt: "num", w: "9%", align: "right", mulQty: true, sum: true },
+  peso: { label: "Peso (kg)", path: "PRICE/EXTRAINFORMATIONS/EXTRAINFORMATION[@ID='Peso']/@TOTALVALUE", fmt: "num", w: "8%", align: "right", sum: true },
+  pesoRef: { label: "Peso ref. (kg)", path: "REFERENCES/PESO/@REFERENCE", fmt: "num", w: "9%", align: "right", mulQty: true, sum: true },
+  ncm: { label: "NCM", path: "PRICE/EXTRAINFORMATIONS/EXTRAINFORMATION[@ID='NCM']/@TABLEVALUE", fmt: "text", w: "9%", align: "center" },
   table: { label: "Preço tabela", path: "PRICE/@TABLE", fmt: "money", w: "10%", align: "right" },
   price: { label: "Preço final", path: "PRICE/MARGINS/BUDGET/@TOTAL", fmt: "money", w: "11%", align: "right" }
 };
-const COLP_NAMES = { seq: "Nº", qty: "Qtd", unit: "Un", ref: "Referência", desc: "Descrição", dim: "Dimensões", material: "Material", peso: "Peso", pesoTotal: "Peso × qtd", table: "Preço tabela", price: "Preço final" };
+const COLP_NAMES = { seq: "Nº", qty: "Qtd", unit: "Un", ref: "Referência", desc: "Descrição", dim: "Dimensões", material: "Material", peso: "Peso", pesoRef: "Peso (referência) × qtd", ncm: "NCM", table: "Preço tabela", price: "Preço final" };
 const custF = ids => ids.map(k => ({ id: k, label: (CUSTOMER[k] || k).replace(/^Loja: /, "") }));
 const cols = keys => keys.map(k => ({ label: "", path: "", fmt: "text", w: "", align: "left", kind: "", sum: false, mulQty: false, ...COLP[k] }));
 function newBlock(type) {
@@ -1784,7 +1803,7 @@ async function renderCanvas() {
 
 /* ---------- Painel de propriedades ---------- */
 function scanFields() {
-  const r = { refs: new Set(["COMPLETE", "MATERIAL", "PESO", "VOLUME", "ITEM_BASE"]), integ: new Set(), meta: new Set(), cust: new Set(Object.keys(CUSTOMER)) };
+  const r = { refs: new Set(["COMPLETE", "MATERIAL", "PESO", "VOLUME", "ITEM_BASE", "THICKNESS", "MODEL", "CODE", "SUPPLIER"]), integ: new Set(), meta: new Set(), cust: new Set(Object.keys(CUSTOMER)), extra: new Set(["Peso", "NCM"]) };
   if (state.xml && state.xml.text) {
     const { doc, error } = parseXml(state.xml.text);
     if (!error) {
@@ -1792,6 +1811,7 @@ function scanFields() {
       doc.querySelectorAll("INTEGRATIONDATA ATTRIBUTE").forEach(n => r.integ.add(n.getAttribute("NAME")));
       doc.querySelectorAll("ITEM METADATA[ID]").forEach(n => { if (n.getAttribute("VALUE") != null) r.meta.add(n.getAttribute("ID")); });
       doc.querySelectorAll("CUSTOMERSDATA > DATA").forEach(n => r.cust.add(n.getAttribute("ID")));
+      doc.querySelectorAll("EXTRAINFORMATION[ID]").forEach(n => r.extra.add(n.getAttribute("ID")));
     }
   }
   return r;
@@ -1802,6 +1822,7 @@ function itemOptions() {
     ["Item", ["@DESCRIPTION", "@REFERENCE", "@QUANTITY", "@UNIT", "@TEXTDIMENSION", "@WIDTH", "@HEIGHT", "@DEPTH", "@REPETITION", "@FAMILY", "@OBSERVATIONS"]],
     ["Referências do item", [...f.refs].map(k => `REFERENCES/${k}/@REFERENCE`)],
     ["Preço", ["PRICE/MARGINS/BUDGET/@TOTAL", "PRICE/MARGINS/BUDGET/@UNIT", "PRICE/MARGINS/ORDER/@TOTAL", "PRICE/@TABLE", "PRICE/@UNIT", "PRICE/@TOTAL"]],
+    ["Tabela de preço (extras)", [...f.extra].flatMap(k => [`PRICE/EXTRAINFORMATIONS/EXTRAINFORMATION[@ID='${k}']/@TOTALVALUE`, `PRICE/EXTRAINFORMATIONS/EXTRAINFORMATION[@ID='${k}']/@TABLEVALUE`])],
     ["Integração", [...f.integ].map(k => `METADATAS/METADATA/METADATA.VALUE/INTEGRATIONDATA/ATTRIBUTES/ATTRIBUTE[@NAME='${k}']/@VALUE`)],
     ["Metadados", [...f.meta].map(k => `METADATAS/METADATA[@ID='${k}']/@VALUE`)],
     ["Builder", ["ADDITIONAL_INFORMATIONS_BUILDER/@ID_ERP", "ADDITIONAL_INFORMATIONS_BUILDER/@CODE"]]

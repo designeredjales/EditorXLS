@@ -1,0 +1,206 @@
+{
+  "lote": "Lote 2: pedido, chapas, TXT, integrações (Bontempo, Focco)",
+  "recebido": "2026-10-10",
+  "itens": [
+    {
+      "cat": "Campos",
+      "t": "Peso da peça (informação extra da tabela de preço)",
+      "d": "O peso vem da tabela de preço do Promob em PRICE/EXTRAINFORMATIONS. TOTALVALUE já é o peso total do item; TABLEVALUE é o valor unitário cadastrado.",
+      "c": "<xsl:choose>\n  <xsl:when test=\"count(PRICE/EXTRAINFORMATIONS/EXTRAINFORMATION[@ID='Peso']) &gt; 0\">\n    <xsl:value-of select=\"format-number(translate(PRICE/EXTRAINFORMATIONS/EXTRAINFORMATION[@ID='Peso']/@TOTALVALUE, ',', '.'), '###.##0,000', 'formato')\" />\n  </xsl:when>\n  <xsl:otherwise>0,000</xsl:otherwise>\n</xsl:choose>",
+      "origem": "PedidoMontadoGeral.xsl",
+      "tags": "peso extrainformation tabela de preço kg"
+    },
+    {
+      "cat": "Campos",
+      "t": "NCM do item",
+      "d": "Código fiscal NCM cadastrado como informação extra na tabela de preço.",
+      "c": "<xsl:value-of select=\"PRICE/EXTRAINFORMATIONS/EXTRAINFORMATION[@ID='NCM']/@TABLEVALUE\" />",
+      "origem": "Bontempo.xsl",
+      "tags": "ncm fiscal extrainformation imposto"
+    },
+    {
+      "cat": "Preços",
+      "t": "IPI: metadado ou margem de pedido",
+      "d": "Usa o IPI digitado como metadado; se não existir, usa a margem de pedido com ID IPI.",
+      "c": "<xsl:choose>\n  <xsl:when test=\"count(METADATAS/METADATA[@ID='IPI']) &gt; 0\">\n    <xsl:value-of select=\"METADATAS/METADATA[@ID='IPI']/@VALUE\" />\n  </xsl:when>\n  <xsl:when test=\"count(PRICE/MARGINS/ORDER/MARGIN[@ID='IPI']) &gt; 0\">\n    <xsl:value-of select=\"PRICE/MARGINS/ORDER/MARGIN[@ID='IPI']/@VALUE\" />\n  </xsl:when>\n</xsl:choose>",
+      "origem": "Bontempo.xsl",
+      "tags": "ipi imposto margem"
+    },
+    {
+      "cat": "Preços",
+      "t": "Preço do módulo com componentes",
+      "d": "Preço de um módulo montado = preço do próprio módulo + soma dos componentes. Troque BUDGET por ORDER para preço de pedido.",
+      "c": "<xsl:variable name=\"vPreco\" select=\"translate(PRICE/MARGINS/BUDGET/@TOTAL, ',', '.')\" />\n<xsl:variable name=\"vComp\" select=\"translate(PRICE/MARGINS/BUDGET/@TOTALCOMPONENTS, ',', '.')\" />\n<xsl:value-of select=\"format-number(number(concat('0', $vPreco)) + number(concat('0', $vComp)), '###.##0,00', 'formato')\" />",
+      "origem": "PedidoMontadoGeral.xsl / OrcamentoExplodido.xsl",
+      "tags": "módulo componentes montado preço"
+    },
+    {
+      "cat": "Itens",
+      "t": "Só módulos montados (primeiro nível)",
+      "d": "Lista só os itens diretamente na categoria (módulos), sem as peças internas. Equivale ao name(parent::node()/parent::node())='CATEGORY' dos layouts originais, mais legível.",
+      "c": "<xsl:for-each select=\"ITEMS/ITEM\">\n  <xsl:if test=\"not(ancestor::ITEM)\">\n    <!-- linha do módulo -->\n  </xsl:if>\n</xsl:for-each>",
+      "origem": "PedidoMontadoGeral.xsl / ListagemMontadosParceiros.pt.xsl / FabricaXML.xsl",
+      "tags": "montado módulo primeiro nível top"
+    },
+    {
+      "cat": "Itens",
+      "t": "Repetição só para itens que não são unidade",
+      "d": "Mostra a repetição quando a unidade não é UN, sem diferenciar maiúsculas.",
+      "c": "<td align=\"center\">\n  <xsl:if test=\"translate(@UNIT, 'UN', 'un') != 'un'\">\n    <xsl:value-of select=\"@REPETITION\" />\n  </xsl:if>\n</td>",
+      "origem": "PedidoMontadoGeral.xsl",
+      "tags": "repetição unidade"
+    },
+    {
+      "cat": "Itens",
+      "t": "Código pai e código do item",
+      "d": "Mostra o ID do item pai e do item. Itens sem pai têm UNIQUEPARENTID negativo e ficam em branco.",
+      "c": "<td align=\"center\"><xsl:if test=\"@UNIQUEPARENTID &gt;= 0\"><xsl:value-of select=\"@UNIQUEPARENTID\" /></xsl:if></td>\n<td align=\"center\"><xsl:value-of select=\"@UNIQUEID\" /></td>",
+      "origem": "Listagem_Chapas.pt.xsl",
+      "tags": "código pai id hierarquia"
+    },
+    {
+      "cat": "Itens",
+      "t": "Expandir e recolher subitens (+/−)",
+      "d": "Linha do módulo com ícone que mostra ou esconde as peças. Usa external.GetStringVSA('pastaSistema'), recurso do navegador do Promob, para achar os ícones.",
+      "c": "<script type=\"text/javascript\">\n  var pasta = external.GetStringVSA('pastaSistema');\n  function alternar(img) {\n    var linha = img.parentNode.parentNode.nextSibling;\n    var fechado = linha.style.display == 'none';\n    linha.style.display = fechado ? '' : 'none';\n    img.src = pasta + (fechado ? '\\\\identity\\\\minus.gif' : '\\\\identity\\\\plus.gif');\n  }\n</script>\n<!-- No item: -->\n<tr>\n  <td width=\"20\" align=\"center\"><img src=\"%pastasistema%\\identity\\plus.gif\" width=\"9\" height=\"9\" border=\"0\" onclick=\"alternar(this)\" style=\"cursor:pointer\" /></td>\n  <td><xsl:value-of select=\"@DESCRIPTION\" /></td>\n</tr>\n<tr style=\"display:none\">\n  <td colspan=\"2\"><!-- tabela com os subitens --></td>\n</tr>",
+      "origem": "Listagem_Chapas.pt.xsl",
+      "tags": "expandir recolher javascript getstringvsa pasta sistema árvore"
+    },
+    {
+      "cat": "Cálculos",
+      "t": "Quantidade de painéis a partir do m²",
+      "d": "Converte a área (m²) em número de painéis usando as referências MAXWIDTH e MAXDEPTH (em mm).",
+      "c": "<xsl:choose>\n  <xsl:when test=\"count(REFERENCES/MAXWIDTH) &gt; 0 and count(REFERENCES/MAXDEPTH) &gt; 0\">\n    <xsl:variable name=\"area\" select=\"(REFERENCES/MAXWIDTH/@REFERENCE div 1000) * (REFERENCES/MAXDEPTH/@REFERENCE div 1000)\" />\n    <xsl:value-of select=\"format-number(number(translate(@QUANTITY, ',', '.')) div $area, '##0,000', 'formato')\" />\n  </xsl:when>\n  <xsl:otherwise>-</xsl:otherwise>\n</xsl:choose>",
+      "origem": "Listagem_Chapas.pt.xsl",
+      "tags": "painel chapa m2 área matéria-prima"
+    },
+    {
+      "cat": "Campos",
+      "t": "Dados da chapa (matéria-prima)",
+      "d": "Referências usadas na listagem de chapas: material, espessura, acabamento e dimensão máxima.",
+      "c": "<td><xsl:value-of select=\"REFERENCES/MATERIAL/@REFERENCE\" /></td>\n<td><xsl:value-of select=\"REFERENCES/THICKNESS/@REFERENCE\" /></td>\n<td><xsl:value-of select=\"REFERENCES/MODEL/@REFERENCE\" /></td>\n<td><xsl:value-of select=\"REFERENCES/MAXWIDTH/@REFERENCE\" /> x <xsl:value-of select=\"REFERENCES/MAXDEPTH/@REFERENCE\" /></td>",
+      "origem": "Listagem_Chapas.pt.xsl",
+      "tags": "chapa material espessura acabamento"
+    },
+    {
+      "cat": "Seções",
+      "t": "Subtotal por categoria (tabela e pedido)",
+      "d": "Linha de subtotal no fim de cada categoria. Versão corrigida: o original tinha uma célula dentro de outra.",
+      "c": "<tr bgcolor=\"#E9E9E9\">\n  <td colspan=\"7\">Subtotal</td>\n  <td align=\"right\"><xsl:value-of select=\"format-number(number(concat('0', translate(TOTALPRICES/@TABLE, ',', '.'))), '###.##0,00', 'formato')\" /></td>\n  <td align=\"right\"><xsl:value-of select=\"format-number(number(concat('0', translate(TOTALPRICES/MARGINS/ORDER/@VALUE, ',', '.'))), '###.##0,00', 'formato')\" /></td>\n</tr>",
+      "origem": "PedidoMontadoGeral.xsl",
+      "tags": "subtotal categoria total"
+    },
+    {
+      "cat": "Seções",
+      "t": "Esconder categorias pelo nome",
+      "d": "Pula categorias que não devem aparecer no documento (ex.: Ferragens, Composições).",
+      "c": "<xsl:for-each select=\"CATEGORIES/CATEGORY[@DESCRIPTION != 'Ferragens' and @DESCRIPTION != 'Composições']\">\n  <!-- tabela da categoria -->\n</xsl:for-each>",
+      "origem": "PedidoMontadoGeral.xsl",
+      "tags": "ocultar filtrar categoria"
+    },
+    {
+      "cat": "Cálculos",
+      "t": "Total separado por linha ou fornecedor",
+      "d": "Divide o total do ambiente entre categorias de um parceiro (ex.: Brilhart Color) e o restante da fábrica. Troque os nomes das categorias.",
+      "c": "<xsl:variable name=\"total\" select=\"number(concat('0', translate(TOTALPRICES/MARGINS/ORDER/@VALUE, ',', '.')))\" />\n<xsl:variable name=\"parceiro\" select=\"sum(CATEGORIES/CATEGORY[@DESCRIPTION = 'Brilhart Color' or @DESCRIPTION = 'Brilhart Color - Especiais']/TOTALPRICES/MARGINS/ORDER/@VALUE)\" />\n<tr><td>Total fábrica:</td><td align=\"right\"><xsl:value-of select=\"format-number($total - $parceiro, '###.##0,00', 'formato')\" /></td></tr>\n<tr><td>Total parceiro:</td><td align=\"right\"><xsl:value-of select=\"format-number($parceiro, '###.##0,00', 'formato')\" /></td></tr>\n<tr><td>Total final:</td><td align=\"right\"><xsl:value-of select=\"format-number($total, '###.##0,00', 'formato')\" /></td></tr>",
+      "origem": "PedidoMontadoGeral.xsl",
+      "tags": "total parceiro fornecedor divisão linha"
+    },
+    {
+      "cat": "Texto (TXT)",
+      "t": "Coluna de largura fixa",
+      "d": "Base dos arquivos .txt para ERP: completa o texto com espaços até N caracteres (aqui 26). Declare a variável espaco uma vez no topo.",
+      "c": "<xsl:variable name=\"espaco\" select=\"'                                                  '\" />\n\n<xsl:value-of select=\"substring(concat(@REFERENCE, $espaco), 1, 26)\" />",
+      "origem": "TxtBudget.xsl / TxtOrder.xsl",
+      "tags": "txt largura fixa coluna padding erp"
+    },
+    {
+      "cat": "Texto (TXT)",
+      "t": "Quebra de linha Windows",
+      "d": "Template para pular linha (CR+LF) em saídas de texto.",
+      "c": "<xsl:template name=\"QuebrarLinha\">\n  <xsl:text>&#13;&#10;</xsl:text>\n</xsl:template>\n\n<!-- uso: -->\n<xsl:call-template name=\"QuebrarLinha\" />",
+      "origem": "TxtBudget.xsl / TxtOrder.xsl / Bontempo.xsl",
+      "tags": "txt quebra linha crlf"
+    },
+    {
+      "cat": "Texto (TXT)",
+      "t": "Mesmo layout para pedido e orçamento",
+      "d": "TxtBudget e TxtOrder são iguais e só trocam BUDGET por ORDER. Com uma variável no topo, um arquivo serve aos dois.",
+      "c": "<xsl:variable name=\"nivelPreco\" select=\"'BUDGET'\" /> <!-- ou 'ORDER' -->\n\n<xsl:variable name=\"valor\">\n  <xsl:choose>\n    <xsl:when test=\"$nivelPreco = 'ORDER'\"><xsl:value-of select=\"PRICE/MARGINS/ORDER/@TOTAL\" /></xsl:when>\n    <xsl:otherwise><xsl:value-of select=\"PRICE/MARGINS/BUDGET/@TOTAL\" /></xsl:otherwise>\n  </xsl:choose>\n</xsl:variable>\n<xsl:value-of select=\"format-number(number(concat('0', translate($valor, ',', '.'))), '#0.00')\" />",
+      "origem": "TxtBudget.xsl / TxtOrder.xsl",
+      "tags": "pedido orçamento parametrizar variável"
+    },
+    {
+      "cat": "Formatação",
+      "t": "Substituir texto",
+      "d": "Troca todas as ocorrências de um texto por outro (XSLT 1.0 não tem replace). Útil para aspas em saídas de texto, vírgulas, quebras.",
+      "c": "<xsl:template name=\"Substituir\">\n  <xsl:param name=\"texto\" />\n  <xsl:param name=\"de\" />\n  <xsl:param name=\"para\" />\n  <xsl:choose>\n    <xsl:when test=\"$de != '' and contains($texto, $de)\">\n      <xsl:value-of select=\"substring-before($texto, $de)\" /><xsl:value-of select=\"$para\" />\n      <xsl:call-template name=\"Substituir\">\n        <xsl:with-param name=\"texto\" select=\"substring-after($texto, $de)\" />\n        <xsl:with-param name=\"de\" select=\"$de\" />\n        <xsl:with-param name=\"para\" select=\"$para\" />\n      </xsl:call-template>\n    </xsl:when>\n    <xsl:otherwise><xsl:value-of select=\"$texto\" /></xsl:otherwise>\n  </xsl:choose>\n</xsl:template>\n\n<!-- uso: aspas da descrição viram &quot; -->\n<xsl:call-template name=\"Substituir\">\n  <xsl:with-param name=\"texto\" select=\"@DESCRIPTION\" />\n  <xsl:with-param name=\"de\">\"</xsl:with-param>\n  <xsl:with-param name=\"para\">&amp;quot;</xsl:with-param>\n</xsl:call-template>",
+      "origem": "Bontempo.xsl",
+      "tags": "replace substituir aspas escape texto"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Código da tabela de preço (de-para)",
+      "d": "Converte o nome da tabela de preço do item (IDPRICETABLE) num código numérico para o ERP.",
+      "c": "<xsl:choose>\n  <xsl:when test=\"@IDPRICETABLE = 'empreendimentos'\">2</xsl:when>\n  <xsl:when test=\"@IDPRICETABLE = 'export'\">3</xsl:when>\n  <xsl:when test=\"@IDPRICETABLE = 'export_empreendimentos'\">4</xsl:when>\n  <xsl:otherwise>1</xsl:otherwise>\n</xsl:choose>",
+      "origem": "Bontempo.xsl",
+      "tags": "tabela de preço idpricetable código"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Dados do pedido (metadados da listagem)",
+      "d": "Número do pedido, condição, cliente final e desconto especial, gravados como metadados da listagem.",
+      "c": "<PEDIDO NUMERO=\"{METADATAS/METADATA[@ID='ORDERNUMBER']/@VALUE}\"\n        CONDICAO=\"{METADATAS/METADATA[@ID='PAYMENTTERMS']/@VALUE}\"\n        CLIENTE_FINAL=\"{METADATAS/METADATA[@ID='TOCLIENT']/@VALUE}\"\n        DESCONTO_ESPECIAL=\"{METADATAS/METADATA[@ID='SPECIALDISCOUNT']/@VALUE}\"\n        TOTAL=\"{PAYMENTTERMS/PAYMENTTERMCOLLECTION/PAYMENTTERM[@SELECTED='Y']/@GENERALTOTAL}\" />",
+      "origem": "Bontempo.xsl",
+      "tags": "pedido número metadado desconto"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Esqueleto FOCCO (estrutura, configurado, roteiro)",
+      "d": "Estrutura de integração com o Focco: três importações. Os %…% são trocados pelo Promob ao exportar.",
+      "c": "<FOCCOINTEGRADOR CHAVE_PRODUTO=\"%FOCCOINTEGRADOR%\">\n  <IMPORTACAO TIPO=\"ESTRUTURA\">\n    <EMPRESA CNPJ=\"%MANUFACTURER_ID%\">\n      <xsl:for-each select=\"AMBIENTS/AMBIENT/CATEGORIES/CATEGORY/ITEMS/ITEM[@FAMILY != 'Roteiro Produtivo']\">\n        <!-- estrutura do item -->\n      </xsl:for-each>\n    </EMPRESA>\n  </IMPORTACAO>\n  <IMPORTACAO TIPO=\"CONFIGURADO\">\n    <EMPRESA CNPJ=\"%MANUFACTURER_ID%\"><!-- itens configurados --></EMPRESA>\n  </IMPORTACAO>\n  <IMPORTACAO TIPO=\"ROTEIRO\">\n    <EMPRESA CNPJ=\"%MANUFACTURER_ID%\"><!-- roteiros produtivos --></EMPRESA>\n  </IMPORTACAO>\n</FOCCOINTEGRADOR>",
+      "origem": "FabricaXML.xsl",
+      "tags": "focco erp integração cnpj"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Código do item: CODE ou referência completa",
+      "d": "Usa a referência CODE quando existir; senão a referência completa. O FabricaXML repete isso 4 vezes: virou um template.",
+      "c": "<xsl:template name=\"CodigoItem\">\n  <xsl:choose>\n    <xsl:when test=\"count(REFERENCES/CODE) &gt; 0\"><xsl:value-of select=\"REFERENCES/CODE/@REFERENCE\" /></xsl:when>\n    <xsl:otherwise><xsl:value-of select=\"REFERENCES/COMPLETE/@REFERENCE\" /></xsl:otherwise>\n  </xsl:choose>\n</xsl:template>\n\n<!-- uso: -->\n<xsl:attribute name=\"CODIGO\"><xsl:call-template name=\"CodigoItem\" /></xsl:attribute>",
+      "origem": "FabricaXML.xsl",
+      "tags": "código code complete referência"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Características do Builder",
+      "d": "Lista as respostas configuradas no Builder (ADDITIONAL_INFORMATIONS_BUILDER/REFERENCES).",
+      "c": "<CONFIGURADO>\n  <xsl:for-each select=\"ADDITIONAL_INFORMATIONS_BUILDER/REFERENCES/REFERENCE\">\n    <CARACTERISTICA CODIGO=\"{@ID}\" RESPOSTA=\"{@VALUE}\" />\n  </xsl:for-each>\n</CONFIGURADO>",
+      "origem": "FabricaXML.xsl",
+      "tags": "builder características configurado"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Operações com dados de corte e usinagem",
+      "d": "Cada operação do roteiro, com medidas de corte (CUT) ou o programa CAM (furação, rasgo, usinagem).",
+      "c": "<xsl:for-each select=\"ADDITIONAL_INFORMATIONS_BUILDER/PRODUCTIVE_SCRIPT/OPERATION\">\n  <OPERACAO CODIGO=\"{@CODE}\">\n    <SEQUENCIA><xsl:value-of select=\"@ORDER\" /></SEQUENCIA>\n    <TEMPO><xsl:value-of select=\"@QUANTITY\" /></TEMPO>\n    <UNID_MED><xsl:value-of select=\"@UNIT\" /></UNID_MED>\n    <xsl:choose>\n      <xsl:when test=\"@TYPE = 'CUT'\">\n        <DADOS_ESPECIAIS>\n          <CAMPO NOME=\"COMPRIMENTO_CORTE\" RESPOSTA=\"{PLATE_CUTTING/@X}\" />\n          <CAMPO NOME=\"LARGURA_CORTE\" RESPOSTA=\"{PLATE_CUTTING/@Y}\" />\n        </DADOS_ESPECIAIS>\n      </xsl:when>\n      <xsl:when test=\"@TYPE = 'HOLE' or @TYPE = 'SLOT' or @TYPE = 'MACHINING' or @TYPE = 'PARAMETRICMACHINING'\">\n        <DADOS_ESPECIAIS><CAMPO NOME=\"CAM\" RESPOSTA=\"{CAM/@VALUE}\" /></DADOS_ESPECIAIS>\n      </xsl:when>\n    </xsl:choose>\n  </OPERACAO>\n</xsl:for-each>",
+      "origem": "FabricaXML.xsl",
+      "tags": "operação corte furação usinagem cam cnc"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Quantidade: repetição ou quantidade",
+      "d": "Regra do FabricaXML: se a repetição é 1, usa a quantidade; senão, usa a repetição.",
+      "c": "<QUANTIDADE>\n  <xsl:choose>\n    <xsl:when test=\"@REPETITION = 1\"><xsl:value-of select=\"@QUANTITY\" /></xsl:when>\n    <xsl:otherwise><xsl:value-of select=\"@REPETITION\" /></xsl:otherwise>\n  </xsl:choose>\n</QUANTIDADE>",
+      "origem": "FabricaXML.xsl",
+      "tags": "quantidade repetição"
+    },
+    {
+      "cat": "Integração XML",
+      "t": "Filtrar ferragens e acessórios do roteiro",
+      "d": "Não gera roteiro produtivo para ferragens, acessórios e itens de roteiro.",
+      "c": "<xsl:if test=\"@GROUP != 'Ferragens' and @FAMILY != 'Roteiro Produtivo' and @FAMILY != 'Acessorios'\">\n  <!-- roteiro do item -->\n</xsl:if>",
+      "origem": "FabricaXML.xsl",
+      "tags": "filtro grupo família ferragens"
+    }
+  ]
+}
