@@ -1,3 +1,4 @@
 dist/
 modelos/
 private/
+__pycache__/
