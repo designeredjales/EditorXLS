@@ -160,6 +160,15 @@ function chromiumPath() {
     assert(insp.includes("antes da correção automática") || insp.includes("Original (ao abrir)"), "sem versão anterior no Histórico: " + insp.replace(/\s+/g, " ").slice(0, 300));
     await page.click("#btnHist");
   });
+  await test("dados: avisa exemplo inventado e detecta vírgula ou ponto decimal", async () => {
+    await page.click('[data-tab="preview"]'); await page.selectOption("#pvXml", { label: "Exemplo: Orcamento_Exemplo.xml" }); await page.waitForTimeout(300);
+    assert(/inventados/.test(await page.textContent("#pvHint")), "sem aviso de dados de exemplo");
+    await page.setInputFiles("#inFiles", path.join(FIX, "orcamento_ponto.xml")); await page.waitForTimeout(400);
+    await page.click('[data-tab="preview"]'); await page.waitForTimeout(300);
+    assert(/ponto/.test(await page.textContent("#pvHint")), "não detectou ponto: " + await page.textContent("#pvHint"));
+    const d = await page.evaluate(x => ({ v: (x.match(/="\d+,\d+"/g) || []).length }), SAMPLE);
+    assert(d.v > 0, "o exemplo deveria ter vírgulas");
+  });
   await test("aba Auditoria lista os arquivos abertos", async () => {
     await page.click('[data-tab="audit"]'); await page.selectOption("#auScope", "files"); await page.waitForTimeout(500);
     const s = await page.textContent("#auSummary"); assert(/com erro/.test(s), s);

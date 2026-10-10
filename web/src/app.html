@@ -27,6 +27,7 @@
   --code-bg:#131a19; --code-gutter:#172120; --sel:#24443f; --hl:#5b4a12;
   --tok-tag:#7cc3ec; --tok-attr:#e3aa6e; --tok-str:#a0d08e; color-scheme:dark}
 
+[hidden]{display:none!important}
 html,body{height:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.45}
 *{box-sizing:border-box}
@@ -288,6 +289,12 @@ pre.diff .add{background:var(--ok-soft);color:var(--ok)} pre.diff .del{backgroun
 .aurow>header .sp{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
 #auRules .fchip{display:inline-flex;align-items:center}
 
+/* ---------- Dados reais ---------- */
+.xhint{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 12px 8px;padding:7px 10px;border-radius:7px;background:var(--wood-soft);font-size:12.5px}
+.xguide{flex-direction:column;align-items:stretch;gap:8px}
+.xguide ol{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:13px}
+.xguide pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--code-bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;margin:5px 0 0;font-size:11.5px}
+
 /* ---------- Parceiros ---------- */
 .pgwrap{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px;align-items:start}
 @media (max-width:980px){.pgwrap{grid-template-columns:minmax(0,1fr)}}
@@ -424,6 +431,7 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
           <button class="btn small" id="bdExport" type="button" title="Gera o XSL e salva no computador">Exportar XSL</button>
           <button class="btn small primary" id="bdGen" type="button">Gerar XSL</button>
         </div>
+        <div class="xhint" id="bdHint" hidden></div>
         <div class="pop" id="bdNewBox" hidden>
           <span>Começar de:</span>
           <button class="btn small" type="button" data-start="orcamento">Modelo de orçamento</button>
@@ -544,6 +552,24 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
           <label class="note" for="pvXml">Dados:</label>
           <select class="sel xmlsel" id="pvXml"></select>
           <button class="btn small primary" id="btnRun" type="button">Atualizar</button>
+        </div>
+        <div class="xhint" id="pvHint" hidden></div>
+        <div class="pop xguide" id="xmlGuide" hidden>
+          <div><b>Como usar o XML real de um orçamento</b>
+            <ol>
+              <li>No Promob, abra um orçamento de cliente (de preferência um com subitens, parceiros e entradas de pagamento).</li>
+              <li>Use <b>Enviar Para → Arquivo XML</b> e salve o arquivo. Essa opção exporta o XML bruto do orçamento, sem layout.</li>
+              <li>Se a opção não aparecer, acrescente esta linha ao <code>sendTo.xml</code> (pasta <code>Budget\SendTo</code>) e reabra o orçamento:
+                <pre id="xgSnippet">&lt;SENDTOFILE ID="ArquivoXML" DESCRIPTION="Arquivo XML" XSLLAYOUT="" SHOWSAVEDIALOG="Y" FILEEXTENSION=".xml" FILENAME="A#savefilename#" FILEPATH="c:\" DEFAULT="N" ENCODING="utf-8" SENDCONTENTONLY="Y" CATEGORIES="orcamento;listagem" /&gt;</pre></li>
+              <li>Arraste o arquivo para este editor (ou use <b>Importar arquivos</b>). Dá para carregar vários e trocar no seletor <b>Dados</b>.</li>
+            </ol>
+            <p class="note">Com o XML real, o editor confere se o Promob grava os valores com vírgula ou com ponto e diz quais layouts mostrariam NaN.</p>
+          </div>
+          <div class="btnrow" style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn small" type="button" id="xgCopy">Copiar a linha do sendTo.xml</button>
+            <button class="btn small primary" type="button" id="xgImport">Importar XML</button>
+            <button class="btn small ghost" type="button" id="xgClose">Fechar</button>
+          </div>
         </div>
         <div class="preview" id="pvOut"></div>
       </section>
@@ -1022,7 +1048,8 @@ async function openXsl(f) {
 async function openXml(f) {
   await readText(f);
   state.xml = f; renderTree(); fillXmlSelect(); renderFound(); if (BD.model) renderCanvas();
-  toast(`Dados de "${f.name}" carregados. Veja em Visualizar e Campos.`);
+  const d = xmlDecimal(f.text);
+  toast(`Dados de "${f.name}" carregados${d.virgula || d.ponto ? ` (valores com ${d.virgula >= d.ponto ? "vírgula" : "ponto"} decimal)` : ""}. Veja em Visualizar e Campos.`);
 }
 function parseXml(text) {
   const d = new DOMParser().parseFromString(text, "application/xml");
@@ -1297,6 +1324,31 @@ async function saveAs(name) {
 function fillXmlSelect() {
   const xmls = state.files.filter(f => f.ext === "xml");
   for (const sel of document.querySelectorAll("select.xmlsel")) sel.innerHTML = xmls.map(f => `<option value="${f.id}" ${f === state.xml ? "selected" : ""}>${esc(f.origin === "exemplo" ? "Exemplo: " + f.name : f.name)}</option>`).join("") || "<option>Nenhum XML</option>";
+  updateXmlHint();
+}
+/* Separador decimal que o Promob gravou no XML (valores de preço e totais). */
+function xmlDecimal(text) {
+  const r = { virgula: 0, ponto: 0, ex: "" };
+  for (const m of (text || "").matchAll(/\b(?:TOTAL|VALUE|UNIT|TABLE|TOTALCOMPONENTS|TOTALVALUE)="(-?\d+)([.,])(\d+)"/g)) {
+    if (m[2] === ",") r.virgula++; else r.ponto++;
+    if (!r.ex) r.ex = m[1] + m[2] + m[3];
+  }
+  return r;
+}
+function updateXmlHint() {
+  const f = state.xml;
+  let h = "";
+  if (f && f.origin === "exemplo") h = `<span><b>Dados de exemplo, inventados.</b> Os valores e campos podem não ser iguais aos do seu Promob.</span><button class="btn small" type="button" data-xguide>Usar o XML real de um orçamento</button>`;
+  else if (f && f.ext === "xml" && f.text != null && f.text.includes("<LISTING")) {
+    const d = xmlDecimal(f.text);
+    if (d.virgula || d.ponto) {
+      const n = MODELS.filter(m => auditModel(m).some(x => x.code === "sum-virgula")).length;
+      h = d.virgula >= d.ponto
+        ? `<span><b>${esc(f.name)}</b>: o Promob grava os valores com <b>vírgula</b> decimal (ex.: ${esc(d.ex)}). Somas com sum() mostram NaN${n ? `: ${n} modelo(s) do acervo têm esse problema` : ""}. Use SomarDecimal (Auditoria corrige).</span>${n ? '<button class="btn small" type="button" data-xaudit>Ver na Auditoria</button>' : ""}`
+        : `<span><b>${esc(f.name)}</b>: o Promob grava os valores com <b>ponto</b> decimal (ex.: ${esc(d.ex)}). sum() funciona com estes dados; SomarDecimal também.</span>`;
+    }
+  }
+  for (const id of ["#pvHint", "#bdHint"]) { const el = $(id); if (el) { el.innerHTML = h; el.hidden = !h; } }
 }
 function findAsset(rel) {
   const r = rel.replace(/\\/g, "/").replace(/^\/+/, "").toLowerCase();
@@ -1534,7 +1586,14 @@ function bind() {
   document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); save(); } });
 
   $("#btnRun").addEventListener("click", runPreview);
-  $("#pvXml").addEventListener("change", async () => { const f = state.files.find(x => String(x.id) === $("#pvXml").value); if (f) { await readText(f); state.xml = f; renderTree(); renderFound(); } runPreview(); });
+  $("#pvXml").addEventListener("change", async () => { const f = state.files.find(x => String(x.id) === $("#pvXml").value); if (f) { await readText(f); state.xml = f; renderTree(); renderFound(); updateXmlHint(); } runPreview(); });
+  document.addEventListener("click", e => {
+    if (e.target.closest("[data-xguide]")) { showTab("preview"); $("#xmlGuide").hidden = false; return; }
+    if (e.target.closest("[data-xaudit]")) { AUD.scope = "models"; AUD.rule = "sum-virgula"; AUD.sev = "alerta"; $("#auScope").value = "models"; $("#auSev").value = "alerta"; showTab("audit"); }
+  });
+  $("#xgClose").addEventListener("click", () => { $("#xmlGuide").hidden = true; });
+  $("#xgCopy").addEventListener("click", () => copy($("#xgSnippet").textContent, "Linha copiada. Cole dentro de <SENDTOCOLLECTION> no sendTo.xml."));
+  $("#xgImport").addEventListener("click", () => $("#inFiles").click());
 
   document.querySelector('[data-pane="fields"]').addEventListener("click", e => {
     const i = e.target.closest("[data-ins]"), c = e.target.closest("[data-cp]");
@@ -3477,6 +3536,7 @@ async function start() {
   renderTree(); fillXmlSelect();
   const firstXml = state.files.find(f => f.ext === "xml");
   if (firstXml) { state.xml = firstXml; renderFound(); }
+  updateXmlHint();
   const firstXsl = state.files.find(f => /^Parceiro_Cinex_Orcamento/i.test(f.name)) || state.files.find(f => /xslt?$/.test(f.ext));
   if (firstXsl) await openXsl(firstXsl); else analyze();
   if (!window.showDirectoryPicker) $("#btnMap").title = "Seu navegador abre a pasta em modo leitura. Para salvar direto nela, use Chrome ou Edge.";

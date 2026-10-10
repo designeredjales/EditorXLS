@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- EXEMPLO montado a partir da documentação do XML de orçamento. Substitua por um XML real do Promob. -->
+<LISTING CUSTOMERNUMBER="1042" DATE="10/10/2026" HOUR="14:32" CURRENCYSYMBOL="R$" UNIT="mm" QUANTITYINCREASE="N" ONLYSELECTEDITEMS="N" ALLOWSUPPLEMENTARYITEMS="Y">
+  <ABOUTPROMOB VERSION="5" REVISION="29" BUILD="2" SYSTEM="Cinex" DISTRIBUTION="Studio" SYSTEMREVISION="12" SERIALNUMBER="PMB-000000">
+    <LIBRARIES>
+      <LIBRARY LINE="Cinex Planejados" VERSION="3" REVISION="8" />
+      <LIBRARY LINE="cozinhas" VERSION="2026.10.03" REVISION="4" />
+    </LIBRARIES>
+    <VERSIONPLUGINS>
+      <PLUGIN NAME="Builder" />
+    </VERSIONPLUGINS>
+  </ABOUTPROMOB>
+  <CUSTOMERSDATA>
+    <DATA ID="codcliente" VALUE="C-2291" />
+    <DATA ID="nomecliente" VALUE="Mariana Albuquerque" />
+    <DATA ID="cpfcnpj" VALUE="123.456.789-00" />
+    <DATA ID="endereco" VALUE="Rua das Acácias, 410" />
+    <DATA ID="cep" VALUE="88015-200" />
+    <DATA ID="bairro" VALUE="Centro" />
+    <DATA ID="cidade" VALUE="Florianópolis" />
+    <DATA ID="uf" VALUE="SC" />
+    <DATA ID="endentrega" VALUE="Rua das Acácias, 410 - Apto 802" />
+    <DATA ID="fone" VALUE="(48) 3222-1010" />
+    <DATA ID="celular" VALUE="(48) 99999-1234" />
+    <DATA ID="email" VALUE="mariana@exemplo.com.br" />
+    <DATA ID="observacoes" VALUE="Entrega após 15/11" />
+    <DATA ID="ambiente" VALUE="Cozinha" />
+    <DATA ID="rep_codloja" VALUE="0457" />
+    <DATA ID="rep_nomeempresa" VALUE="Marcenaria Exemplo Ltda" />
+    <DATA ID="rep_enderecoempresa" VALUE="Av. Industrial, 1200" />
+    <DATA ID="rep_telefoneempresa" VALUE="(48) 3333-4444" />
+    <DATA ID="rep_emailempresa" VALUE="contato@marcenariaexemplo.com.br" />
+  </CUSTOMERSDATA>
+  <PROJECTGUID GUID="5b1f0c2e-7a41-4c8e-9d3a-000000000001" />
+  <METADATAS>
+    <METADATA ID="Ws_Argument_1" VALUE="https://www.promob.com" />
+    <METADATA ID="ORDERNUMBER" VALUE="PED-2026-0457" />
+  </METADATAS>
+  <AMBIENTS>
+    <AMBIENT DESCRIPTION="Cozinha" GUID="a1b2c3d4-0001">
+      <CATEGORIES>
+        <CATEGORY DESCRIPTION="Armários inferiores">
+          <ITEMS>
+            <ITEM ID="BAL800" UNIQUEID="101" UNIQUEPARENTID="0" STRUCTURE="N" DESCRIPTION="Balcão 2 portas 800" REFERENCE="1.0184.18.Branco" UNIT="un" REPETITION="1" QUANTITY="1" WIDTH="800" HEIGHT="720" DEPTH="560" TEXTDIMENSION="800 x 720 x 560" COMPONENT="N" FAMILY="Cozinha" OBSERVATIONS="" GUIDBUILDER="g-101" SHOWPRICE="Y">
+              <REFERENCES>
+                <COMPLETE REFERENCE="1.0184.18.Branco" />
+                <MATERIAL REFERENCE="MDF 18mm Branco TX" />
+                <PESO REFERENCE="28,40" />
+                <SEPARACAO_PEDIDO REFERENCE="pedido_geral" />
+                <EXPORTXML REFERENCE="tabela_geral" />
+                <VOLUME REFERENCE="2" />
+                <ITEM_BASE REFERENCE="BAL-2P" />
+              </REFERENCES>
+              <PRICE TABLE="1450.00" UNIT="1450.00" TOTAL="1450.00" TOTALCOMPONENTS="0">
+                <EXTRAINFORMATIONS>
+                  <EXTRAINFORMATION ID="Peso" TABLEVALUE="28.4" TOTALVALUE="28.4" />
+                  <EXTRAINFORMATION ID="NCM" TABLEVALUE="9403.40.00" TOTALVALUE="9403.40.00" />
+                </EXTRAINFORMATIONS>
+                <MARGINS>
+                  <ORDER UNIT="1595.00" TOTAL="1595.00" TOTALCOMPONENTS="0">
+                    <MARGIN ID="desc_1" DESCRIPTION="Desconto loja" OPERATOR="-" VALUE="-5" />
+                    <MARGIN ID="icms" DESCRIPTION="ICMS" OPERATOR="+" VALUE="12" />
+                    <MARGIN ID="IPI" DESCRIPTION="IPI" OPERATOR="+" VALUE="3.25" />
+                  </ORDER>
+                  <BUDGET UNIT="2392.50" TOTAL="2392.50" TOTALCOMPONENTS="0" />
+                </MARGINS>
+              </PRICE>
+              <METADATAS>
+                <METADATA ID="INTEGRATIONDATA">
+                  <METADATA.VALUE>
+                    <INTEGRATIONDATA>
+                      <ATTRIBUTES>
+                        <ATTRIBUTE NAME="TIPO_PRODUTO" VALUE="MODULO" />
+                        <ATTRIBUTE NAME="LARGURA_AMBIENTE" VALUE="800" />
+                        <ATTRIBUTE NAME="COR" VALUE="Branco TX" />
+                      </ATTRIBUTES>
+                    </INTEGRATIONDATA>
+                  </METADATA.VALUE>
+                </METADATA>
+              </METADATAS>
+              <ADDITIONAL_INFORMATIONS_BUILDER PROCESSED_BY_BUILDER="Y" ID_ERP="ERP-5521" CODE="DES-101" />
+              <ITEMS>
+                <ITEM ID="LAT720" UNIQUEID="102" UNIQUEPARENTID="101" STRUCTURE="N" DESCRIPTION="Lateral 720 x 560" REFERENCE="PC.LAT.18" UNIT="un" REPETITION="2" QUANTITY="2" WIDTH="560" HEIGHT="720" DEPTH="18" TEXTDIMENSION="560 x 720 x 18" COMPONENT="Y" FAMILY="Cozinha">
+                  <REFERENCES>
+                    <COMPLETE REFERENCE="PC.LAT.18.Branco" />
+                    <MATERIAL REFERENCE="MDF 18mm Branco TX" />
+                    <PESO REFERENCE="5,20" />
+                  </REFERENCES>
+                  <PRICE TABLE="0" UNIT="0" TOTAL="0" TOTALCOMPONENTS="0" />
+                </ITEM>
+                <ITEM ID="POR400" UNIQUEID="103" UNIQUEPARENTID="101" STRUCTURE="N" DESCRIPTION="Porta 400 x 700" REFERENCE="PC.POR.18" UNIT="un" REPETITION="2" QUANTITY="2" WIDTH="397" HEIGHT="700" DEPTH="18" TEXTDIMENSION="397 x 700 x 18" COMPONENT="Y" FAMILY="Cozinha">
+                  <REFERENCES>
+                    <COMPLETE REFERENCE="PC.POR.18.Branco" />
+                    <MATERIAL REFERENCE="MDF 18mm Branco TX" />
+                    <PESO REFERENCE="3,90" />
+                  </REFERENCES>
+                  <PRICE TABLE="0" UNIT="0" TOTAL="0" TOTALCOMPONENTS="0" />
+                </ITEM>
+              </ITEMS>
+            </ITEM>
+            <ITEM ID="GAV600" UNIQUEID="104" UNIQUEPARENTID="0" STRUCTURE="N" DESCRIPTION="Gaveteiro 3 gavetas 600" REFERENCE="1.0210.18.Freijó" UNIT="un" REPETITION="1" QUANTITY="1" WIDTH="600" HEIGHT="720" DEPTH="560" TEXTDIMENSION="600 x 720 x 560" COMPONENT="N" FAMILY="Cozinha" SHOWPRICE="Y">
+              <REFERENCES>
+                <COMPLETE REFERENCE="1.0210.18.Freijó" />
+                <MATERIAL REFERENCE="MDF 18mm Freijó" />
+                <PESO REFERENCE="31,75" />
+                <SEPARACAO_PEDIDO REFERENCE="pedido_laca" />
+                <EXPORTXML REFERENCE="tabela_laca" />
+                <VOLUME REFERENCE="3" />
+              </REFERENCES>
+              <PRICE TABLE="1980.00" UNIT="1980.00" TOTAL="1980.00" TOTALCOMPONENTS="0">
+                <EXTRAINFORMATIONS>
+                  <EXTRAINFORMATION ID="Peso" TABLEVALUE="31.75" TOTALVALUE="31.75" />
+                  <EXTRAINFORMATION ID="NCM" TABLEVALUE="9403.40.00" TOTALVALUE="9403.40.00" />
+                </EXTRAINFORMATIONS>
+                <MARGINS>
+                  <ORDER UNIT="2178.00" TOTAL="2178.00" TOTALCOMPONENTS="0" />
+                  <BUDGET UNIT="3267.00" TOTAL="3267.00" TOTALCOMPONENTS="0" />
+                </MARGINS>
+              </PRICE>
+              <METADATAS>
+                <METADATA ID="QUANTIDADE_ALTERADA" VALUE="1" />
+              </METADATAS>
+            </ITEM>
+            <ITEM ID="ERR01" UNIQUEID="105" UNIQUEPARENTID="0" STRUCTURE="N" DESCRIPTION="Travessa superior" REFERENCE="VERIFICAR TRAVESSA" UNIT="m" REPETITION="1" QUANTITY="1,6" WIDTH="1600" HEIGHT="70" DEPTH="18" TEXTDIMENSION="1600 x 70 x 18" COMPONENT="N" FAMILY="Cozinha">
+              <REFERENCES>
+                <COMPLETE REFERENCE="TRV.70" />
+              </REFERENCES>
+              <PRICE TABLE="96.00" UNIT="60.00" TOTAL="96.00" TOTALCOMPONENTS="0">
+                <MARGINS>
+                  <ORDER UNIT="66.00" TOTAL="105.60" TOTALCOMPONENTS="0" />
+                  <BUDGET UNIT="99.00" TOTAL="158.40" TOTALCOMPONENTS="0" />
+                </MARGINS>
+              </PRICE>
+            </ITEM>
+          </ITEMS>
+          <TOTALPRICES TABLE="3526.00">
+            <MARGINS>
+              <ORDER VALUE="3878.60" />
+              <BUDGET VALUE="5817.90" />
+            </MARGINS>
+          </TOTALPRICES>
+        </CATEGORY>
+      </CATEGORIES>
+      <TOTALPRICES TABLE="3526.00">
+        <MARGINS>
+          <ORDER VALUE="3878.60" />
+          <BUDGET VALUE="5817.90" />
+        </MARGINS>
+      </TOTALPRICES>
+    </AMBIENT>
+  </AMBIENTS>
+  <TOTALPRICES TABLE="3526.00">
+    <MARGINS>
+      <ORDER VALUE="3878.60">
+        <MARGIN ID="1" DESCRIPTION="Frete" VALUE="352.60" />
+        <MARGIN ID="IPI" DESCRIPTION="IPI" VALUE="126.06" />
+      </ORDER>
+      <BUDGET VALUE="5817.90">
+        <MARGIN ID="2" DESCRIPTION="Margem loja" VALUE="1939.30" />
+      </BUDGET>
+    </MARGINS>
+  </TOTALPRICES>
+  <PAYMENTTERMS>
+    <PAYMENTTERMCOLLECTION>
+      <PAYMENTTERM ID="1" DESCRIPTION="À vista (5% desc.)" SELECTED="Y" PARCELQUANTITY="1" PERCENTUALDISCOUNT="5" PARCELVALUE="5527.01" HASDOWNPAYMENT="N" INITIALVALUE="5817.90" PARCELEDTOTAL="5527.01" GENERALTOTAL="5527.01" />
+      <PAYMENTTERM ID="2" DESCRIPTION="1 + 5" SELECTED="N" PARCELQUANTITY="6" PERCENTUALDISCOUNT="0" PARCELVALUE="1066.62" HASDOWNPAYMENT="Y" INITIALVALUE="5817.90" PARCELEDTOTAL="6399.69" GENERALTOTAL="6399.69" />
+    </PAYMENTTERMCOLLECTION>
+    <ADITIONALENTRYCOLLECTION>
+      <ADITIONALENTRY ID="1" DESCRIPTION="Sinal" OPERATIONTYPE="Discount" VALUE="1000" />
+    </ADITIONALENTRYCOLLECTION>
+  </PAYMENTTERMS>
+</LISTING>
