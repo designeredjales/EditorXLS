@@ -9,6 +9,7 @@ Cada modelo recebido é lido, classificado e desmontado em padrões reutilizáve
 | 3 | `03_pedidos_sendto.json` | 14 |
 | 4 | `04_portas_pedras.json` | 5 |
 | 5 | `05_pedido_fabrica_txt.json` | 7 |
+| 6 | `06_listing_pacote3.json` | 9 |
 
 ## Tipos de layout encontrados
 
@@ -93,3 +94,27 @@ Risco: desconto e ICMS são lidos do primeiro item do projeto, assumindo o mesmo
 **Orcamento.xsl** · TXT simples do orçamento. Problema: item sem preço de orçamento sai com "0.00" e "0,00" seguidos.
 
 **sendTo.xml** · a opção de e-mail aponta para `Fabrica.xsl`, que não veio no pacote.
+
+### Lote 6 — Listing pacote 3 (100+ parceiros)
+
+156 arquivos, 124 nomes novos. Dos 113 layouts de parceiro, 51 são cópias quase idênticas da base `Parceiro_Accord` (uma segunda família segue a base Leo Madeiras/Adipar): candidatos a um arquivo base com variáveis.
+
+**OrcamentoMontadoComEdicao.xsl / OrcamentoExplodidoComEdicao.xsl** · o preço vira link que abre a janela de alteração de preço do próprio Promob: `external.InvokeVSAComMensagem(..., 'FormApresentacaoListagem', 'AlterarPreco', 'ref;qtd;tabela;unitário;componentes;unidade;descrição;família;fornecedor')`, liberado pelo atributo `PRICECANMODIFY` do item (padrão Y). As versões SemEdicao são o mesmo layout só leitura.
+
+**ListagemMontados / ListagemExplodidos (e 37 outros)** · logo dinâmico do cliente (`@CLIENTLOGO`), modelo estendido (`MODEL_EXT` com "-" quando vazio) e as seções reais `OBSERVATIONS` e `SIGNATURES`.
+
+**Listagem_Revest.xsl / Parceiro_Kapazi.xsl** · revestimento: m² → caixas com `ceiling(QUANTITY div BOXQUANTITY)`, mínimo 1. Problema: um teste foi escrito `valueOfQuantityPerBox = 0` (sem o `$`), então esse ramo nunca roda.
+
+**Parceiro_Metal_Design.xsl** · imagem do item (`REFERENCES/IMAGE`, senão `@IMAGE`).
+
+**Parceiro_Rometal.xsl** · itens com `NAO_DISPONIVEL = 'Não Disponível'` saem sem destaque.
+
+**Parceiro_Leo_Madeiras_chapas.xsl** · código do fornecedor (`@SUPPLIERREFERENCE`).
+
+**Parceiro_Perfar_Detalhado.xsl** · ficha da porta com códigos do ERP (`ERP_COD`, `ERP_MOD`, `ERP_COR`, `ERP_ACA`, `ERP_FACE`, `ERP_RAIO`, `ERP_LADO_ABE`, `ERP_CAVA_POS`, `ERP_CAVA_DIM`, `ERP_HELO_POS`).
+
+**Parceiro_Salvatore.xsl** · até 5 cores por item (`COR1`–`COR5`), CNPJ da loja (`rep_CNPJempresa`).
+
+**MCMIntegration.xsl** · novos atributos `PRODUCTIVESCRIPT`, `KIT_AGRUPADOR`, `PRICEUNIT`.
+
+Arquivos danificados no `.rar`: Parceiro_Perfar, Listagem_Revest.en, parceiro_Mekal, Parceiro_debacco, parceiro_Zen, parceiro_Zen.pt, parceiro_Lofra, OrcamentoCondicoes.

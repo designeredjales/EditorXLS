@@ -1,0 +1,78 @@
+{
+  "lote": "Lote 6: Listing pacote 3 (100+ parceiros, orçamentos com edição de preço)",
+  "recebido": "2026-10-10",
+  "itens": [
+    {
+      "cat": "Preços",
+      "t": "Preço editável dentro do orçamento",
+      "d": "Recurso do Promob: clicar no preço abre a janela de alteração de preço do próprio sistema (external.InvokeVSAComMensagem). Respeita o atributo PRICECANMODIFY do item.",
+      "c": "<xsl:variable name=\"podeEditar\">\n  <xsl:choose>\n    <xsl:when test=\"@PRICECANMODIFY != ''\"><xsl:value-of select=\"@PRICECANMODIFY\" /></xsl:when>\n    <xsl:otherwise>Y</xsl:otherwise>\n  </xsl:choose>\n</xsl:variable>\n<td align=\"right\">\n  <xsl:choose>\n    <xsl:when test=\"$podeEditar = 'Y'\">\n      <a href=\"javascript:void(0);\">\n        <xsl:attribute name=\"title\">Clique para alterar o preço</xsl:attribute>\n        <xsl:attribute name=\"onclick\">external.InvokeVSAComMensagem('${messages_budget:msg_text_changePrice}','${messages_budget:msg_title_changePrice}','FormApresentacaoListagem','AlterarPreco','<xsl:value-of select=\"@REFERENCE\" />;<xsl:value-of select=\"@QUANTITY\" />;<xsl:value-of select=\"PRICE/@TABLE\" />;<xsl:value-of select=\"PRICE/@UNIT\" />;<xsl:value-of select=\"PRICE/@TOTALCOMPONENTS\" />;<xsl:value-of select=\"@UNIT\" />;<xsl:value-of select=\"@DESCRIPTION\" />;<xsl:value-of select=\"@FAMILY\" />;<xsl:value-of select=\"@IDPRICEPROVIDER\" />');</xsl:attribute>\n        <xsl:value-of select=\"format-number(translate(PRICE/MARGINS/BUDGET/@TOTAL, ',', '.'), '###.##0,00', 'formato')\" />\n      </a>\n    </xsl:when>\n    <xsl:otherwise>\n      <xsl:value-of select=\"format-number(translate(PRICE/MARGINS/BUDGET/@TOTAL, ',', '.'), '###.##0,00', 'formato')\" />\n    </xsl:otherwise>\n  </xsl:choose>\n</td>",
+      "origem": "OrcamentoMontadoComEdicao.xsl / OrcamentoExplodidoComEdicao.xsl",
+      "tags": "preço editar alterar invokevsa pricecanmodify promob"
+    },
+    {
+      "cat": "Cabeçalho",
+      "t": "Logo do cliente (dinâmico)",
+      "d": "Usa o logo configurado no Promob para a loja (atributo CLIENTLOGO da listagem), sem precisar fixar o nome do arquivo.",
+      "c": "<img border=\"0\" alt=\"\" hspace=\"10\">\n  <xsl:attribute name=\"src\"><xsl:value-of select=\"@CLIENTLOGO\" /></xsl:attribute>\n</img>",
+      "origem": "ListagemMontados.xsl / ListagemExplodidos.xsl (e 37 outros)",
+      "tags": "logo cliente loja clientlogo"
+    },
+    {
+      "cat": "Cálculos",
+      "t": "Caixas de revestimento a partir do m²",
+      "d": "Converte a quantidade (m²) em caixas, usando a referência BOXQUANTITY (m² por caixa) e arredondando para cima. Mínimo de 1 caixa.",
+      "c": "<xsl:variable name=\"porCaixa\" select=\"number(translate(REFERENCES/BOXQUANTITY/@REFERENCE, ',', '.'))\" />\n<td align=\"center\">\n  <xsl:if test=\"$porCaixa &gt; 0\">\n    <xsl:variable name=\"caixas\" select=\"ceiling(number(translate(@QUANTITY, ',', '.')) div $porCaixa)\" />\n    <xsl:choose>\n      <xsl:when test=\"$caixas &lt; 1\">1</xsl:when>\n      <xsl:otherwise><xsl:value-of select=\"$caixas\" /></xsl:otherwise>\n    </xsl:choose>\n  </xsl:if>\n</td>",
+      "origem": "Listagem_Revest.xsl / Parceiro_Kapazi.xsl",
+      "tags": "revestimento caixa m2 piso arredondar ceiling"
+    },
+    {
+      "cat": "Itens",
+      "t": "Imagem do item",
+      "d": "Mostra a imagem do produto: a referência IMAGE quando existir, senão a imagem padrão do item (@IMAGE).",
+      "c": "<td align=\"center\">\n  <img border=\"0\" width=\"100\">\n    <xsl:attribute name=\"src\">\n      <xsl:choose>\n        <xsl:when test=\"string-length(REFERENCES/IMAGE/@REFERENCE) &gt; 0\"><xsl:value-of select=\"REFERENCES/IMAGE/@REFERENCE\" /></xsl:when>\n        <xsl:otherwise><xsl:value-of select=\"@IMAGE\" /></xsl:otherwise>\n      </xsl:choose>\n    </xsl:attribute>\n  </img>\n</td>",
+      "origem": "Parceiro_Metal_Design.xsl",
+      "tags": "imagem foto produto image"
+    },
+    {
+      "cat": "Itens",
+      "t": "Item não disponível (sem destaque)",
+      "d": "Itens marcados com a referência NAO_DISPONIVEL = 'Não Disponível' saem sem negrito, para diferenciar do que o parceiro fornece.",
+      "c": "<xsl:variable name=\"disponivel\" select=\"not(REFERENCES/NAO_DISPONIVEL/@REFERENCE = 'Não Disponível')\" />\n<td align=\"center\">\n  <xsl:if test=\"$disponivel\"><xsl:attribute name=\"style\">font-weight:bold</xsl:attribute></xsl:if>\n  <xsl:if test=\"not($disponivel)\"><xsl:attribute name=\"style\">color:#888888</xsl:attribute></xsl:if>\n  <xsl:value-of select=\"@DESCRIPTION\" />\n</td>",
+      "origem": "Parceiro_Rometal.xsl",
+      "tags": "indisponível não fornecido destaque"
+    },
+    {
+      "cat": "Campos",
+      "t": "Código do item no fornecedor",
+      "d": "Referência do produto no catálogo do fornecedor (SUPPLIERREFERENCE). Itens sem ela saem em negrito no layout da Leo Madeiras.",
+      "c": "<td><xsl:value-of select=\"@SUPPLIERREFERENCE\" /></td>",
+      "origem": "Parceiro_Leo_Madeiras_chapas.xsl",
+      "tags": "fornecedor código supplierreference"
+    },
+    {
+      "cat": "Itens",
+      "t": "Ficha da porta para o ERP (Perfar)",
+      "d": "Colunas da configuração da porta já com os códigos do ERP: código, modelo, cor, acabamento, face, raio, lado de abertura, posição e dimensão da cava, posição do puxador.",
+      "c": "<td><xsl:value-of select=\"REFERENCES/ERP_COD/@REFERENCE\" /></td>\n<td><xsl:value-of select=\"REFERENCES/ERP_MOD/@REFERENCE\" /></td>\n<td><xsl:value-of select=\"REFERENCES/ERP_COR/@REFERENCE\" /></td>\n<td><xsl:value-of select=\"REFERENCES/ERP_ACA/@REFERENCE\" /></td>\n<td><xsl:value-of select=\"REFERENCES/ERP_FACE/@REFERENCE\" /></td>\n<td><xsl:value-of select=\"REFERENCES/ERP_RAIO/@REFERENCE\" /></td>\n<td><xsl:value-of select=\"REFERENCES/ERP_LADO_ABE/@REFERENCE\" /></td>\n<td><xsl:value-of select=\"REFERENCES/ERP_CAVA_POS/@REFERENCE\" /></td>\n<td><xsl:value-of select=\"REFERENCES/ERP_CAVA_DIM/@REFERENCE\" /></td>\n<td><xsl:value-of select=\"REFERENCES/ERP_HELO_POS/@REFERENCE\" /></td>",
+      "origem": "Parceiro_Perfar_Detalhado.xsl",
+      "tags": "porta erp perfar cava puxador abertura"
+    },
+    {
+      "cat": "Seções",
+      "t": "Observações do projeto (seção OBSERVATIONS)",
+      "d": "Seção padrão do Promob para as observações digitadas na tela de dados do cliente.",
+      "c": "<tr id=\"OBSERVATIONS\">\n  <td>\n    <b>Observações:</b><br />\n    <xsl:value-of select=\"CUSTOMERSDATA/DATA[@ID='observacoes']/@VALUE\" />\n  </td>\n</tr>",
+      "origem": "ListagemMontados.xsl (e 22 outros)",
+      "tags": "observações seção"
+    },
+    {
+      "cat": "Seções",
+      "t": "Assinaturas (seção SIGNATURES)",
+      "d": "Seção padrão do Promob com as linhas de assinatura do cliente e do consultor.",
+      "c": "<tr id=\"SIGNATURES\">\n  <td align=\"center\">\n    <table width=\"78%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\">\n      <tr>\n        <td align=\"center\" style=\"font-size:10px\">_____________________________________<br /><b>Assinatura Cliente</b></td>\n        <td width=\"50\"> </td>\n        <td align=\"center\" style=\"font-size:10px\">_____________________________________<br /><b>Consultor de Negócios</b></td>\n      </tr>\n    </table>\n  </td>\n</tr>",
+      "origem": "OrcamentoCondicoes.xsl / OrcamentoResumido.xsl",
+      "tags": "assinatura seção contrato"
+    }
+  ]
+}

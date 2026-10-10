@@ -75,6 +75,21 @@ DESCRICOES = {
     "parceiro_Falmec": ("Orçamento do parceiro Falmec (coifas).", []),
     "Listagem.OLD": ("Versão antiga da listagem com ficha de porta (furo, puxador, recorte).", []),
     "Listagem.NovaPasta": ("Cópia da listagem encontrada numa subpasta \"Nova pasta\".", []),
+    "OrcamentoMontadoComEdicao": ("Orçamento de módulos montados em que o preço é clicável: abre a janela de alteração de preço do Promob (external.InvokeVSAComMensagem), respeitando PRICECANMODIFY.", []),
+    "OrcamentoExplodidoComEdicao": ("Orçamento explodido com preço clicável para alterar no Promob (external.InvokeVSAComMensagem).", []),
+    "OrcamentoMontadoSemEdicao": ("Orçamento de módulos montados, preço só para leitura.", []),
+    "OrcamentoExplodidoSemEdicao": ("Orçamento explodido, preço só para leitura.", []),
+    "OrcamentoCondicoes": ("Orçamento com condições de pagamento e assinaturas (seção SIGNATURES).", []),
+    "ListagemMontados": ("Listagem de módulos montados com logo dinâmico do cliente (CLIENTLOGO), modelo estendido e observações (seção OBSERVATIONS).", []),
+    "ListagemExplodidos": ("Listagem explodida com logo dinâmico do cliente e observações.", []),
+    "Listagem_Revest": ("Listagem de revestimentos: converte m² em caixas (BOXQUANTITY), arredondando para cima.",
+                        ["Um teste está escrito sem o $ (valueOfQuantityPerBox = 0): esse ramo nunca roda."]),
+    "Parceiro_Kapazi": ("Orçamento Kapazi (pisos e tapetes) com cálculo de caixas por m².", []),
+    "Parceiro_Metal_Design": ("Orçamento Metal Design com imagem de cada item.", []),
+    "Parceiro_Rometal": ("Orçamento Rometal: itens não disponíveis no parceiro saem sem destaque.", []),
+    "Parceiro_Perfar_Detalhado": ("Pedido Perfar detalhado com a configuração da porta já nos códigos do ERP (ERP_COD, ERP_COR, cava, puxador…).", []),
+    "Parceiro_Leo_Madeiras_chapas": ("Pedido de chapas Leo Madeiras com o código do fornecedor (SUPPLIERREFERENCE).", []),
+    "Parceiro_Salvatore": ("Orçamento Salvatore com até 5 cores por item (COR1–COR5) e CNPJ da loja.", []),
     "parceiro_finotoc_detalhado": ("Pedido Finotoc detalhado: uma coluna para cada configuração da porta (espessura, face, cor, puxador, cava, iluminação, frisos…).", []),
 }
 DESCRICOES_PACOTE = {
@@ -88,7 +103,7 @@ DESCRICOES_PACOTE = {
     ("SendTo Fabrica Electrolux Cata Tramontina", "sendTo"): ("Enviar Para deste pacote: TXT de pedido, pedido geral, especiais, orçamento e listagem; XML bruto do orçamento; e-mail.",
         ["A opção de e-mail aponta para Fabrica.xsl, que não veio neste pacote."]),
 }
-IDIOMA = {"pt": "PT", "pt-BR": "PT", "es": "ES", "en": "EN"}
+IDIOMA = {"PT": "PT", "pt": "PT", "pt-BR": "PT", "es": "ES", "en": "EN"}
 
 
 def norm(t):
@@ -105,7 +120,7 @@ def ler(p):
 
 def base_e_idioma(nome):
     stem = re.sub(r"\.(xslt?|xml|css)$", "", nome, flags=re.I)
-    m = re.match(r"^(.*?)\.(pt-BR|pt|es|en)(_copia|\.OLD)?$", stem)
+    m = re.match(r"^(.*?)\.(pt-BR|pt|PT|es|en)(_copia|\.OLD)?$", stem)
     return (m.group(1), IDIOMA[m.group(2)]) if m else (stem, "")
 
 

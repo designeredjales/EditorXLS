@@ -537,7 +537,7 @@ const CUSTOMER = {
   bairro: "Bairro", cidade: "Cidade", uf: "UF", endentrega: "Endereço de entrega", fone: "Telefone", celular: "Celular",
   email: "E-mail", observacoes: "Observações", rep_nomeempresa: "Loja: nome", rep_enderecoempresa: "Loja: endereço",
   rep_bairroempresa: "Loja: bairro", rep_cepenpresa: "Loja: CEP", rep_cidadeempresa: "Loja: cidade", rep_ufempresa: "Loja: UF",
-  rep_telefoneempresa: "Loja: telefone", rep_codloja: "Loja: código", ambiente: "Ambiente (dados do cliente)", rep_emailempresa: "Loja: e-mail", rep_contatoempresa: "Loja: contato"
+  rep_telefoneempresa: "Loja: telefone", rep_codloja: "Loja: código", ambiente: "Ambiente (dados do cliente)", rep_CNPJempresa: "Loja: CNPJ", rep_enderecoLoja: "Loja: endereço", rep_emailempresa: "Loja: e-mail", rep_contatoempresa: "Loja: contato"
 };
 const ATTR = {
   DATE: "Data da listagem", HOUR: "Hora da listagem", CURRENCYSYMBOL: "Símbolo da moeda", CUSTOMERNUMBER: "Número do projeto", UNIT: "Unidade",
@@ -587,6 +587,16 @@ const CATALOG = [
   { g: "Referências de pedido para fábrica", ctx: "ITEM/REFERENCES/<NOME>", f: [
     ["REFERENCES/PEDIDO_ESPECIAL/@REFERENCE", "Pedido especial (SIM/NAO)"], ["REFERENCES/DIMENSAO_EDITAVEL_1/@REFERENCE", "Dimensão editável 1"],
     ["REFERENCES/DIMENSAO_EDITAVEL_2/@REFERENCE", "Dimensão editável 2"], ["REFERENCES/LETRA_PUXADOR/@REFERENCE", "Letra do puxador"]]},
+  { g: "Recursos de parceiros (pacote 3)", ctx: "ITEM e LISTING", f: [
+    ["@CLIENTLOGO", "Logo do cliente/loja (na listagem)"], ["@PRICECANMODIFY", "Preço pode ser editado? (Y/N)"], ["@IMAGE", "Imagem padrão do item"],
+    ["@SUPPLIERREFERENCE", "Código do item no fornecedor"], ["@IDPRICEPROVIDER", "Fornecedor do preço"], ["REFERENCES/IMAGE/@REFERENCE", "Imagem do item (referência)"],
+    ["REFERENCES/BOXQUANTITY/@REFERENCE", "Quantidade por caixa (revestimento)"], ["REFERENCES/NAO_DISPONIVEL/@REFERENCE", "Não disponível no parceiro"],
+    ["REFERENCES/MODEL_EXT/@REFERENCE", "Modelo (descrição estendida)"], ["REFERENCES/PRICE/@REFERENCE", "Referência de preço"]]},
+  { g: "Porta para ERP (Perfar)", ctx: "ITEM/REFERENCES/ERP_*", f: [
+    ["REFERENCES/ERP_COD/@REFERENCE", "Código ERP"], ["REFERENCES/ERP_MOD/@REFERENCE", "Modelo ERP"], ["REFERENCES/ERP_COR/@REFERENCE", "Cor ERP"],
+    ["REFERENCES/ERP_ACA/@REFERENCE", "Acabamento ERP"], ["REFERENCES/ERP_FACE/@REFERENCE", "Face ERP"], ["REFERENCES/ERP_RAIO/@REFERENCE", "Raio ERP"],
+    ["REFERENCES/ERP_LADO_ABE/@REFERENCE", "Lado de abertura"], ["REFERENCES/ERP_CAVA_POS/@REFERENCE", "Posição da cava"], ["REFERENCES/ERP_CAVA_DIM/@REFERENCE", "Dimensão da cava"],
+    ["REFERENCES/ERP_HELO_POS/@REFERENCE", "Posição do puxador"]]},
   { g: "Pedras e tampos", ctx: "ITEM/REFERENCES/<NOME>", f: [
     ["REFERENCES/AREA/@REFERENCE", "Área (m²)"], ["REFERENCES/DESC_COR_PAI_ESP/@REFERENCE", "Descrição especial do material"]]},
   { g: "Dados do pedido (metadados da listagem)", ctx: "LISTING/METADATAS", f: [
@@ -755,6 +765,18 @@ const BUILTIN = [
     c: `<xsl:for-each select="METADATAS/METADATA/METADATA.VALUE/INTEGRATIONDATA/ATTRIBUTES/ATTRIBUTE">
   <CARACTERISTICA CODIGO="{@NAME}" RESPOSTA="{@VALUE}" />
 </xsl:for-each>` },
+  { cat: "Estrutura", t: "Esqueleto de layout Promob (seções reais)", d: "Seções que o editor do Promob reconhece, confirmadas nos modelos: HEADER, CUSTOMERDATA, COMPANYDATA, BODY, PAYMENTTERMS, PAYMENTENTRIES, TOTALS, OBSERVATIONS, SIGNATURES, FOOTER.", c: `<thead id="HEADER"><tr><td><!-- logo, data --></td></tr></thead>
+<tbody>
+  <tr id="CUSTOMERDATA"><td><!-- dados do cliente --></td></tr>
+  <tr id="COMPANYDATA"><td><!-- dados da loja --></td></tr>
+  <tr id="BODY" templatetext="Itens"><td><!-- ambientes, categorias, itens --></td></tr>
+  <tr id="PAYMENTTERMS"><td><!-- condições de pagamento --></td></tr>
+  <tr id="PAYMENTENTRIES"><td><!-- entradas diferenciadas --></td></tr>
+  <tr id="TOTALS"><td><!-- total final --></td></tr>
+  <tr id="OBSERVATIONS"><td><!-- observações --></td></tr>
+  <tr id="SIGNATURES"><td><!-- assinaturas --></td></tr>
+</tbody>
+<tfoot id="FOOTER"><tr><td><!-- rodapé --></td></tr></tfoot>` },
   { cat: "Estrutura", t: "Esqueleto de layout Promob", d: "Ponto de partida para um layout novo, com as marcações de seção que o editor do Promob reconhece.",
     c: `<?xml version="1.0" encoding="utf-8"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
@@ -2010,7 +2032,7 @@ async function renderCanvas() {
 
 /* ---------- Painel de propriedades ---------- */
 function scanFields() {
-  const r = { refs: new Set(["COMPLETE", "MATERIAL", "PESO", "VOLUME", "ITEM_BASE", "THICKNESS", "MODEL", "CODE", "SUPPLIER", "COLOR", "BUILDER_CODE", "BUILDER_ACABAMENTO", "DOORHOLE", "HOLESIDE", "KNOBPOSITION", "RECORTE", "AREA"]), integ: new Set(), meta: new Set(), cust: new Set(Object.keys(CUSTOMER)), extra: new Set(["Peso", "NCM"]) };
+  const r = { refs: new Set(["COMPLETE", "MATERIAL", "PESO", "VOLUME", "ITEM_BASE", "THICKNESS", "MODEL", "CODE", "SUPPLIER", "COLOR", "BUILDER_CODE", "BUILDER_ACABAMENTO", "DOORHOLE", "HOLESIDE", "KNOBPOSITION", "RECORTE", "AREA", "IMAGE", "BOXQUANTITY", "MODEL_EXT", "NAO_DISPONIVEL"]), integ: new Set(), meta: new Set(), cust: new Set(Object.keys(CUSTOMER)), extra: new Set(["Peso", "NCM"]) };
   if (state.xml && state.xml.text) {
     const { doc, error } = parseXml(state.xml.text);
     if (!error) {
