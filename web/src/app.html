@@ -181,6 +181,8 @@ span.CodeMirror-selectedtext{background:none}
 .cm-tag{color:var(--tok-tag)}.cm-attribute{color:var(--tok-attr)}.cm-string{color:var(--tok-str)}
 .cm-comment{color:var(--muted);font-style:italic}.cm-bracket{color:var(--muted)}.cm-error{color:var(--err)}
 .cm-jump{background:var(--hl)}
+.cm-find{background:rgba(255,193,7,.32);border-radius:2px}
+.cm-find-cur{background:#ffb300;color:#000;outline:1px solid #a86d00}
 
 /* ---------- Recolher painel de arquivos ---------- */
 .work{transition:grid-template-columns .18s ease}
@@ -298,6 +300,24 @@ pre.diff .add{background:var(--ok-soft);color:var(--ok)} pre.diff .del{backgroun
 .stcats{display:flex;flex-wrap:wrap;gap:4px 12px;max-height:140px;overflow:auto;padding:4px 0;color:var(--fg)}
 
 .card.team{border-color:var(--accent)}
+
+/* ---------- Localizar e substituir ---------- */
+.findbar{position:fixed;top:118px;right:24px;z-index:50;width:min(460px,calc(100vw - 32px));background:var(--panel);border:1px solid var(--line);border-radius:9px;box-shadow:0 10px 28px rgba(0,0,0,.18);display:flex;flex-direction:column;gap:7px;padding:0 10px 9px}
+.findbar>header{display:flex;align-items:center;gap:8px;margin:0 -10px;padding:7px 10px;background:var(--sunk);border-bottom:1px solid var(--line);border-radius:9px 9px 0 0;cursor:move;user-select:none;font-size:12.5px;touch-action:none}
+.findbar>header .note{margin-right:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.fdrow{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.fdrow input[type=text]{flex:1 1 160px;min-width:0;border:1px solid var(--line);background:var(--sunk);border-radius:6px;padding:5px 8px;font-family:var(--mono);font-size:12.5px}
+.fdcount{font-size:11.5px;color:var(--muted);min-width:56px;text-align:right}
+.fdcount.bad{color:var(--err)}
+.fdopt{border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:2px 6px;font-family:var(--mono);font-size:11.5px;cursor:pointer;color:var(--muted)}
+.fdopt[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.fdres{display:flex;flex-direction:column;gap:2px;max-height:220px;overflow:auto}
+.fdres:empty{display:none}
+.fdfile{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 8px;text-align:left;border:0;border-top:1px solid var(--line);background:transparent;padding:5px 4px;cursor:pointer;font-size:12.5px}
+.fdfile:hover{background:var(--accent-soft)} .fdfile small{grid-column:1;color:var(--muted);font-size:11px;overflow-wrap:anywhere} .fdfile b{grid-row:1 / span 2;grid-column:2;align-self:center}
+.fdhint{margin:0;font-size:11px}
+mark.fdm{background:rgba(255,193,7,.45);color:inherit;border-radius:2px} mark.fdm.cur{background:#ffb300;color:#000}
+@media (max-width:700px){.findbar{top:auto;bottom:12px;left:16px!important;right:16px!important;width:auto}}
 
 /* ---------- IA ---------- */
 .aiout:empty{display:none}
@@ -510,6 +530,7 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
           <button class="btn small primary" id="btnSave" type="button">Salvar</button>
           <button class="btn small" id="btnExport" type="button" title="Salvar uma cópia no computador">Exportar</button>
           <button class="btn small" id="btnCopy" type="button">Copiar código</button>
+          <button class="btn small" type="button" data-findopen title="Localizar e substituir (Ctrl+Shift+L)">Localizar</button>
         </div>
         <div class="pop" id="pubBox" hidden></div>
         <div class="pop" id="langBox" hidden><span>Gerar a versão deste layout em</span><button class="btn small primary" type="button" data-lang="es">Espanhol (.es)</button><button class="btn small primary" type="button" data-lang="en">Inglês (.en)</button>
@@ -543,6 +564,7 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
             <span class="stat" id="cmpStat"></span>
             <label class="ck"><input type="checkbox" id="cmpWs"> Ignorar espaços</label>
             <label class="ck"><input type="checkbox" id="cmpOnly" checked> Só diferenças</label>
+            <button class="btn small" type="button" data-findopen title="Localizar (Ctrl+Shift+L)">Localizar</button>
           </div>
           <div class="cmpview" id="cmpView"></div>
           <div class="cmpfoot" data-cside="files">
@@ -638,6 +660,16 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
       </section>
     </main>
   </div>
+</div>
+<div class="findbar" id="findBar" hidden role="dialog" aria-label="Localizar e substituir">
+  <header title="Arraste para mover"><b>Localizar e substituir</b><span class="note" id="fdWhere"></span><button class="ibtn" type="button" id="fdClose" title="Fechar (Esc)" aria-label="Fechar">✕</button></header>
+  <div class="fdrow"><input id="fdFind" type="text" placeholder="Localizar" spellcheck="false" autocomplete="off" aria-label="Localizar"><span class="fdcount" id="fdCount"></span>
+    <button class="fdopt" type="button" data-fdo="case" title="Diferenciar maiúsculas e minúsculas" aria-pressed="false">Aa</button><button class="fdopt" type="button" data-fdo="word" title="Palavra inteira" aria-pressed="false">ab|</button><button class="fdopt" type="button" data-fdo="re" title="Expressão regular" aria-pressed="false">.*</button>
+    <button class="ibtn" type="button" id="fdPrev" title="Anterior (Shift+Enter)" aria-label="Anterior">↑</button><button class="ibtn" type="button" id="fdNext" title="Próxima (Enter)" aria-label="Próxima">↓</button></div>
+  <div class="fdrow"><input id="fdRepl" type="text" placeholder="Substituir por" spellcheck="false" autocomplete="off" aria-label="Substituir por"><button class="btn small" type="button" id="fdOne" title="Substituir a ocorrência atual (Enter)">Substituir</button><button class="btn small" type="button" id="fdAll" title="Substituir todas (Ctrl+Enter)">Substituir tudo</button></div>
+  <div class="fdrow" id="fdScopeRow"><label class="ck"><input type="radio" name="fdScope" value="file" checked> Este arquivo</label><label class="ck"><input type="radio" name="fdScope" value="all"> Todos os arquivos abertos</label></div>
+  <div class="fdres" id="fdRes"></div>
+  <p class="note fdhint">Ctrl+Shift+L abre e fecha · Enter próxima · Shift+Enter anterior · Esc fecha</p>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -1044,7 +1076,7 @@ let cm, analyzeTimer, jumpMark;
 function initEditor() {
   if (window.CodeMirror) {
     cm = CodeMirror($("#codebox"), { mode: "xml", lineNumbers: true, lineWrapping: false, tabSize: 2, indentUnit: 2, value: "" });
-    cm.on("change", () => { if (!state.xsl || cm._loading) return; state.xsl.text = cm.getValue(); if (!state.xsl.dirty) { state.xsl.dirty = true; renderTree(); } schedule(); });
+    cm.on("change", () => { fdRefreshSoon(); if (!state.xsl || cm._loading) return; state.xsl.text = cm.getValue(); if (!state.xsl.dirty) { state.xsl.dirty = true; renderTree(); } schedule(); });
   } else {
     const ta = document.createElement("textarea");
     ta.style.cssText = "width:100%;height:100%;border:0;padding:10px;font-family:var(--mono);font-size:12.5px;background:var(--code-bg);color:var(--fg);resize:none";
@@ -1691,6 +1723,7 @@ function showTab(name) {
   if (name === "lib") renderLib();
   if (name === "builder" && BD.model) renderCanvas();
   if (name === "audit") renderAudit();
+  if (FD.open) setTimeout(() => fdRun(), 60);
   if (name === "partners") renderPartners();
   if (name === "compare") fillCmpSelects().then(() => CMP.mode === "packs" ? renderPacks() : runCompare());
 }
@@ -3960,6 +3993,206 @@ async function tradWithAi() {
   } catch (e) { toast(AI_ERR[e && e.code] || "Não foi possível traduzir agora. Tente de novo."); if (e && /^(not_granted|sampling_disabled|not_declared)$/.test(e.code)) AI.off = true; }
 }
 
+/* ---------- Localizar e substituir (painel flutuante: Ctrl+Shift+L; Ctrl+F / Ctrl+H dentro de código) ---------- */
+const FD = { open: false, mode: "", field: null, opts: { case: false, word: false, re: false }, cur: -1, hits: [], marks: [], scope: "file", lastField: null, err: "" };
+function fdRegex() {
+  const q = $("#fdFind").value; FD.err = "";
+  if (!q) return null;
+  let src = FD.opts.re ? q : q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (FD.opts.word) src = `(?<![\\p{L}\\p{N}_])(?:${src})(?![\\p{L}\\p{N}_])`;
+  try { return new RegExp(src, "g" + (FD.opts.case ? "" : "i") + (FD.opts.word ? "u" : "")); }
+  catch (e) { FD.err = "Expressão inválida"; return null; }
+}
+function fdFindAll(text, re) {
+  const out = []; if (!re) return out; re.lastIndex = 0; let m;
+  while ((m = re.exec(text)) && out.length < 5000) { if (!m[0].length) { re.lastIndex++; continue; } out.push({ i: m.index, len: m[0].length }); }
+  return out;
+}
+const fdRepl = () => FD.opts.re ? $("#fdRepl").value : $("#fdRepl").value.replace(/\$/g, "$$$$");
+const fdVisiblePane = () => document.querySelector(".pane:not([hidden])");
+function fdTarget() {
+  const pane = fdVisiblePane();
+  if (pane && pane.dataset.pane === "editor" && state.xsl) return { mode: "editor" };
+  const f = FD.lastField;
+  if (f && f.isConnected && pane && pane.contains(f) && f.offsetParent) return { mode: "field", field: f };
+  return { mode: "page", pane };
+}
+function fdClearMarks() {
+  FD.marks.forEach(m => m.clear && m.clear()); FD.marks = [];
+  document.querySelectorAll("mark.fdm").forEach(mk => { const p = mk.parentNode; p.replaceChild(document.createTextNode(mk.textContent), mk); p.normalize(); });
+}
+function fdLabel() {
+  if (FD.mode === "editor") return FD.scope === "all" ? "todos os arquivos abertos" : (state.xsl ? state.xsl.name : "editor");
+  if (FD.mode === "field") return "campo de código";
+  return "esta tela (somente leitura)";
+}
+function fdRun(keepCur, show = true) {
+  if (!FD.open) return;
+  const t = fdTarget(); FD.mode = t.mode; FD.field = t.field || null;
+  fdClearMarks();
+  const re = fdRegex(); let hits = [];
+  if (FD.mode === "editor" && FD.scope === "file") {
+    hits = fdFindAll(cm.getValue(), re);
+    if (cm.markText && cm.posFromIndex) FD.marks = hits.slice(0, 2000).map(h => cm.markText(cm.posFromIndex(h.i), cm.posFromIndex(h.i + h.len), { className: "cm-find" }));
+  } else if (FD.mode === "editor" && FD.scope === "all") {
+    fdAllFiles(re); hits = [];
+  } else if (FD.mode === "field") {
+    hits = fdFindAll(FD.field.value, re);
+  } else if (t.pane && re) {
+    const walker = document.createTreeWalker(t.pane, NodeFilter.SHOW_TEXT, { acceptNode: n => n.nodeValue.trim() && !n.parentNode.closest("script,style,textarea,input,select,.findbar,[hidden]") ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT });
+    const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+    for (const n of nodes) {
+      const found = fdFindAll(n.nodeValue, re); if (!found.length) continue;
+      let node = n, offset = 0;
+      for (const h of found) {
+        const mid = node.splitText(h.i - offset), rest = mid.splitText(h.len), mk = document.createElement("mark");
+        mk.className = "fdm"; mid.parentNode.replaceChild(mk, mid); mk.appendChild(mid); hits.push({ el: mk }); node = rest; offset = h.i + h.len;
+        if (hits.length >= 2000) break;
+      }
+      if (hits.length >= 2000) break;
+    }
+  }
+  FD.hits = hits;
+  if (!keepCur || FD.cur >= hits.length) FD.cur = hits.length ? fdNearest() : -1;
+  fdPaint(); if (show) fdShowCur(false);
+}
+let fdRefreshT;
+function fdRefreshSoon() { if (!FD.open) return; clearTimeout(fdRefreshT); fdRefreshT = setTimeout(() => fdRun(true, false), 250); }
+function fdNearest() {
+  if (FD.mode === "editor" && cm.getCursor && cm.indexFromPos) { const c = cm.indexFromPos(cm.getCursor("from")); const k = FD.hits.findIndex(h => h.i >= c); return k < 0 ? 0 : k; }
+  if (FD.mode === "field") { const c = FD.field.selectionStart || 0; const k = FD.hits.findIndex(h => h.i >= c); return k < 0 ? 0 : k; }
+  return 0;
+}
+function fdPaint() {
+  const editor = FD.mode === "editor", ro = FD.mode === "page";
+  $("#fdWhere").textContent = "em " + fdLabel();
+  $("#fdScopeRow").hidden = !editor;
+  for (const id of ["#fdRepl", "#fdOne", "#fdAll"]) $(id).disabled = ro;
+  $("#fdOne").disabled = ro || (editor && FD.scope === "all");
+  $("#fdRepl").placeholder = ro ? "Substituir não se aplica nesta tela" : "Substituir por";
+  document.querySelectorAll("[data-fdo]").forEach(b => b.setAttribute("aria-pressed", String(!!FD.opts[b.dataset.fdo])));
+  const q = $("#fdFind").value;
+  $("#fdCount").textContent = FD.err ? FD.err : !q ? "" : (editor && FD.scope === "all") ? "" : FD.hits.length ? `${FD.cur + 1} de ${FD.hits.length}${FD.hits.length >= 2000 ? "+" : ""}` : "Nenhum";
+  $("#fdCount").classList.toggle("bad", !!q && (!!FD.err || (!FD.hits.length && !(editor && FD.scope === "all"))));
+  if (!(editor && FD.scope === "all")) $("#fdRes").innerHTML = "";
+}
+function fdShowCur(focusTarget) {
+  const h = FD.hits[FD.cur]; if (!h) return;
+  if (FD.mode === "editor" && cm.posFromIndex) {
+    const from = cm.posFromIndex(h.i), to = cm.posFromIndex(h.i + h.len);
+    if (FD.curMark) FD.curMark.clear(); FD.curMark = cm.markText(from, to, { className: "cm-find-cur" });
+    cm.scrollIntoView({ from, to }, 120); cm.setSelection(from, to);
+  } else if (FD.mode === "field") {
+    const f = FD.field; if (focusTarget) f.focus(); f.setSelectionRange(h.i, h.i + h.len);
+    const line = f.value.slice(0, h.i).split("\n").length, lh = parseFloat(getComputedStyle(f).lineHeight) || 16; f.scrollTop = Math.max(0, (line - 3) * lh);
+  } else if (h.el) {
+    document.querySelectorAll("mark.fdm.cur").forEach(x => x.classList.remove("cur")); h.el.classList.add("cur"); h.el.scrollIntoView({ block: "center", inline: "nearest" });
+  }
+}
+function fdGo(d) { if (!FD.hits.length) return; FD.cur = (FD.cur + d + FD.hits.length) % FD.hits.length; fdPaint(); fdShowCur(true); }
+function fdReplaceOne() {
+  const h = FD.hits[FD.cur], re = fdRegex(); if (!h || !re) return;
+  const one = new RegExp(re.source, re.flags.replace("g", ""));
+  if (FD.mode === "editor") {
+    const text = cm.getValue(), seg = text.slice(h.i, h.i + h.len), rep = seg.replace(one, fdRepl());
+    cm.replaceRange(rep, cm.posFromIndex(h.i), cm.posFromIndex(h.i + h.len));
+  } else if (FD.mode === "field") {
+    const f = FD.field, seg = f.value.slice(h.i, h.i + h.len), rep = seg.replace(one, fdRepl());
+    f.setRangeText(rep, h.i, h.i + h.len, "end"); f.dispatchEvent(new Event("input", { bubbles: true }));
+  } else return;
+  fdRun(true); if (FD.hits.length) { FD.cur = Math.min(FD.cur, FD.hits.length - 1); fdPaint(); fdShowCur(false); }
+}
+async function fdReplaceAll() {
+  const re = fdRegex(); if (!re) return;
+  if (FD.mode === "editor" && FD.scope === "all") { await fdReplaceAllFiles(re); return; }
+  if (FD.mode === "editor") {
+    const before = cm.getValue(), n = fdFindAll(before, re).length; if (!n) return;
+    editorReplaceAll(before.replace(re, fdRepl())); toast(`${n} ocorrência(s) substituída(s). Para voltar, use Desfazer no topo do editor.`);
+  } else if (FD.mode === "field") {
+    const f = FD.field, n = fdFindAll(f.value, re).length; if (!n) return;
+    f.value = f.value.replace(re, fdRepl()); f.dispatchEvent(new Event("input", { bubbles: true })); toast(`${n} ocorrência(s) substituída(s) no campo.`);
+  }
+  fdRun();
+}
+// Todos os arquivos abertos (XSL e XML), inclusive os da pasta do sistema ainda não lidos.
+async function fdFilesWithText() {
+  const fs = state.files.filter(f => /^(xslt?|xml)$/.test(f.ext));
+  for (const f of fs) if (f.text == null) { try { await readText(f); } catch {} }
+  return fs.filter(f => f.text != null);
+}
+let fdAllSeq = 0;
+async function fdAllFiles(re) {
+  const seq = ++fdAllSeq, box = $("#fdRes");
+  if (!re) { box.innerHTML = ""; return; }
+  box.innerHTML = '<p class="note">Procurando nos arquivos abertos…</p>';
+  const fs = await fdFilesWithText(); if (seq !== fdAllSeq) return;
+  const res = fs.map(f => ({ f, n: fdFindAll(f === state.xsl ? cm.getValue() : f.text, re).length })).filter(x => x.n);
+  const tot = res.reduce((a, x) => a + x.n, 0);
+  FD.allRes = res;
+  $("#fdCount").textContent = tot ? `${tot} em ${res.length} arquivo(s)` : "Nenhum"; $("#fdCount").classList.toggle("bad", !tot);
+  box.innerHTML = res.length ? res.map(x => `<button class="fdfile" type="button" data-fdfile="${x.f.id}"><span>${esc(x.f.name)}</span><small>${esc(x.f.origin === "sistema" ? x.f.path : x.f.origin)}</small><b>${x.n}</b></button>`).join("") : "";
+}
+let fdArmed = 0;
+async function fdReplaceAllFiles(re) {
+  const res = FD.allRes || []; if (!res.length) { toast("Nada encontrado nos arquivos abertos."); return; }
+  const tot = res.reduce((a, x) => a + x.n, 0);
+  if (Date.now() - fdArmed > 8000) { fdArmed = Date.now(); $("#fdAll").textContent = `Confirmar: ${tot} em ${res.length} arquivo(s)`; setTimeout(() => { $("#fdAll").textContent = "Substituir tudo"; }, 8000); return; }
+  fdArmed = 0; $("#fdAll").textContent = "Substituir tudo";
+  let files = 0;
+  for (const { f } of res) {
+    const before = f === state.xsl ? cm.getValue() : f.text, after = before.replace(re, fdRepl());
+    if (after === before) continue;
+    await histAdd(f, "antes", before, "antes de substituir em vários arquivos");
+    if (f === state.xsl) editorReplaceAll(after); else { f.text = after; f.dirty = true; }
+    files++;
+  }
+  renderTree(); fdRun();
+  toast(`${tot} ocorrência(s) substituída(s) em ${files} arquivo(s). A versão anterior de cada um ficou no Histórico. Salve cada arquivo ou use Exportar tudo.`);
+}
+function fdOpen(withReplace) {
+  const bar = $("#findBar"); FD.open = true; bar.hidden = false;
+  const sel = (() => { const a = document.activeElement; if (a && a.closest && a.closest(".CodeMirror") && cm.getSelection) return cm.getSelection(); if (a && /^(TEXTAREA|INPUT)$/.test(a.tagName) && !a.closest(".findbar") && a.selectionEnd > a.selectionStart) return a.value.slice(a.selectionStart, a.selectionEnd); return String(window.getSelection ? window.getSelection() : ""); })();
+  if (sel && !sel.includes("\n") && sel.length < 200) $("#fdFind").value = sel;
+  const inp = withReplace && $("#fdFind").value ? $("#fdRepl") : $("#fdFind"); inp.focus(); inp.select();
+  fdRun();
+}
+function fdClose() { FD.open = false; $("#findBar").hidden = true; fdClearMarks(); if (FD.curMark) { FD.curMark.clear(); FD.curMark = null; } }
+function bindFind() {
+  const bar = $("#findBar");
+  document.addEventListener("focusin", e => { const t = e.target; if (/^(TEXTAREA)$/.test(t.tagName) && !t.closest(".findbar")) FD.lastField = t; });
+  document.addEventListener("keydown", e => {
+    const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
+    if (mod && e.shiftKey && k === "l") { e.preventDefault(); FD.open && document.activeElement && document.activeElement.closest(".findbar") ? fdClose() : fdOpen(false); return; }
+    const inCode = document.activeElement && (document.activeElement.closest(".CodeMirror") || (document.activeElement.tagName === "TEXTAREA" && !document.activeElement.closest(".findbar")));
+    if (mod && !e.shiftKey && (k === "f" || k === "h") && (inCode || (document.activeElement && document.activeElement.closest(".findbar")))) { e.preventDefault(); fdOpen(k === "h"); return; }
+    if (FD.open && k === "escape" && (document.activeElement && document.activeElement.closest(".findbar"))) { e.preventDefault(); fdClose(); }
+    if (FD.open && e.key === "F3") { e.preventDefault(); fdGo(e.shiftKey ? -1 : 1); }
+  });
+  let t;
+  $("#fdFind").addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => fdRun(), 120); });
+  $("#fdFind").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); fdGo(e.shiftKey ? -1 : 1); } });
+  $("#fdRepl").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); e.ctrlKey || e.metaKey ? fdReplaceAll() : fdReplaceOne(); } });
+  $("#fdNext").addEventListener("click", () => fdGo(1));
+  $("#fdPrev").addEventListener("click", () => fdGo(-1));
+  $("#fdOne").addEventListener("click", fdReplaceOne);
+  $("#fdAll").addEventListener("click", fdReplaceAll);
+  $("#fdClose").addEventListener("click", fdClose);
+  bar.addEventListener("click", e => {
+    const o = e.target.closest("[data-fdo]"); if (o) { FD.opts[o.dataset.fdo] = !FD.opts[o.dataset.fdo]; fdRun(); return; }
+    const f = e.target.closest("[data-fdfile]");
+    if (f) { const file = state.files.find(x => x.id === +f.dataset.fdfile); if (file) { openXsl(file).then(() => { FD.scope = "file"; bar.querySelector('input[name="fdScope"][value="file"]').checked = true; fdRun(); }); } }
+  });
+  bar.querySelectorAll('input[name="fdScope"]').forEach(r => r.addEventListener("change", () => { FD.scope = r.value; fdRun(); }));
+  // Arrastar pelo cabeçalho; a posição fica lembrada neste navegador.
+  const head = bar.querySelector("header"); let drag = null;
+  const place = (x, y) => { const w = bar.offsetWidth, h = bar.offsetHeight; bar.style.left = Math.max(4, Math.min(innerWidth - w - 4, x)) + "px"; bar.style.top = Math.max(4, Math.min(innerHeight - h - 4, y)) + "px"; bar.style.right = "auto"; };
+  head.addEventListener("pointerdown", e => { if (e.target.closest("button")) return; const r = bar.getBoundingClientRect(); drag = { dx: e.clientX - r.left, dy: e.clientY - r.top }; head.setPointerCapture(e.pointerId); });
+  head.addEventListener("pointermove", e => { if (drag) place(e.clientX - drag.dx, e.clientY - drag.dy); });
+  head.addEventListener("pointerup", () => { if (!drag) return; drag = null; lsSet("exsl.findPos", { x: parseInt(bar.style.left), y: parseInt(bar.style.top) }); });
+  const pos = lsGet("exsl.findPos", null); if (pos && innerWidth > 700) { bar.style.left = pos.x + "px"; bar.style.top = pos.y + "px"; bar.style.right = "auto"; }
+  document.querySelectorAll("[data-findopen]").forEach(b => b.addEventListener("click", () => fdOpen(false)));
+}
+
 /* Ganchos para os testes automáticos (web/tests). */
 window.EditorXSL = { audit: auditXsl, applyFixes, interpretXsl, generate, models: () => MODELS, builtin: () => BUILTIN, partnerInfo, partnerApply, canonDist, mapFolder, publishText, translateLayout };
 
@@ -3986,6 +4219,7 @@ async function start() {
   bindPartners();
   initAi();
   initTeam();
+  bindFind();
   bindCompare();
   builderInit();
   showTab(savedTab);

@@ -188,6 +188,20 @@ function chromiumPath() {
     const d = await page.evaluate(x => ({ v: (x.match(/="\d+,\d+"/g) || []).length }), SAMPLE);
     assert(d.v > 0, "o exemplo deveria ter vírgulas");
   });
+  await test("localizar e substituir: arquivo, regex com grupo e todos os arquivos abertos", async () => {
+    await page.setInputFiles("#inFiles", [path.join(FIX, "limpo.xsl"), path.join(FIX, "soma_virgula.xsl")]); await page.waitForTimeout(500);
+    await page.click('[data-tab="editor"]'); await page.click(".CodeMirror"); await page.keyboard.press("Control+Shift+L"); await page.waitForTimeout(150);
+    assert(await page.isVisible("#findBar"), "o painel não abriu com Ctrl+Shift+L");
+    await page.fill("#fdFind", "formato"); await page.waitForTimeout(250);
+    assert(/de 2$/.test(await page.textContent("#fdCount")), "contagem: " + await page.textContent("#fdCount"));
+    await page.click('[data-fdo="re"]'); await page.fill("#fdFind", "name=\"(formato)\""); await page.fill("#fdRepl", "name=\"$1_br\""); await page.click("#fdAll"); await page.waitForTimeout(200);
+    assert(/name="formato_br"/.test(await page.evaluate(() => document.querySelector(".CodeMirror").CodeMirror.getValue())), "regex com grupo não substituiu");
+    await page.click('[data-fdo="re"]'); await page.check('input[name="fdScope"][value="all"]'); await page.fill("#fdFind", "decimal-separator"); await page.waitForTimeout(700);
+    const n = await page.$$eval(".fdfile", a => a.length); assert(n >= 2, `${n} arquivos com resultado`);
+    await page.fill("#fdRepl", "decimal-separator"); await page.click("#fdAll"); assert(/Confirmar/.test(await page.textContent("#fdAll")), "o lote deveria pedir confirmação");
+    await page.check('input[name="fdScope"][value="file"]'); await page.press("#fdFind", "Escape");
+    assert(!(await page.isVisible("#findBar")), "Esc não fechou");
+  });
   await test("aba Auditoria lista os arquivos abertos", async () => {
     await page.click('[data-tab="audit"]'); await page.selectOption("#auScope", "files"); await page.waitForTimeout(500);
     const s = await page.textContent("#auSummary"); assert(/com erro/.test(s), s);
