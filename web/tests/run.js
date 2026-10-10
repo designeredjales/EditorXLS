@@ -206,6 +206,31 @@ function chromiumPath() {
     await p3.close();
   });
 
+  console.log("\nBiblioteca da equipe (banco simulado)");
+  await test("mostra códigos da equipe, compartilha um seu e só remove o que pode", async () => {
+    const p4 = await ctx.newPage();
+    await p4.addInitScript({ path: path.join(__dirname, "fakeclaude.js") });
+    await p4.addInitScript(() => window.__fakeTeam("u-edson", false, { "equipe/u-ana": { itens: [{ t: "Peso por categoria", cat: "Cálculos", d: "da Ana", c: "<xsl:value-of select=\"@WEIGHT\" />" }] } }));
+    if (fs.existsSync(cmDir)) await p4.route("https://cdnjs.cloudflare.com/**", r => r.fulfill({ path: path.join(cmDir, r.request().url().endsWith("xml.min.js") ? "mode/xml/xml.js" : "lib/codemirror.js"), contentType: "application/javascript" }));
+    await p4.route("https://fonts.**", r => r.abort());
+    await p4.goto("file://" + DIST); await p4.waitForFunction(() => window.EditorXSL);
+    await p4.click('[data-tab="lib"]'); await p4.waitForFunction(() => /1 código\(s\) de 1 pessoa/.test(document.querySelector("#libTeam").textContent));
+    await p4.click('#libFilters [data-cat="Equipe"]'); await p4.waitForTimeout(200);
+    const card = await p4.textContent("#libCards .card.team");
+    assert(/Equipe · Ana Projetista/.test(card) && /Peso por categoria/.test(card), card.slice(0, 120));
+    assert(!(await p4.$("#libCards .card.team [data-snipteamdel]")), "não deveria poder remover o código da Ana");
+    await p4.click('#libFilters [data-cat="Todas"]'); await p4.waitForTimeout(100);
+    await p4.click("#libNew summary"); await p4.fill("#snTitle", "Meu código"); await p4.fill("#snCode", "<b>x</b>");
+    assert(await p4.isVisible("#snShareWrap"), "sem opção de compartilhar");
+    await p4.click("#snAdd"); await p4.waitForFunction(() => window.__store.has("equipe/u-edson"));
+    await p4.click('#libFilters [data-cat="Equipe"]'); await p4.waitForTimeout(300);
+    assert((await p4.$$("#libCards .card.team")).length === 2, "o compartilhado não apareceu");
+    const mine = await p4.$$eval("#libCards .card.team", a => a.map(c => /você/.test(c.textContent) && !!c.querySelector("[data-snipteamdel]")));
+    assert(mine.includes(true), "o próprio código deveria ter Remover da equipe");
+    await p4.click("#libCards .card.team [data-snipteamdel]"); await p4.waitForFunction(() => window.__store.get("equipe/u-edson").itens.length === 0);
+    await p4.close();
+  });
+
   console.log("\nIA na página (Claude simulado)");
   await test("pergunta, proposta comparável e aplicação com versão no Histórico", async () => {
     const p2 = await ctx.newPage();

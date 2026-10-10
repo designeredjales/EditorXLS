@@ -297,6 +297,8 @@ pre.diff .add{background:var(--ok-soft);color:var(--ok)} pre.diff .del{backgroun
 .stgrid .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
 .stcats{display:flex;flex-wrap:wrap;gap:4px 12px;max-height:140px;overflow:auto;padding:4px 0;color:var(--fg)}
 
+.card.team{border-color:var(--accent)}
+
 /* ---------- IA ---------- */
 .aiout:empty{display:none}
 .airesult{display:flex;flex-direction:column;gap:7px;border:1px solid var(--line);border-radius:7px;padding:8px 10px;background:var(--sunk);font-size:12.5px}
@@ -610,6 +612,7 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
         <div class="lib">
           <div class="filters" id="libFilters"></div>
           <input class="search" id="libSearch" type="search" placeholder="Buscar na biblioteca (ex.: peso, moeda, coluna)">
+          <p class="hnote" id="libTeam" hidden></p>
           <div class="cards" id="libCards"></div>
           <details class="form" id="libNew">
             <summary><b>Adicionar código à biblioteca</b></summary>
@@ -620,6 +623,7 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
             <input id="snDesc" type="text" placeholder="Para que serve">
             <textarea id="snCode" placeholder="Código XSL"></textarea>
             <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
+              <span id="snShareWrap" hidden><label class="ck"><input type="checkbox" id="snShare" checked> Compartilhar também com a equipe</label></span>
               <button class="btn small primary" id="snAdd" type="button">Salvar na biblioteca</button>
               <button class="btn small" id="snFromSel" type="button">Usar trecho selecionado no editor</button>
               <button class="btn small" id="libExport" type="button">Exportar biblioteca</button>
@@ -1474,18 +1478,73 @@ function renderFound() {
 const userSnips = () => lsGet("exsl.snippets", []);
 let LIBRARY = [];
 try { LIBRARY = JSON.parse(document.getElementById("library").textContent).flatMap(l => (l.itens || []).map(s => ({ ...s, lote: l.lote, builtin: true }))); } catch {}
-function allSnips() { return [...BUILTIN.map(s => ({ ...s, builtin: true })), ...LIBRARY, ...userSnips()]; }
+function allSnips() { return [...BUILTIN.map(s => ({ ...s, builtin: true })), ...LIBRARY.map(s => ({ ...s, lib: true })), ...userSnips().map(s => ({ ...s, mine: true })), ...teamSnips()]; }
+
+/* ---------- Biblioteca da equipe: códigos compartilhados entre quem abre o editor no claude.ai ---------- */
+// Cada pessoa grava só o próprio documento equipe/<id> (lista de códigos); todos leem; o dono do editor pode remover qualquer um.
+const TEAM = { db: null, user: null, uid: null, owner: false, docs: [], names: {}, err: "", ready: false };
+async function initTeam() {
+  if (!window.claude || !window.claude.use) return;
+  let db = null, user = null;
+  try { [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]); } catch {}
+  if (!db) return;
+  TEAM.db = db; TEAM.user = user;
+  try { TEAM.uid = user ? await user.id() : null; TEAM.owner = user ? await user.isOwner() : false; } catch {}
+  const repaint = () => { if (!$('[data-pane="lib"]').hidden) renderLib(); else teamBar(); };
+  db.collection("equipe").onSnapshot(snap => {
+    TEAM.docs = snap.docs.filter(d => d.exists).map(d => ({ id: d.id, itens: Array.isArray((d.data() || {}).itens) ? d.data().itens : [] }));
+    TEAM.ready = true; teamNames().then(repaint);
+  }, () => { TEAM.err = "A biblioteca da equipe ficou indisponível nesta visita."; TEAM.ready = false; repaint(); });
+  repaint();
+}
+async function teamNames() {
+  if (!TEAM.user || !TEAM.docs.length) return;
+  try { const ps = await TEAM.user.profiles(TEAM.docs.map(d => d.id)); for (const [k, p] of Object.entries(ps)) TEAM.names[k] = p.isMe ? "você" : (p.name || "alguém da equipe"); } catch {}
+}
+function teamSnips() { return TEAM.docs.flatMap(d => d.itens.map((x, k) => ({ ...x, team: true, autor: d.id, k }))); }
+const myTeamItens = () => (TEAM.docs.find(d => d.id === TEAM.uid) || { itens: [] }).itens;
+function teamErr(e) {
+  const c = e && e.code;
+  return c === "invalid_argument" ? "Seu acesso a este editor é só de leitura. Peça ao dono acesso de colaborador para compartilhar."
+    : c === "quota_exceeded" ? "A biblioteca da equipe está cheia. Remova códigos antigos." : c === "resource_exhausted" ? "Muitas gravações seguidas. Tente de novo em instantes." : "Não foi possível gravar na biblioteca da equipe.";
+}
+async function teamShare(sn) {
+  if (!TEAM.db || !TEAM.uid) { toast("Abra o editor pelo claude.ai, conectado, para compartilhar com a equipe."); return; }
+  const mine = myTeamItens();
+  if (mine.some(x => x.t === sn.t && x.c === sn.c)) { toast("Este código já está na biblioteca da equipe."); return; }
+  try { await TEAM.db.doc("equipe/" + TEAM.uid).set({ itens: [...mine, { t: sn.t, cat: sn.cat || "Meus códigos", d: sn.d || "", c: sn.c, criado: new Date().toISOString() }], atualizado: new Date().toISOString() }); toast("Compartilhado com a equipe."); }
+  catch (e) { toast(teamErr(e)); }
+}
+async function teamRemove(autor, k) {
+  const d = TEAM.docs.find(x => x.id === autor); if (!d) return;
+  if (autor !== TEAM.uid && !TEAM.owner) { toast("Só quem compartilhou, ou o dono do editor, pode remover."); return; }
+  try { await TEAM.db.doc("equipe/" + autor).set({ itens: d.itens.filter((_, i) => i !== k), atualizado: new Date().toISOString() }); toast("Removido da biblioteca da equipe."); }
+  catch (e) { toast(teamErr(e)); }
+}
+function teamBar() {
+  const el = $("#libTeam"); if (!el) return;
+  const shareBox = $("#snShareWrap"); if (shareBox) shareBox.hidden = !(TEAM.db && TEAM.uid);
+  if (!TEAM.db) { el.hidden = true; return; }
+  const n = TEAM.docs.reduce((a, d) => a + d.itens.length, 0), pessoas = TEAM.docs.filter(d => d.itens.length).length;
+  el.hidden = false;
+  el.innerHTML = TEAM.err ? esc(TEAM.err) : !TEAM.ready ? "Carregando a biblioteca da equipe…"
+    : `<b>Biblioteca da equipe:</b> ${n ? `${n} código(s) de ${pessoas} pessoa(s), marcados com "Equipe".` : "ainda vazia."} Compartilhe os seus pelo botão <b>Compartilhar com a equipe</b> em cada card.`;
+}
 function renderLib() {
+  teamBar();
   const list = allSnips();
-  const cats = ["Todas", ...new Set(list.map(s => s.cat))];
+  const cats = ["Todas", ...(TEAM.docs.some(d => d.itens.length) ? ["Equipe"] : []), ...new Set(list.map(s => s.cat))];
   $("#libFilters").innerHTML = cats.map(c => `<button class="fchip" type="button" aria-pressed="${c === state.libCat}" data-cat="${esc(c)}">${esc(c)}</button>`).join("");
   const q = $("#libSearch").value.trim().toLowerCase();
-  const shown = list.filter(s => (state.libCat === "Todas" || s.cat === state.libCat) && (!q || (s.t + s.d + s.c + s.cat + (s.tags || "") + (s.origem || "")).toLowerCase().includes(q)));
+  const shown = list.filter(s => (state.libCat === "Todas" || (state.libCat === "Equipe" ? s.team : s.cat === state.libCat)) && (!q || (s.t + s.d + s.c + s.cat + (s.tags || "") + (s.origem || "")).toLowerCase().includes(q)));
   $("#libCards").innerHTML = shown.map(s => {
     const i = list.indexOf(s);
-    return `<article class="card"><span class="cat">${esc(s.cat)}${s.builtin ? "" : " · seu"}</span><h4>${esc(s.t)}</h4><p>${esc(s.d || "")}</p>${s.origem ? `<p class="orig">Origem: ${esc(s.origem)}</p>` : ""}<pre>${esc(s.c)}</pre>
+    const canDel = s.team && (s.autor === TEAM.uid || TEAM.owner);
+    return `<article class="card${s.team ? " team" : ""}"><span class="cat">${esc(s.cat)}${s.mine ? " · seu" : ""}${s.team ? ` · Equipe · ${esc(TEAM.names[s.autor] || "…")}` : ""}</span><h4>${esc(s.t)}</h4><p>${esc(s.d || "")}</p>${s.origem ? `<p class="orig">Origem: ${esc(s.origem)}</p>` : ""}<pre>${esc(s.c)}</pre>
       <div class="row"><button class="btn small primary" type="button" data-snip="${i}">Inserir no editor</button><button class="btn small" type="button" data-snipcp="${i}">Copiar</button>
-      ${s.builtin ? "" : `<button class="btn small ghost" type="button" data-snipdel="${i}">Remover</button>`}</div></article>`;
+      ${s.mine ? `<button class="btn small ghost" type="button" data-snipdel="${i}">Remover</button>` : ""}
+      ${(s.mine || s.lib || s.builtin) && TEAM.db && TEAM.uid && !TEAM.err ? `<button class="btn small ghost" type="button" data-snipshare="${i}">Compartilhar com a equipe</button>` : ""}
+      ${canDel ? `<button class="btn small ghost" type="button" data-snipteamdel="${i}">Remover da equipe</button>` : ""}</div></article>`;
   }).join("") || '<p class="empty">Nada encontrado.</p>';
 }
 
@@ -1713,6 +1772,9 @@ function bind() {
     const a = e.target.closest("[data-snip]"), c = e.target.closest("[data-snipcp]"), d = e.target.closest("[data-snipdel]");
     if (a) insertCode(list[+a.dataset.snip].c);
     if (c) copy(list[+c.dataset.snipcp].c, "Código copiado.");
+    const sh = e.target.closest("[data-snipshare]"), td = e.target.closest("[data-snipteamdel]");
+    if (sh) teamShare(list[+sh.dataset.snipshare]);
+    if (td) { const s = list[+td.dataset.snipteamdel]; teamRemove(s.autor, s.k); }
     if (d) { const s = list[+d.dataset.snipdel]; lsSet("exsl.snippets", userSnips().filter(u => !(u.t === s.t && u.c === s.c))); renderLib(); toast("Removido da biblioteca."); }
   });
   $("#snFromSel").addEventListener("click", () => { const s = cm.getSelection ? cm.getSelection() : ""; if (!s) { toast("Selecione um trecho no editor primeiro."); return; } $("#snCode").value = s; });
@@ -1721,6 +1783,7 @@ function bind() {
     if (!s.t || !s.c.trim()) { toast("Preencha o título e o código."); return; }
     lsSet("exsl.snippets", [...userSnips(), s]); ["#snTitle", "#snCat", "#snDesc", "#snCode"].forEach(k => { $(k).value = ""; });
     state.libCat = s.cat; renderLib(); toast("Salvo na biblioteca deste navegador. Use Exportar para guardar uma cópia.");
+    if ($("#snShare") && $("#snShare").checked && !$("#snShareWrap").hidden) teamShare(s);
   });
   $("#libExport").addEventListener("click", async () => {
     const data = JSON.stringify(userSnips(), null, 2), dl = await getDownloads();
@@ -3813,6 +3876,7 @@ async function start() {
   bindAudit();
   bindPartners();
   initAi();
+  initTeam();
   bindCompare();
   builderInit();
   showTab(savedTab);

@@ -9,7 +9,7 @@ Editor de layouts XSL do Promob (orçamento, listagem e integração ERP), em um
 - **Editor:** código com destaque, validação na hora e mapa das seções (HEADER, CUSTOMERDATA, BODY, TOTALS, FOOTER…) com nomes legíveis para cada campo.
 - **Visualizar:** aplica o XSL ao XML de orçamento e mostra o relatório ou o XML de integração. Avisa quando os dados são o exemplo inventado, ensina a gerar o XML real (Enviar Para → Arquivo XML, com a linha pronta para o `sendTo.xml`) e detecta se o Promob grava os valores com vírgula ou ponto, apontando os layouts que mostrariam NaN.
 - **Campos:** catálogo do XML de orçamento e os campos que existem de fato no XML carregado (referências, metadados, integração).
-- **Biblioteca de códigos:** trechos prontos (peso pela referência, moeda, somas, colunas, integração) e os seus, com exportação.
+- **Biblioteca de códigos:** trechos prontos (peso pela referência, moeda, somas, colunas, integração) e os seus, com exportação. No editor publicado no claude.ai, a **biblioteca da equipe** reúne os códigos que cada pessoa compartilha (cada uma grava só os seus; o dono do editor pode remover qualquer um).
 - **Modelos:** os layouts recebidos, sem duplicados, organizados por tipo (orçamento, pedido, listagem, parceiros, integração, TXT, Enviar Para), com idiomas e pacotes como versões. Abrir, visualizar, levar ao construtor ou exportar.
 - **Histórico e backups:** desfazer/refazer, versões por arquivo (ao abrir, salvar, exportar, gerar, antes de restaurar e rascunho automático), comparar, restaurar, voltar ao original, `.bak` e cópia datada em `_historico_editorxsl` a cada salvamento na pasta.
 - **+ Código nas seções:** insere um trecho da biblioteca ou um campo direto na seção escolhida do layout.
