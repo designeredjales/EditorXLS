@@ -7,6 +7,7 @@ Cada modelo recebido é lido, classificado e desmontado em padrões reutilizáve
 | 1 | `01_cinex.json` | 19 |
 | 2 | `02_pedido_chapas_txt_integracao.json` | 25 |
 | 3 | `03_pedidos_sendto.json` | 14 |
+| 4 | `04_portas_pedras.json` | 5 |
 
 ## Tipos de layout encontrados
 
@@ -68,3 +69,13 @@ Idênticos exceto o valor do filtro. Risco: `sum()` direto no preço só funcion
 2. **Roteamento por referência do item.** `SEPARACAO_PEDIDO` e `EXPORTXML` dizem para onde cada item vai. É o mecanismo para separar pedidos por fornecedor, linha ou setor.
 3. **Recursos do navegador do Promob.** `external.ProcessStart` (abrir link/programa) e `external.GetStringVSA('pastaSistema')` (pasta do sistema) só funcionam dentro do Promob.
 4. **Peso e dados fiscais vêm da tabela de preço** (`PRICE/EXTRAINFORMATIONS`), não das referências do item.
+
+### Lote 4 — Listing (segunda instalação)
+
+Outra instalação da pasta `Budget\Layouts\Listing`, com versões diferentes dos mesmos arquivos (Listagem, MCMIntegration, Tramontina, Elettromec) e parceiros novos: Cosentino, Appliances, Lofra, Falmec, Franke e Cinex. Trouxe o `Orcamento.css` que faltava.
+
+**Listagem_Builder_Fabrica.xsl** · ficha da porta para a fábrica: código e acabamento do Builder, furo (`DOORHOLE`), lado (`HOLESIDE`), posição do puxador (`KNOBPOSITION`), recorte; numeração hierárquica `xsl:number level="multiple"`.
+
+**Parceiro_Cosentino.xsl** · pedras: área (`AREA`) e alerta "PREENCHER INFORMAÇÕES" quando a descrição do material ficou com o marcador `$MATERIALUSERDESCRIPTION$`.
+
+Arquivos que vieram danificados no `.rar` e não puderam ser lidos: Listagem_Builder_Fabrica.pt, Listagem_Builder_Loja.pt, parceiro_Smeg, Parceiro_tramontina.en (versão nova) e dois arquivos vazios.

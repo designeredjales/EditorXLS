@@ -67,6 +67,14 @@ DESCRICOES = {
     "ListagemCompleta": ("Listagem completa padrão do Promob.", []), "ListagemCINEX": ("Listagem Cinex (seções do editor do Promob).", []),
     "PedidoSCA": ("Pedido SCA com total por categoria.", []), "PedidoSCA_explodido": ("Pedido SCA com módulos explodidos.", []),
     "TESTE_Pecas": ("Layout de teste de peças (pedido SCA de acessórios).", []),
+    "Listagem_Builder_Fabrica": ("Listagem para a fábrica com a ficha de cada porta: código e acabamento do Builder, furo, lado, posição do puxador e recorte, com numeração hierárquica.", []),
+    "Listagem_Builder_Loja": ("Listagem do Builder para a loja.", []),
+    "Parceiro_Cosentino": ("Orçamento de pedras Cosentino com área (m²) e alerta \"PREENCHER INFORMAÇÕES\" para material sem descrição.", []),
+    "Parceiro_Appliances": ("Orçamento do parceiro Appliances (eletrodomésticos).", []),
+    "Parceiro_Lofra": ("Orçamento do parceiro Lofra.", []), "parceiro_Lofra": ("Orçamento do parceiro Lofra.", []),
+    "parceiro_Falmec": ("Orçamento do parceiro Falmec (coifas).", []),
+    "Listagem.OLD": ("Versão antiga da listagem com ficha de porta (furo, puxador, recorte).", []),
+    "Listagem.NovaPasta": ("Cópia da listagem encontrada numa subpasta \"Nova pasta\".", []),
     "parceiro_finotoc_detalhado": ("Pedido Finotoc detalhado: uma coluna para cada configuração da porta (espessura, face, cor, puxador, cava, iluminação, frisos…).", []),
 }
 IDIOMA = {"pt": "PT", "pt-BR": "PT", "es": "ES", "en": "EN"}
@@ -86,7 +94,7 @@ def ler(p):
 
 def base_e_idioma(nome):
     stem = re.sub(r"\.(xslt?|xml|css)$", "", nome, flags=re.I)
-    m = re.match(r"^(.*?)\.(pt-BR|pt|es|en)(_copia)?$", stem)
+    m = re.match(r"^(.*?)\.(pt-BR|pt|es|en)(_copia|\.OLD)?$", stem)
     return (m.group(1), IDIOMA[m.group(2)]) if m else (stem, "")
 
 

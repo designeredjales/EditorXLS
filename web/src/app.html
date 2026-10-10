@@ -181,6 +181,39 @@ span.CodeMirror-selectedtext{background:none}
 .cm-comment{color:var(--muted);font-style:italic}.cm-bracket{color:var(--muted)}.cm-error{color:var(--err)}
 .cm-jump{background:var(--hl)}
 
+/* ---------- Comparador ---------- */
+.cmp{flex:1;min-height:0;display:flex;flex-direction:column}
+.cmpbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--sunk)}
+.cmpbar .cside{display:flex;gap:6px;align-items:center;flex:1 1 300px;min-width:0}
+.cmpbar .cside select{flex:1;min-width:0;max-width:none}
+.cmpbar .cside b{font-size:12px;color:var(--muted)}
+.cmpnav{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line)}
+.cmpnav .stat{font-family:var(--mono);font-size:12px}
+.cmpnav .stat .a{color:var(--ok)} .cmpnav .stat .d{color:var(--err)} .cmpnav .stat .c{color:var(--wood)}
+.cmpview{flex:1;min-height:0;overflow:auto;background:var(--code-bg)}
+table.dt{width:100%;border-collapse:collapse;table-layout:fixed;font-family:var(--mono);font-size:12px;line-height:1.45}
+table.dt col.ln{width:44px} table.dt col.gut{width:58px}
+table.dt td{vertical-align:top;padding:0 6px;white-space:pre-wrap;word-break:break-all}
+table.dt td.ln{color:var(--muted);text-align:right;user-select:none;background:var(--code-gutter)}
+table.dt td.gut{text-align:center;background:var(--code-gutter);border-left:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap;padding:0 2px}
+table.dt tr.chg td.tx{background:var(--wood-soft)}
+table.dt tr.del td.tl,table.dt tr.add td.tr{background:var(--err-soft)}
+table.dt tr.add td.tr{background:var(--ok-soft)}
+table.dt tr.del td.tr,table.dt tr.add td.tl{background:repeating-linear-gradient(135deg,var(--sunk) 0 6px,var(--code-bg) 6px 12px)}
+table.dt mark{background:var(--hl);color:inherit;border-radius:2px}
+table.dt tr.cur td.ln{background:var(--accent);color:var(--accent-ink)}
+table.dt tr.gap td{text-align:center;color:var(--muted);font-style:italic;background:var(--sunk);cursor:pointer;font-family:var(--sans)}
+.gbtn{border:1px solid var(--line);background:var(--panel);border-radius:4px;padding:0 5px;cursor:pointer;font-size:12px;line-height:1.4;color:var(--accent);font-weight:700}
+.gbtn:hover{border-color:var(--accent)}
+.cmpfoot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 10px;border-top:1px solid var(--line);background:var(--sunk)}
+.cmpfoot .grp{display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex:1 1 300px}
+.cmpfoot .grp b{font-size:12px;color:var(--muted)}
+table.pk{width:100%;border-collapse:collapse;font-size:13px}
+table.pk th,table.pk td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+table.pk tr.click{cursor:pointer} table.pk tr.click:hover td{background:var(--accent-soft)}
+.st{font-size:11.5px;padding:1px 7px;border-radius:999px;white-space:nowrap}
+.st.eq{background:var(--ok-soft);color:var(--ok)} .st.df{background:var(--wood-soft);color:var(--wood)} .st.only{background:var(--sunk);color:var(--muted);border:1px solid var(--line)}
+
 /* ---------- Inserir código numa seção ---------- */
 .addsec{margin-left:6px;border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:1px 7px;font-size:11.5px;cursor:pointer;color:var(--accent);font-weight:600;white-space:nowrap}
 .addsec:hover{border-color:var(--accent)}
@@ -322,6 +355,7 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
         <button class="tab" role="tab" aria-selected="true" data-tab="builder" type="button">Construtor visual</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="models" type="button">Modelos</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="editor" type="button">Editor de código</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="compare" type="button">Comparar</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="preview" type="button">Visualizar</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="fields" type="button">Campos</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="lib" type="button">Biblioteca de códigos</button>
@@ -387,6 +421,33 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
         <div class="split">
           <div class="codebox" id="codebox"></div>
           <div class="inspect" id="inspect"></div>
+        </div>
+      </section>
+
+      <section class="pane" data-pane="compare" hidden>
+        <div class="cmp">
+          <div class="cmpbar">
+            <span class="filters" role="group" aria-label="Modo"><button class="fchip" type="button" data-cmode="files" aria-pressed="true">Arquivos</button><button class="fchip" type="button" data-cmode="packs" aria-pressed="false">Pacotes</button></span>
+            <span class="cside" data-cside="files"><b>Esquerda</b><select class="sel" id="cmpL" aria-label="Arquivo da esquerda"></select></span>
+            <button class="btn small" id="cmpSwap" type="button" title="Trocar os lados" data-cside="files">⇄</button>
+            <span class="cside" data-cside="files"><b>Direita</b><select class="sel" id="cmpR" aria-label="Arquivo da direita"></select></span>
+            <span class="cside" data-cside="packs" hidden><b>Pacote A</b><select class="sel" id="pkA"></select></span>
+            <span class="cside" data-cside="packs" hidden><b>Pacote B</b><select class="sel" id="pkB"></select></span>
+            <input id="cmpFile" type="file" accept=".xsl,.xslt,.xml,.txt,.css" hidden>
+          </div>
+          <div class="cmpnav" data-cside="files">
+            <button class="btn small" id="cmpPrev" type="button" title="Diferença anterior (Alt+↑)">▲ Anterior</button>
+            <button class="btn small" id="cmpNext" type="button" title="Próxima diferença (Alt+↓)">▼ Próxima</button>
+            <span class="note" id="cmpPos"></span>
+            <span class="stat" id="cmpStat"></span>
+            <label class="ck"><input type="checkbox" id="cmpWs"> Ignorar espaços</label>
+            <label class="ck"><input type="checkbox" id="cmpOnly" checked> Só diferenças</label>
+          </div>
+          <div class="cmpview" id="cmpView"></div>
+          <div class="cmpfoot" data-cside="files">
+            <span class="grp"><b>Esquerda:</b><button class="btn small" type="button" data-cout="L:apply">Aplicar no arquivo</button><button class="btn small" type="button" data-cout="L:new">Abrir no editor</button><button class="btn small ghost" type="button" data-cout="L:export">Exportar</button></span>
+            <span class="grp"><b>Direita:</b><button class="btn small" type="button" data-cout="R:apply">Aplicar no arquivo</button><button class="btn small" type="button" data-cout="R:new">Abrir no editor</button><button class="btn small ghost" type="button" data-cout="R:export">Exportar</button></span>
+          </div>
         </div>
       </section>
 
@@ -501,6 +562,13 @@ const CATALOG = [
     ["REFERENCES/THICKNESS/@REFERENCE", "Espessura"], ["REFERENCES/MODEL/@REFERENCE", "Acabamento / modelo"], ["REFERENCES/MAXWIDTH/@REFERENCE", "Largura máxima da chapa"],
     ["REFERENCES/MAXDEPTH/@REFERENCE", "Profundidade máxima da chapa"], ["REFERENCES/CODE/@REFERENCE", "Código do item"], ["REFERENCES/SUPPLIER/@REFERENCE", "Fornecedor"],
     ["REFERENCES/POSITION/@REFERENCE", "Posição"], ["REFERENCES/SEPARACAO_PEDIDO/@REFERENCE", "Pedido em que o item entra"], ["REFERENCES/EXPORTXML/@REFERENCE", "Arquivo de destino na exportação"]]},
+  { g: "Referências de porta e fabricação", ctx: "ITEM/REFERENCES/<NOME>", f: [
+    ["REFERENCES/BUILDER_CODE/@REFERENCE", "Código no Builder"], ["REFERENCES/BUILDER_ACABAMENTO/@REFERENCE", "Acabamento no Builder"], ["REFERENCES/COLOR/@REFERENCE", "Cor"],
+    ["REFERENCES/DOORHOLE/@REFERENCE", "Furo da porta"], ["REFERENCES/HOLESIDE/@REFERENCE", "Lado da furação"], ["REFERENCES/KNOBPOSITION/@REFERENCE", "Posição do puxador"],
+    ["REFERENCES/SIDE/@REFERENCE", "Lado"], ["REFERENCES/RECORTE/@REFERENCE", "Recorte"], ["REFERENCES/CHANGEDDIMENSION/@REFERENCE", "Medida alterada (marca)"],
+    ["REFERENCES/LEGEND/@REFERENCE", "Legenda"], ["REFERENCES/NICKNAME/@REFERENCE", "Apelido do item"]]},
+  { g: "Pedras e tampos", ctx: "ITEM/REFERENCES/<NOME>", f: [
+    ["REFERENCES/AREA/@REFERENCE", "Área (m²)"], ["REFERENCES/DESC_COR_PAI_ESP/@REFERENCE", "Descrição especial do material"]]},
   { g: "Dados do pedido (metadados da listagem)", ctx: "LISTING/METADATAS", f: [
     ["METADATAS/METADATA[@ID='ORDERNUMBER']/@VALUE", "Número do pedido"], ["METADATAS/METADATA[@ID='PAYMENTTERMS']/@VALUE", "Condição de pagamento"],
     ["METADATAS/METADATA[@ID='TOCLIENT']/@VALUE", "Cliente final"], ["METADATAS/METADATA[@ID='SPECIALDISCOUNT']/@VALUE", "Desconto especial"], ["PROJECTGUID/@GUID", "ID do projeto"]]},
@@ -1274,6 +1342,7 @@ function showTab(name) {
   if (name === "preview") runPreview();
   if (name === "lib") renderLib();
   if (name === "builder" && BD.model) renderCanvas();
+  if (name === "compare") fillCmpSelects().then(() => CMP.mode === "packs" ? renderPacks() : runCompare());
 }
 
 /* ---------- Eventos ---------- */
@@ -1909,7 +1978,7 @@ async function renderCanvas() {
 
 /* ---------- Painel de propriedades ---------- */
 function scanFields() {
-  const r = { refs: new Set(["COMPLETE", "MATERIAL", "PESO", "VOLUME", "ITEM_BASE", "THICKNESS", "MODEL", "CODE", "SUPPLIER"]), integ: new Set(), meta: new Set(), cust: new Set(Object.keys(CUSTOMER)), extra: new Set(["Peso", "NCM"]) };
+  const r = { refs: new Set(["COMPLETE", "MATERIAL", "PESO", "VOLUME", "ITEM_BASE", "THICKNESS", "MODEL", "CODE", "SUPPLIER", "COLOR", "BUILDER_CODE", "BUILDER_ACABAMENTO", "DOORHOLE", "HOLESIDE", "KNOBPOSITION", "RECORTE", "AREA"]), integ: new Set(), meta: new Set(), cust: new Set(Object.keys(CUSTOMER)), extra: new Set(["Peso", "NCM"]) };
   if (state.xml && state.xml.text) {
     const { doc, error } = parseXml(state.xml.text);
     if (!error) {
@@ -2157,6 +2226,223 @@ function builderInit() {
   bdLoad(starterModel("orcamento"), [], null);
 }
 
+/* ---------- Comparador (estilo WinMerge) ---------- */
+const CMP = { mode: "files", L: null, R: null, rows: [], blocks: [], cur: -1, open: new Set() };
+/* Fonte: {key, label, text, file?} */
+function cmpSources() {
+  const out = [{ group: "Editor", items: state.xsl ? [{ key: "editor", label: `Texto atual do editor · ${state.xsl.name}` }] : [] }];
+  out.push({ group: "Arquivos abertos", items: state.files.filter(f => /^(xslt?|xml)$/.test(f.ext)).map(f => ({ key: "file:" + f.id, label: f.name + (f.dirty ? " (alterado)" : "") })) });
+  if (state.xsl) out.push({ group: "Original do arquivo atual", items: state.xsl.orig != null ? [{ key: "orig", label: `Original de ${state.xsl.name}` }] : [] });
+  out.push({ group: "Histórico do arquivo atual", items: (CMP.hist || []).map((v, i) => ({ key: "hist:" + i, label: `${KIND[v.kind] || v.kind} · ${fmtTime(v.t)}${v.label ? " · " + v.label : ""}` })) });
+  out.push({ group: "Modelos", items: MODELS.map(m => ({ key: "model:" + m.id, label: `${m.name} · ${m.pacote}` })) });
+  out.push({ group: "Outro", items: [{ key: "upload", label: "Abrir arquivo do computador…" }] });
+  if (CMP.extra) out.push({ group: "Carregados", items: CMP.extra.map((x, i) => ({ key: "extra:" + i, label: x.name })) });
+  return out.filter(g => g.items.length);
+}
+async function cmpText(key) {
+  if (!key) return null;
+  if (key === "editor") return { text: cm.getValue(), name: state.xsl ? state.xsl.name : "editor", file: state.xsl };
+  if (key === "orig") return { text: state.xsl.orig, name: state.xsl.name + " (original)" };
+  const [k, v] = [key.slice(0, key.indexOf(":")), key.slice(key.indexOf(":") + 1)];
+  if (k === "file") { const f = state.files.find(x => String(x.id) === v); if (!f) return null; await readText(f); return { text: f === state.xsl ? cm.getValue() : f.text, name: f.name, file: f }; }
+  if (k === "hist") { const h = (CMP.hist || [])[+v]; return h ? { text: h.text, name: `${state.xsl.name} (${fmtTime(h.t)})` } : null; }
+  if (k === "model") { const m = MODELS.find(x => x.id === v); return m ? { text: m.text, name: `${m.name} · ${m.pacote}` } : null; }
+  if (k === "extra") { const x = CMP.extra[+v]; return x ? { text: x.text, name: x.name } : null; }
+  return null;
+}
+async function fillCmpSelects() {
+  CMP.hist = state.xsl ? await histList(state.xsl) : [];
+  const groups = cmpSources();
+  for (const [id, cur] of [["#cmpL", CMP.Lkey], ["#cmpR", CMP.Rkey]]) {
+    $(id).innerHTML = `<option value="">Escolha um arquivo…</option>` + groups.map(g => `<optgroup label="${esc(g.group)}">${g.items.map(it => `<option value="${esc(it.key)}" ${it.key === cur ? "selected" : ""}>${esc(it.label)}</option>`).join("")}</optgroup>`).join("");
+  }
+}
+const normWs = l => l.replace(/\s+/g, " ").trim();
+function alignRows(A, B, ignoreWs) {
+  const ka = ignoreWs ? A.map(normWs) : A, kb = ignoreWs ? B.map(normWs) : B;
+  let s = 0; while (s < A.length && s < B.length && ka[s] === kb[s]) s++;
+  let e = 0; while (e < A.length - s && e < B.length - s && ka[A.length - 1 - e] === kb[B.length - 1 - e]) e++;
+  const n = A.length - s - e, m = B.length - s - e, ops = [];
+  if (n * m > 6e6) { for (let i = 0; i < n; i++) ops.push(["-", s + i]); for (let j = 0; j < m; j++) ops.push(["+", s + j]); }
+  else {
+    const W = m + 1, dp = new Int32Array((n + 1) * W);
+    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i * W + j] = ka[s + i] === kb[s + j] ? dp[(i + 1) * W + j + 1] + 1 : Math.max(dp[(i + 1) * W + j], dp[i * W + j + 1]);
+    let i = 0, j = 0;
+    while (i < n && j < m) { if (ka[s + i] === kb[s + j]) { ops.push(["=", s + i, s + j]); i++; j++; } else if (dp[(i + 1) * W + j] >= dp[i * W + j + 1]) ops.push(["-", s + i++]); else ops.push(["+", s + j++]); }
+    while (i < n) ops.push(["-", s + i++]); while (j < m) ops.push(["+", s + j++]);
+  }
+  const rows = [];
+  for (let i = 0; i < s; i++) rows.push({ t: "eq", l: i, r: i });
+  for (let k = 0; k < ops.length;) {
+    if (ops[k][0] === "=") { rows.push({ t: "eq", l: ops[k][1], r: ops[k][2] }); k++; continue; }
+    const dels = [], adds = [];
+    while (k < ops.length && ops[k][0] !== "=") { (ops[k][0] === "-" ? dels : adds).push(ops[k][1]); k++; }
+    const pair = Math.min(dels.length, adds.length);
+    for (let x = 0; x < pair; x++) rows.push({ t: ka[dels[x]] === kb[adds[x]] ? "eq" : "chg", l: dels[x], r: adds[x] });
+    for (let x = pair; x < dels.length; x++) rows.push({ t: "del", l: dels[x], r: null });
+    for (let x = pair; x < adds.length; x++) rows.push({ t: "add", l: null, r: adds[x] });
+  }
+  for (let i = 0; i < e; i++) rows.push({ t: "eq", l: A.length - e + i, r: B.length - e + i });
+  return rows;
+}
+function intraline(a, b) {
+  let p = 0; while (p < a.length && p < b.length && a[p] === b[p]) p++;
+  let q = 0; while (q < a.length - p && q < b.length - p && a[a.length - 1 - q] === b[b.length - 1 - q]) q++;
+  const mk = (t, x) => esc(t.slice(0, p)) + (t.length - p - q > 0 ? `<mark>${esc(t.slice(p, t.length - q))}</mark>` : "") + esc(t.slice(t.length - q));
+  return [mk(a), mk(b)];
+}
+async function runCompare() {
+  const view = $("#cmpView");
+  CMP.Lkey = $("#cmpL").value; CMP.Rkey = $("#cmpR").value;
+  const L = await cmpText(CMP.Lkey), R = await cmpText(CMP.Rkey);
+  CMP.L = L; CMP.R = R;
+  if (!L || !R) { view.innerHTML = '<p class="pv-msg note">Escolha os dois arquivos acima. Pode ser o texto do editor, um arquivo aberto, uma versão do histórico, um modelo ou um arquivo do computador.</p>'; $("#cmpStat").textContent = ""; $("#cmpPos").textContent = ""; return; }
+  const A = (L.text || "").split(/\r?\n/), B = (R.text || "").split(/\r?\n/);
+  CMP.A = A; CMP.B = B;
+  CMP.rows = alignRows(A, B, $("#cmpWs").checked);
+  CMP.blocks = [];
+  CMP.rows.forEach((r, i) => { if (r.t === "eq") return; const last = CMP.blocks[CMP.blocks.length - 1]; if (last && last.end === i - 1) last.end = i; else CMP.blocks.push({ start: i, end: i }); });
+  const st = { a: 0, d: 0, c: 0 }; CMP.rows.forEach(r => { if (r.t === "add") st.a++; else if (r.t === "del") st.d++; else if (r.t === "chg") st.c++; });
+  $("#cmpStat").innerHTML = CMP.blocks.length ? `<span class="c">~${st.c} alteradas</span> · <span class="a">+${st.a} só na direita</span> · <span class="d">−${st.d} só na esquerda</span>` : "Arquivos iguais" + ($("#cmpWs").checked ? " (ignorando espaços)" : "");
+  if (CMP.cur >= CMP.blocks.length) CMP.cur = CMP.blocks.length - 1;
+  renderCompare();
+}
+function renderCompare() {
+  const only = $("#cmpOnly").checked, rows = CMP.rows, A = CMP.A, B = CMP.B;
+  const blockOf = new Map(); CMP.blocks.forEach((b, bi) => { for (let i = b.start; i <= b.end; i++) blockOf.set(i, bi); });
+  const near = new Uint8Array(rows.length);
+  CMP.blocks.forEach(b => { for (let i = Math.max(0, b.start - 3); i <= Math.min(rows.length - 1, b.end + 3); i++) near[i] = 1; });
+  let h = `<table class="dt"><colgroup><col class="ln"><col><col class="gut"><col class="ln"><col></colgroup>`;
+  let i = 0;
+  while (i < rows.length) {
+    if (only && !near[i] && !CMP.open.has(i)) {
+      let j = i; while (j < rows.length && !near[j] && !CMP.open.has(j)) j++;
+      h += `<tr class="gap" data-gap="${i}:${j}"><td colspan="5">… ${j - i} linha(s) iguais — clique para mostrar</td></tr>`; i = j; continue;
+    }
+    const r = rows[i], bi = blockOf.get(i), first = bi != null && CMP.blocks[bi].start === i;
+    let tl = r.l != null ? esc(A[r.l]) : "", tr = r.r != null ? esc(B[r.r]) : "";
+    if (r.t === "chg") [tl, tr] = intraline(A[r.l], B[r.r]);
+    h += `<tr class="${r.t}${bi != null && bi === CMP.cur ? " cur" : ""}"${first ? ` id="blk${bi}"` : ""}>
+      <td class="ln">${r.l != null ? r.l + 1 : ""}</td><td class="tx tl">${tl || " "}</td>
+      <td class="gut">${first ? `<button class="gbtn" type="button" data-copy="${bi}:R" title="Copiar este bloco da esquerda para a direita">→</button> <button class="gbtn" type="button" data-copy="${bi}:L" title="Copiar este bloco da direita para a esquerda">←</button>` : ""}</td>
+      <td class="ln">${r.r != null ? r.r + 1 : ""}</td><td class="tx tr">${tr || " "}</td></tr>`;
+    i++;
+  }
+  $("#cmpView").innerHTML = h + "</table>" + (CMP.blocks.length ? "" : '<p class="pv-msg note">Nenhuma diferença.</p>');
+  $("#cmpPos").textContent = CMP.blocks.length ? (CMP.cur >= 0 ? `Diferença ${CMP.cur + 1} de ${CMP.blocks.length}` : `${CMP.blocks.length} diferença(s)`) : "";
+}
+function cmpGo(d) {
+  if (!CMP.blocks.length) return;
+  CMP.cur = CMP.cur < 0 ? (d > 0 ? 0 : CMP.blocks.length - 1) : Math.min(CMP.blocks.length - 1, Math.max(0, CMP.cur + d));
+  renderCompare();
+  const el = document.getElementById("blk" + CMP.cur); if (el) el.scrollIntoView({ block: "center" });
+}
+function blockRange(b, side) {
+  const rows = CMP.rows, key = side === "L" ? "l" : "r";
+  let lo = null, hi = null;
+  for (let i = b.start; i <= b.end; i++) { const v = rows[i][key]; if (v != null) { if (lo == null) lo = v; hi = v; } }
+  if (lo == null) { let p = -1; for (let i = b.start - 1; i >= 0; i--) if (rows[i][key] != null) { p = rows[i][key]; break; } return { lo: p + 1, len: 0 }; }
+  return { lo, len: hi - lo + 1 };
+}
+function cmpCopy(bi, target) {
+  const b = CMP.blocks[bi]; if (!b) return;
+  const src = target === "R" ? "L" : "R", rs = blockRange(b, src), rt = blockRange(b, target);
+  const from = src === "L" ? CMP.A : CMP.B, to = target === "L" ? CMP.A : CMP.B;
+  to.splice(rt.lo, rt.len, ...from.slice(rs.lo, rs.lo + rs.len));
+  const side = target === "L" ? CMP.L : CMP.R; side.text = to.join("\n"); side.changed = true;
+  CMP.extra = CMP.extra || [];
+  const tkey = target === "L" ? "Lkey" : "Rkey";
+  if (!CMP[tkey].startsWith("extra:")) { CMP.extra.push({ name: `${side.name} (mesclado)`, text: side.text, file: side.file }); CMP[tkey] = "extra:" + (CMP.extra.length - 1); }
+  else CMP.extra[+CMP[tkey].slice(6)].text = side.text;
+  fillCmpSelects().then(() => { $(target === "L" ? "#cmpL" : "#cmpR").value = CMP[tkey]; runCompare(); });
+  toast(`Bloco copiado para a ${target === "L" ? "esquerda" : "direita"}. Use Aplicar no arquivo ou Abrir no editor para guardar o resultado.`);
+}
+async function cmpOut(side, act) {
+  const S = side === "L" ? CMP.L : CMP.R; if (!S) { toast("Escolha os arquivos primeiro."); return; }
+  const key = side === "L" ? CMP.Lkey : CMP.Rkey;
+  const target = S.file || (key.startsWith("extra:") ? CMP.extra[+key.slice(6)].file : null);
+  if (act === "export") { const nm = S.name.replace(/\s*·.*$/, "").replace(/\s*\(.*\)$/, ""); await exportFiles([{ name: nm, bytes: new TextEncoder().encode(S.text) }], nm.replace(/\.(xslt?|xml)$/i, "") + ".zip"); return; }
+  if (act === "apply") {
+    if (!target) { toast("Este lado não vem de um arquivo aberto. Use Abrir no editor."); return; }
+    await readText(target);
+    const old = target === state.xsl ? cm.getValue() : target.text;
+    await histAdd(target, "antes", old);
+    target.text = S.text; target.dirty = true;
+    if (target === state.xsl) { cm.setValue(S.text); }
+    renderTree(); toast(`Aplicado em ${target.name}. A versão anterior ficou no Histórico (Antes de restaurar). Clique em Salvar para gravar.`); return;
+  }
+  const nm = S.name.replace(/\s*·.*$/, "").replace(/\s*\(.*\)$/, "").replace(/(\.(xslt?|xml))?$/i, "_comparado$1");
+  const f = addFile({ name: /\.(xslt?|xml)$/i.test(nm) ? nm : nm + ".xsl", path: nm, text: S.text, orig: null, enc: "utf-8", origin: "import" });
+  await openXsl(f); f.dirty = true; renderTree(); histAdd(f, "manual", S.text, "Resultado do comparador");
+}
+/* Pacotes */
+function packFiles(p) {
+  const map = new Map();
+  for (const m of MODELS) {
+    if (m.pacote === p) map.set(m.name.toLowerCase(), { name: m.name, text: m.text, id: m.id });
+    for (const t of m.tambem) { const [pk, nm] = t.split(" / "); if (pk === p && !map.has(nm.toLowerCase())) map.set(nm.toLowerCase(), { name: nm, text: m.text, id: m.id }); }
+  }
+  return map;
+}
+function renderPacks() {
+  const A = $("#pkA").value, B = $("#pkB").value, view = $("#cmpView");
+  if (!A || !B) { view.innerHTML = '<p class="pv-msg note">Escolha os dois pacotes para comparar arquivo por arquivo.</p>'; return; }
+  const ma = packFiles(A), mb = packFiles(B), names = [...new Set([...ma.keys(), ...mb.keys()])].sort();
+  const rows = names.map(n => { const a = ma.get(n), b = mb.get(n); const st = !a ? "b" : !b ? "a" : (a.id === b.id || normWs(a.text) === normWs(b.text)) ? "eq" : "df"; return { n, a, b, st }; });
+  const cnt = k => rows.filter(r => r.st === k).length;
+  view.innerHTML = `<div style="padding:10px 12px" class="note">${rows.length} arquivos · <span class="st eq">${cnt("eq")} iguais</span> <span class="st df">${cnt("df")} diferentes</span> <span class="st only">${cnt("a")} só em A</span> <span class="st only">${cnt("b")} só em B</span> · clique num arquivo diferente para comparar.</div>
+    <table class="pk"><tr><th>Arquivo</th><th>Situação</th><th>A: ${esc(A)}</th><th>B: ${esc(B)}</th></tr>${rows.map(r => `<tr class="${r.st === "df" ? "click" : ""}" ${r.st === "df" ? `data-pkcmp="${esc(r.a.id)}|${esc(r.b.id)}"` : ""}><td>${esc((r.a || r.b).name)}</td>
+      <td><span class="st ${r.st === "eq" ? "eq" : r.st === "df" ? "df" : "only"}">${{ eq: "igual", df: "diferente", a: "só em A", b: "só em B" }[r.st]}</span></td><td>${r.a ? "✓" : "—"}</td><td>${r.b ? "✓" : "—"}</td></tr>`).join("")}</table>`;
+}
+function setCmpMode(mode) {
+  CMP.mode = mode;
+  document.querySelectorAll("[data-cmode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.cmode === mode)));
+  document.querySelectorAll("[data-cside]").forEach(el => { el.hidden = el.dataset.cside !== mode; });
+  if (mode === "packs") renderPacks(); else runCompare();
+}
+function bindCompare() {
+  const packs = [...new Set(MODELS.map(m => m.pacote))];
+  $("#pkA").innerHTML = '<option value="">Escolha…</option>' + packs.map(p => `<option>${esc(p)}</option>`).join("");
+  $("#pkB").innerHTML = $("#pkA").innerHTML;
+  const l1 = packs.find(p => /Listing Promob/.test(p)), l2 = packs.find(p => /pacote 2/.test(p));
+  if (l1 && l2) { $("#pkA").value = l1; $("#pkB").value = l2; }
+  ["#pkA", "#pkB"].forEach(k => $(k).addEventListener("change", renderPacks));
+  document.querySelectorAll("[data-cmode]").forEach(b => b.addEventListener("click", () => setCmpMode(b.dataset.cmode)));
+  for (const id of ["#cmpL", "#cmpR"]) $(id).addEventListener("change", e => {
+    if (e.target.value === "upload") { CMP.pendingSide = id; e.target.value = ""; $("#cmpFile").click(); return; }
+    CMP.cur = -1; CMP.open.clear(); runCompare();
+  });
+  $("#cmpFile").addEventListener("change", async e => {
+    const file = e.target.files[0]; e.target.value = ""; if (!file) return;
+    const tmp = { file, ext: "xsl" }; const text = await readText(tmp);
+    CMP.extra = CMP.extra || []; CMP.extra.push({ name: file.name, text }); const key = "extra:" + (CMP.extra.length - 1);
+    if (CMP.pendingSide === "#cmpL") CMP.Lkey = key; else CMP.Rkey = key;
+    await fillCmpSelects(); runCompare();
+  });
+  $("#cmpSwap").addEventListener("click", async () => { [CMP.Lkey, CMP.Rkey] = [$("#cmpR").value, $("#cmpL").value]; await fillCmpSelects(); runCompare(); });
+  $("#cmpPrev").addEventListener("click", () => cmpGo(-1));
+  $("#cmpNext").addEventListener("click", () => cmpGo(1));
+  $("#cmpWs").addEventListener("change", runCompare);
+  $("#cmpOnly").addEventListener("change", () => { CMP.open.clear(); renderCompare(); });
+  $("#cmpView").addEventListener("click", async e => {
+    const g = e.target.closest("[data-gap]"); if (g) { const [a, b] = g.dataset.gap.split(":").map(Number); for (let i = a; i < b; i++) CMP.open.add(i); renderCompare(); return; }
+    const c = e.target.closest("[data-copy]"); if (c) { const [bi, t] = c.dataset.copy.split(":"); cmpCopy(+bi, t); return; }
+    const pk = e.target.closest("[data-pkcmp]"); if (pk) {
+      const [a, b] = pk.dataset.pkcmp.split("|"), nm = pk.querySelector("td").textContent, ma = MODELS.find(x => x.id === a), mb = MODELS.find(x => x.id === b);
+      CMP.extra = CMP.extra || [];
+      CMP.extra.push({ name: `${nm} · ${$("#pkA").value}`, text: ma.text }); CMP.Lkey = "extra:" + (CMP.extra.length - 1);
+      CMP.extra.push({ name: `${nm} · ${$("#pkB").value}`, text: mb.text }); CMP.Rkey = "extra:" + (CMP.extra.length - 1);
+      CMP.cur = -1; CMP.open.clear(); await fillCmpSelects(); setCmpMode("files"); return;
+    }
+  });
+  document.querySelector(".cmpfoot").addEventListener("click", e => { const b = e.target.closest("[data-cout]"); if (b) { const [side, act] = b.dataset.cout.split(":"); cmpOut(side, act); } });
+  document.addEventListener("keydown", e => { if ($('[data-pane="compare"]').hidden || !e.altKey) return; if (e.key === "ArrowDown") { e.preventDefault(); cmpGo(1); } else if (e.key === "ArrowUp") { e.preventDefault(); cmpGo(-1); } });
+}
+async function openCompare(lkey, rkey) {
+  CMP.Lkey = lkey; CMP.Rkey = rkey; CMP.cur = -1; CMP.open.clear();
+  showTab("compare"); await fillCmpSelects(); setCmpMode("files");
+}
+
 /* ---------- Inserir código da biblioteca numa seção ---------- */
 const PICK = { target: null, q: "" };
 const SECTION_CATS = {
@@ -2314,6 +2600,7 @@ async function renderHistory() {
       <span class="dstat">${same ? "igual ao editor" : `<span class="a">+${d.add}</span> / <span class="d">−${d.del}</span> linhas em relação ao editor`} · ${v.text.split("\n").length} linhas</span>
       <div class="row"><button class="btn small" type="button" data-h="view" data-i="${i}" ${same ? "disabled" : ""}>Comparar</button>
       <button class="btn small ${HIST.confirm === i ? "primary" : ""}" type="button" data-h="restore" data-i="${i}" ${same ? "disabled" : ""}>${HIST.confirm === i ? "Confirmar restauração" : "Restaurar"}</button>
+      <button class="btn small ghost" type="button" data-h="cmp" data-i="${i}" ${same ? "disabled" : ""}>No comparador</button>
       <button class="btn small ghost" type="button" data-h="dl" data-i="${i}">Baixar</button></div></div>`;
   }).join("") : '<p class="note">Nenhuma versão guardada ainda.</p>';
   box.innerHTML = h;
@@ -2331,6 +2618,7 @@ async function onHistClick(e) {
   if (act === "close") { HIST.open = false; HIST.view = -1; $("#btnHist").classList.remove("primary"); analyze(); return; }
   if (act === "back") { HIST.view = -1; renderHistory(); return; }
   if (act === "view") { HIST.view = i; renderHistory(); return; }
+  if (act === "cmp") { await openCompare("hist:" + i, "editor"); return; }
   if (act === "mark") { await histAdd(f, "manual", cm.getValue(), ($("#hLabel").value || "").trim()); toast("Ponto de restauração criado."); return; }
   if (act === "orig") { if (f.orig != null) restoreVersion(f.orig, "Original"); return; }
   if (act === "restore") {
@@ -2385,6 +2673,7 @@ function cardModel(g) {
       <button class="btn small primary" type="button" data-mact="open">Abrir</button>
       ${m.tipo !== "Config" ? '<button class="btn small" type="button" data-mact="view">Visualizar</button>' : ""}
       ${m.tipo === "HTML" ? '<button class="btn small" type="button" data-mact="build">Construtor</button>' : ""}
+      <button class="btn small ghost" type="button" data-mact="compare">Comparar</button>
       <button class="btn small ghost" type="button" data-mact="export">Exportar</button>
     </div>
     ${outros.length ? `<details><summary>Cópias idênticas em ${outros.length} arquivo(s)</summary><ul>${outros.map(o => `<li>${esc(o)}</li>`).join("")}</ul></details>` : ""}
@@ -2398,6 +2687,7 @@ async function openModel(m) {
 }
 async function modelAction(card, act) {
   const id = card.querySelector("[data-mvar]").value, m = MODELS.find(x => x.id === id); if (!m) return;
+  if (act === "compare") { await openCompare("model:" + m.id, state.xsl ? "editor" : ""); toast("Modelo na esquerda. Escolha o arquivo da direita."); return; }
   if (act === "export") { await exportFiles([{ name: m.name, bytes: new TextEncoder().encode(m.text) }], m.name.replace(/\.(xslt?|xml)$/i, "") + ".zip"); return; }
   const f = await openModel(m);
   if (act === "view") { if (!state.xml) state.xml = state.files.find(x => x.ext === "xml") || null; fillXmlSelect(); showTab("preview"); }
@@ -2434,6 +2724,7 @@ async function start() {
   const saved = await idbGet("root");
   if (saved && saved.name) { const b = $("#btnReopen"); b.hidden = false; b.textContent = "Reabrir " + saved.name; }
   bindModels();
+  bindCompare();
   builderInit();
   showTab(savedTab);
 }

@@ -1,0 +1,46 @@
+{
+  "lote": "Lote 4: fabricação de portas, pedras e listagens (pacote 2)",
+  "recebido": "2026-10-10",
+  "itens": [
+    {
+      "cat": "Itens",
+      "t": "Ficha da porta para a fábrica",
+      "d": "Colunas de fabricação da porta: código e acabamento do Builder, furo, lado da furação, posição do puxador (2 letras) e recorte.",
+      "c": "<td align=\"center\"><xsl:value-of select=\"REFERENCES/BUILDER_CODE/@REFERENCE\" /></td>\n<td align=\"center\"><xsl:value-of select=\"REFERENCES/BUILDER_ACABAMENTO/@REFERENCE\" /></td>\n<td align=\"center\"><xsl:value-of select=\"REFERENCES/DOORHOLE/@REFERENCE\" /></td>\n<td align=\"center\"><xsl:value-of select=\"REFERENCES/HOLESIDE/@REFERENCE\" /></td>\n<td align=\"center\"><xsl:value-of select=\"substring(REFERENCES/KNOBPOSITION/@REFERENCE, 1, 2)\" /></td>\n<td align=\"center\"><xsl:value-of select=\"REFERENCES/RECORTE/@REFERENCE\" /></td>",
+      "origem": "Listagem_Builder_Fabrica.xsl",
+      "tags": "porta furo puxador dobradiça recorte fábrica builder"
+    },
+    {
+      "cat": "Itens",
+      "t": "Numeração hierárquica (1, 1.1, 1.2)",
+      "d": "Numera módulos e seus componentes em níveis, como num sumário.",
+      "c": "<td><xsl:number level=\"multiple\" count=\"ITEM\" format=\"1.1\" /></td>",
+      "origem": "Listagem_Builder_Fabrica.xsl",
+      "tags": "numeração nível item componente"
+    },
+    {
+      "cat": "Itens",
+      "t": "Alerta de informação não preenchida",
+      "d": "Destaca em vermelho o item cuja descrição de material ficou com o marcador $MATERIALUSERDESCRIPTION$, ou seja, o vendedor não preencheu.",
+      "c": "<xsl:choose>\n  <xsl:when test=\"REFERENCES/DESC_COR_PAI_ESP/@REFERENCE = '$MATERIALUSERDESCRIPTION$'\">\n    <td style=\"color:#cc0000;font-weight:bold\">PREENCHER INFORMAÇÕES</td>\n  </xsl:when>\n  <xsl:otherwise>\n    <td><xsl:value-of select=\"@DESCRIPTION\" /></td>\n  </xsl:otherwise>\n</xsl:choose>",
+      "origem": "Parceiro_Cosentino.xsl",
+      "tags": "validação pendente preencher alerta pedra"
+    },
+    {
+      "cat": "Campos",
+      "t": "Área da peça de pedra (m²)",
+      "d": "Área calculada pelo Promob para tampos e peças de pedra (Cosentino).",
+      "c": "<td align=\"center\"><xsl:value-of select=\"REFERENCES/AREA/@REFERENCE\" /></td>",
+      "origem": "Parceiro_Cosentino.xsl",
+      "tags": "área m2 pedra tampo cosentino"
+    },
+    {
+      "cat": "Itens",
+      "t": "Marcar item com medida alterada",
+      "d": "Mostra a marca de dimensão alterada (CHANGEDDIMENSION) e a legenda do item, usados para avisar a fábrica de peças fora do padrão.",
+      "c": "<td align=\"center\">\n  <xsl:if test=\"string(REFERENCES/CHANGEDDIMENSION/@REFERENCE) != ''\">\n    <b style=\"color:#cc0000\"><xsl:value-of select=\"REFERENCES/CHANGEDDIMENSION/@REFERENCE\" /></b>\n  </xsl:if>\n  <xsl:value-of select=\"REFERENCES/LEGEND/@REFERENCE\" />\n</td>",
+      "origem": "Listagem.pt.xsl (pacote 2)",
+      "tags": "medida alterada especial legenda"
+    }
+  ]
+}
