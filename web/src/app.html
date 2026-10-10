@@ -1745,6 +1745,7 @@ function bind() {
 /* ================= Construtor visual ================= */
 const BT = {
   header: { name: "Cabeçalho", sec: "HEADER", desc: "Logo, título, data e hora", single: true },
+  partner: { name: "Dados do parceiro", sec: "", desc: "Logo e contatos do fornecedor" },
   customer: { name: "Dados do cliente", sec: "CUSTOMERDATA", desc: "Nome, CPF, endereço…" },
   store: { name: "Dados da loja", sec: "COMPANYDATA", desc: "Dados da sua empresa" },
   items: { name: "Tabela de itens", sec: "BODY", desc: "Ambientes, categorias, itens" },
@@ -1778,6 +1779,8 @@ const cols = keys => keys.map(k => ({ label: "", path: "", fmt: "text", w: "", a
 function newBlock(type) {
   const d = {
     header: { logo: "%pastasistema%/identity/logo.png", logo2: "", title: "Orçamento", showDate: true, showHour: true, showNumber: false },
+    partner: { titulo: "Dados do parceiro", logo: "%pastasistema%/identity/parceiro.png", largura: "100", altura: "100", cor: "", showDate: false,
+      campos: [{ label: "Nome", value: "" }, { label: "Telefone", value: "" }, { label: "E-mail", value: "" }, { label: "Website", value: "" }] },
     customer: { title: "Dados do cliente", cols: 2, fields: custF(["nomecliente", "cpfcnpj", "endereco", "cep", "bairro", "cidade", "uf", "fone", "celular", "email"]) },
     store: { title: "Dados da loja", cols: 2, fields: custF(["rep_nomeempresa", "rep_enderecoempresa", "rep_telefoneempresa", "rep_emailempresa"]) },
     items: { showAmbient: true, showCategory: true, subitems: true, hideZero: true, catTotal: true, errorRefs: "VERIFICAR TRAVESSA; ERRO METRAGEM", columns: cols(["seq", "qty", "ref", "desc", "dim", "price"]) },
@@ -1957,6 +1960,24 @@ function genBlock(b, i, pv, model) {
     </table>
   </td></tr>
 </thead>`;
+    case "partner": {
+      // Mesma estrutura dos layouts de parceiro do Promob: o gerador de parceiros consegue usar o resultado como base.
+      const cor = b.cor || model.theme.accent;
+      return `<tr${da}><td>
+  <table class="secao" width="100%" cellspacing="0" cellpadding="0">
+    <tr>
+      ${b.logo ? `<td width="1%" valign="top" style="padding:8px"><img src="${X(b.logo)}"${b.largura ? ` width="${X(b.largura)}"` : ""}${b.altura ? ` height="${X(b.altura)}"` : ""} alt="" border="0" /></td>` : ""}
+      <td valign="top" style="padding:8px">
+        <table width="100%" cellspacing="0" cellpadding="2" border="0">
+          <tr><td style="color:${X(cor)};font-weight:bold;font-size:${(+model.theme.size || 11) + 4}px">${X(b.titulo)}</td></tr>
+          ${b.campos.filter(c => c.label || c.value).map(c => `<tr><td><b>${X(c.label)}: </b>${textWithTokens(c.value)}</td></tr>`).join("\n          ")}
+          ${b.showDate ? `<tr><td style="padding-top:6px"><span class="rotulo">Data: </span><xsl:value-of select="@DATE" /><xsl:text>   </xsl:text><span class="rotulo">Hora: </span><xsl:value-of select="@HOUR" /></td></tr>` : ""}
+        </table>
+      </td>
+    </tr>
+  </table>
+</td></tr>`;
+    }
     case "customer": case "store": return `<tr${sec(BT[b.type].sec)}><td>
   <table class="secao" width="100%" cellspacing="0" cellpadding="0">
     <tr><td class="tit" colspan="${Math.max(1, Math.min(3, +b.cols || 2))}">${X(b.title)}</td></tr>
@@ -2101,6 +2122,8 @@ function interpretXsl(text, name) {
       const v = vals(el);
       Object.assign(b, { logo: imgs[0] || "", logo2: imgs[1] || "", title: model.title, showDate: v.includes("@DATE"), showHour: v.includes("@HOUR"), showNumber: v.includes("@CUSTOMERNUMBER") });
       model.blocks.push(b);
+      const pinf = partnerInfo(new XMLSerializer().serializeToString(el));
+      if (pinf) { b.logo = ""; b.logo2 = ""; model.blocks.push(partnerFromInfo(pinf, false)); notes.push("O quadro do parceiro virou o bloco Dados do parceiro: logo, cor e contatos editáveis."); }
       if (el.getElementsByTagName("script").length || el.getElementsByTagName("a").length) notes.push("Cabeçalho: o link/script do original (ex.: \"Cinex do Meu Jeito\") não foi recriado. Use um bloco de Código XSL se precisar.");
     } else if (id === "CUSTOMERDATA" || id === "STOREDATA" || id === "COMPANYDATA") {
       const b = newBlock(id === "CUSTOMERDATA" ? "customer" : "store"); const f = custFields(el, id !== "CUSTOMERDATA");
@@ -2186,8 +2209,16 @@ function interpretByTemplates(doc, model, notes, custFields) {
     if (!nm && el && /dados do cliente/i.test(textOnly(el))) return "customer";
     return "code";
   };
+  let pnote = false;
   for (const u of units) {
     const k = kind(u), el = u.tpl || u.el;
+    const src = el && el.nodeType === 1 ? ser(el) : "", pinf = src && partnerInfo(src);
+    if (pinf) {
+      const pb = partnerFromInfo(pinf, /@DATE/.test(src)); if (u.name) pb.origem = u.name.replace(/^Gerar/, "");
+      model.blocks.push(pb); pnote = true;
+      if (/OBSERVATIONS\/@VALUE|DATA\[@ID='observacoes'\]/.test(src)) { const ob = newBlock("observations"); if (/OBSERVATIONS\/@VALUE/.test(src)) ob.path = "OBSERVATIONS/@VALUE"; model.blocks.push(ob); }
+      continue;
+    }
     if (k !== "code" && el) {
       const f = custFields(el, k === "store");
       if (f.length >= 2) { const b = newBlock(k); b.fields = f; const t = el.getElementsByTagName("b")[0]; if (t && textOnly(t) && textOnly(t).length < 40) b.title = textOnly(t).replace(/[:\s-]+$/, ""); if (u.name) b.origem = u.name.replace(/^Gerar/, ""); model.blocks.push(b); continue; }
@@ -2196,7 +2227,12 @@ function interpretByTemplates(doc, model, notes, custFields) {
     const b = newBlock("code"); b.xsl = u.xml; if (u.name) b.origem = u.name.replace(/^Gerar/, "");
     model.blocks.push(b);
   }
+  if (pnote) notes.push("O cabeçalho do parceiro virou o bloco Dados do parceiro: logo, cor e contatos editáveis.");
   if (model.blocks.length) notes.push("Este layout não usa os ids de seção do Promob: cada parte chamada pelo template principal virou um bloco (dados do cliente e da loja como blocos editáveis; o resto como Código XSL). Os templates originais seguem preservados no arquivo gerado.");
+}
+function partnerFromInfo(inf, showDate) {
+  const b = newBlock("partner");
+  return Object.assign(b, { logo: inf.logo, largura: inf.largura, altura: inf.altura, cor: inf.cor, showDate, campos: inf.campos.map(c => ({ label: c.label, value: c.value })) });
 }
 function interpretItems(doc, body, notes) {
   const b = newBlock("items");
@@ -2437,6 +2473,13 @@ function renderProps() {
       h = pf("Título", inTxt("title", b.title)) + pf("Logo (caminho)", inTxt("logo", b.logo, "%pastasistema%/identity/logo.png")) + pf("Segundo logo, à direita (opcional)", inTxt("logo2", b.logo2, "%pastasistema%/identity/logoPromob.png"))
         + `<div class="pgroup">${inChk("showDate", b.showDate, "Mostrar data")}${inChk("showHour", b.showHour, "Mostrar hora")}${inChk("showNumber", b.showNumber, "Mostrar nº do projeto")}</div>`
         + `<p class="note">%pastasistema% é a pasta System do Promob. Com a pasta mapeada, o logo aparece na tela.</p>`; break;
+    case "partner":
+      h = pf("Título", inTxt("titulo", b.titulo)) + pf("Logo (caminho)", inTxt("logo", b.logo, "%pastasistema%/identity/parceiro.png"))
+        + pf("Largura do logo", inTxt("largura", b.largura)) + pf("Altura do logo", inTxt("altura", b.altura))
+        + pf("Cor do título", `<input type="color" data-k="cor" value="${esc(/^#[0-9a-f]{6}$/i.test(b.cor || "") ? b.cor : BD.model.theme.accent)}">`)
+        + `<div class="pgroup"><span class="label">Linhas</span>${b.campos.map((c, k) => `<div class="colrow"><div class="r1">${inTxt(`campos.${k}.label`, c.label, "Rótulo")}<button class="ibtn" type="button" data-cpup="${k}" title="Subir">↑</button><button class="ibtn" type="button" data-cpdel="${k}" title="Remover">✕</button></div>${inTxt(`campos.${k}.value`, c.value, "Valor (aceita {{campo}})")}</div>`).join("")}
+          <button class="btn small" type="button" data-cpadd>Adicionar linha</button></div>`
+        + inChk("showDate", b.showDate, "Mostrar data e hora") + `<p class="note">Para gerar o mesmo layout para vários parceiros, use a aba Parceiros com este arquivo como base.</p>`; break;
     case "customer": case "store":
       h = pf("Título", inTxt("title", b.title)) + pf("Colunas", inSel("cols", b.cols, [[1, "1 coluna"], [2, "2 colunas"], [3, "3 colunas"]])) + fieldList(b, "fields"); break;
     case "items":
@@ -2503,6 +2546,9 @@ function onPropClick(e) {
   else if (d.cdel) { b.columns.splice(+d.cdel, 1); BD.selCol = -1; }
   else if (d.cup) { const k = +d.cup; if (k > 0) { [b.columns[k - 1], b.columns[k]] = [b.columns[k], b.columns[k - 1]]; BD.selCol = k - 1; } }
   else if (d.cdown) { const k = +d.cdown; if (k < b.columns.length - 1) { [b.columns[k + 1], b.columns[k]] = [b.columns[k], b.columns[k + 1]]; BD.selCol = k + 1; } }
+  else if (d.cpadd !== undefined) b.campos.push({ label: "Nova linha", value: "" });
+  else if (d.cpdel) b.campos.splice(+d.cpdel, 1);
+  else if (d.cpup) { const k = +d.cpup; if (k > 0) [b.campos[k - 1], b.campos[k]] = [b.campos[k], b.campos[k - 1]]; }
   else if (d.fadd !== undefined) b.fields.push({ id: "nomecliente", label: "Novo campo" });
   else if (d.fdel) b.fields.splice(+d.fdel, 1);
   else if (d.fup) { const k = +d.fup; if (k > 0) [b.fields[k - 1], b.fields[k]] = [b.fields[k], b.fields[k - 1]]; }

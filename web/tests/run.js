@@ -118,6 +118,14 @@ function chromiumPath() {
     const b = await build(fx("limpo.xsl"), "limpo.xsl"), again = await build(b.full, "x.xsl");
     assert(JSON.stringify(again.types) === JSON.stringify(b.types), `${again.types} ≠ ${b.types}`);
   });
+  await test("cabeçalho de parceiro vira o bloco Dados do parceiro e serve de base", async () => {
+    const r = await page.evaluate(t => { const E = window.EditorXSL, m = E.interpretXsl(t, "p.xsl").model, pb = m.blocks.find(b => b.type === "partner");
+      pb.campos[0].value = "Fornecedor Novo"; const full = E.generate(m, false), inf = E.partnerInfo(full);
+      return { types: m.blocks.map(b => b.type), logo: pb.logo, cor: pb.cor, full, inf: inf && inf.campos.map(c => c.label + "=" + c.value) }; }, fx("parceiro_base.xsl"));
+    assert(r.types.includes("header") && r.types.includes("partner") && /parceiro_exemplo\.png$/.test(r.logo) && r.cor === "#556982", JSON.stringify(r.types));
+    assert(r.inf && r.inf[0] === "Nome=Fornecedor Novo" && r.inf[1] === "Telefone=(48) 3000-0000", "o gerado não serve de base: " + JSON.stringify(r.inf));
+    const o = await transform(r.full, SAMPLE); assert(!o.error && /Fornecedor Novo/.test(o.text), o.error || "nome não aparece");
+  });
   await test("exemplo de compatibilidade CSS abre e renderiza", async () => {
     const t = fs.readFileSync(path.join(WEB, "samples", "Teste_Compatibilidade_CSS.xsl"), "utf8");
     const o = await transform((await build(t, "css.xsl")).pv, SAMPLE); assert(!o.error, o.error);
