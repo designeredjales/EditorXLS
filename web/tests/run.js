@@ -175,6 +175,29 @@ function chromiumPath() {
     assert((await page.$$(".aurow")).length >= 1, "nenhuma linha");
   });
 
+  console.log("\nPublicar no Promob (pasta simulada)");
+  await test("publica com .bak e histórico, e inclui opção no sendTo.xml", async () => {
+    const p3 = await ctx.newPage();
+    await p3.addInitScript({ path: path.join(__dirname, "fakefs.js") });
+    if (fs.existsSync(cmDir)) await p3.route("https://cdnjs.cloudflare.com/**", r => r.fulfill({ path: path.join(cmDir, r.request().url().endsWith("xml.min.js") ? "mode/xml/xml.js" : "lib/codemirror.js"), contentType: "application/javascript" }));
+    await p3.route("https://fonts.**", r => r.abort());
+    await p3.goto("file://" + DIST); await p3.waitForFunction(() => window.EditorXSL);
+    await p3.evaluate(([st, li]) => { window.__root = window.__fakeFs({ "Budget/Layouts/Listing/Novo.xsl": "<antigo/>", "Budget/SendTo/sendTo.xml": st, "Budget/SendTo/limpo.xsl": li }); return window.EditorXSL.mapFolder(window.__root); }, [fx("sendTo.xml"), fx("limpo.xsl")]);
+    await p3.setInputFiles("#inFiles", path.join(FIX, "parceiro_base.xsl")); await p3.waitForTimeout(400);
+    await p3.click("#btnPub"); await p3.fill("#pubBox [data-pubname]", "Novo.xsl"); await p3.selectOption("#pubBox [data-pubdir]", "Budget/Layouts/Listing");
+    await p3.click("#pubBox [data-pubgo]"); await p3.waitForTimeout(200);
+    assert(/já existe/.test(await p3.textContent("#toast")), "deveria pedir para marcar Substituir");
+    await p3.check("#pubBox [data-pubover]"); await p3.click("#pubBox [data-pubgo]"); await p3.waitForTimeout(400);
+    const r = await p3.evaluate(() => ({ bak: window.__root.read("Budget/Layouts/Listing/Novo.xsl.bak"), novo: window.__root.read("Budget/Layouts/Listing/Novo.xsl"), hist: window.__root.read("Budget/Layouts/Listing/_historico_editorxsl") }));
+    assert(r.bak === "<antigo/>" && /Dados do parceiro/.test(r.novo) && r.hist && r.hist.length === 1, JSON.stringify(r).slice(0, 200));
+    await p3.click('#tree .file[title="Budget/SendTo/sendTo.xml"]'); await p3.waitForTimeout(400);
+    await p3.click(".stform summary"); await p3.fill('.stform [data-st="desc"]', "Pedido TXT"); await p3.fill('.stform [data-st="lay"]', "limpo.xsl"); await p3.check('.stform [data-stcat][value="pedido"]');
+    await p3.click(".stform [data-stadd]"); await p3.waitForTimeout(300);
+    const t = await p3.evaluate(() => document.querySelector(".CodeMirror").CodeMirror.getValue());
+    assert(/<SENDTOFILE ID="PEDIDO_TXT" DESCRIPTION="Pedido TXT" XSLLAYOUT="%PastaBudget%\\SendTo\\limpo\.xsl"[^\n]*CATEGORIES="pedido" \/>\n<\/SENDTOCOLLECTION>/.test(t), t.slice(-400));
+    await p3.close();
+  });
+
   console.log("\nIA na página (Claude simulado)");
   await test("pergunta, proposta comparável e aplicação com versão no Histórico", async () => {
     const p2 = await ctx.newPage();

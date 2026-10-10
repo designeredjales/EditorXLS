@@ -289,6 +289,14 @@ pre.diff .add{background:var(--ok-soft);color:var(--ok)} pre.diff .del{backgroun
 .aurow>header .sp{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
 #auRules .fchip{display:inline-flex;align-items:center}
 
+/* ---------- Publicar e Enviar Para ---------- */
+.pop input[type=text]{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:4px 8px;min-width:0}
+.stform>summary{cursor:pointer;padding:6px 9px;background:var(--sunk);font-size:12.5px;list-style:none}
+.stform>summary::-webkit-details-marker{display:none}
+.stgrid{display:grid;gap:8px;padding:9px}
+.stgrid .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.stcats{display:flex;flex-wrap:wrap;gap:4px 12px;max-height:140px;overflow:auto;padding:4px 0;color:var(--fg)}
+
 /* ---------- IA ---------- */
 .aiout:empty{display:none}
 .airesult{display:flex;flex-direction:column;gap:7px;border:1px solid var(--line);border-radius:7px;padding:8px 10px;background:var(--sunk);font-size:12.5px}
@@ -477,8 +485,10 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
             <label class="btn small" for="pgCsvIn">Importar planilha</label><input id="pgCsvIn" type="file" accept=".csv,.txt" hidden>
             <button class="btn small" id="pgCsvOut" type="button">Exportar planilha</button>
             <button class="btn small ghost" id="pgClear" type="button">Limpar lista</button>
+            <button class="btn small" id="pgPub" type="button" title="Grava os marcados direto na pasta do Promob mapeada, com backup">Publicar marcados no Promob</button>
             <button class="btn small primary" id="pgGenAll" type="button">Gerar marcados (.zip)</button>
           </div>
+          <div class="pop" id="pgPubBox" hidden></div>
           <input class="search" id="pgSearch" type="search" placeholder="Filtrar parceiros">
           <div class="pgwrap"><div class="pglist" id="pgList"></div><div class="pgform" id="pgForm"></div></div>
         </div>
@@ -493,10 +503,12 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
           <button class="btn small" id="btnHist" type="button" title="Versões, comparar e restaurar">Histórico</button>
           <button class="btn small" id="btnAI" type="button">Pedir à IA</button>
           <button class="btn small" id="btnSaveAs" type="button">Salvar como</button>
+          <button class="btn small" id="btnPub" type="button" title="Gravar este layout na pasta do Promob mapeada, com backup">Publicar no Promob</button>
           <button class="btn small primary" id="btnSave" type="button">Salvar</button>
           <button class="btn small" id="btnExport" type="button" title="Salvar uma cópia no computador">Exportar</button>
           <button class="btn small" id="btnCopy" type="button">Copiar código</button>
         </div>
+        <div class="pop" id="pubBox" hidden></div>
         <div class="pop" id="saveAsBox" hidden>
           <span>Novo nome:</span><input id="saveAsName" type="text" value="MeuLayout.xsl">
           <button class="btn small primary" id="saveAsGo" type="button">Criar arquivo</button>
@@ -1050,6 +1062,8 @@ async function openXsl(f) {
     else { const d = l.find(v => v.kind === "rascunho"), r = l.find(v => v.kind !== "rascunho"); if (d && (!r || d.t > r.t) && d.text !== cm.getValue()) toast(`Há um rascunho não salvo de ${fmtTime(d.t)}. Abra o Histórico para recuperar.`); }
   });
 }
+// sendTo.xml e outros XML de configuração abrem no editor; XML de orçamento vira dados.
+async function openXmlOrConfig(f) { await readText(f); if (/<SENDTOCOLLECTION\b/i.test(f.text || "")) openXsl(f); else openXml(f); }
 async function openXml(f) {
   await readText(f);
   state.xml = f; renderTree(); fillXmlSelect(); renderFound(); if (BD.model) renderCanvas();
@@ -1077,7 +1091,7 @@ function analyzeInto(box) {
     const n = doc.getElementsByTagName("*").length;
     if (AC.erro || AC.alerta) { st.className = "status " + (AC.erro ? "err" : "wait"); st.textContent += ` · ${AC.erro + AC.alerta} problema(s)`; }
     box.innerHTML = HH + `<p class="note">Este arquivo não é um layout XSL: é ${doc.documentElement.nodeName === "SENDTOCOLLECTION" ? "a configuração do menu <b>Enviar Para</b> do Promob (pasta Budget\\SendTo)" : "um XML de dados"}. Ele pode ser editado e salvo aqui, mas não tem pré-visualização.</p>` +
-      (doc.documentElement.nodeName === "SENDTOCOLLECTION" ? `<div class="sec"><header><b>Opções configuradas</b></header>${[...doc.getElementsByTagName("*")].filter(e => /^SENDTO(FILE|EMAIL|FTP|PACKAGE)$/.test(e.nodeName)).map(e => `<div class="frow" style="cursor:default"><span class="lb"><b>${esc(e.getAttribute("DESCRIPTION") || e.getAttribute("ID"))}</b> · ${esc(e.nodeName.replace("SENDTO", "").toLowerCase())}</span><code>${esc(e.getAttribute("XSLLAYOUT") || "(sem layout: XML bruto do orçamento)")}</code></div>`).join("")}</div>` : "") + aiBlock();
+      (doc.documentElement.nodeName === "SENDTOCOLLECTION" ? sendToForm(doc) + `<div class="sec"><header><b>Opções configuradas</b></header>${[...doc.getElementsByTagName("*")].filter(e => /^SENDTO(FILE|EMAIL|FTP|PACKAGE)$/.test(e.nodeName)).map(e => `<div class="frow" style="cursor:default"><span class="lb"><b>${esc(e.getAttribute("DESCRIPTION") || e.getAttribute("ID"))}</b> · ${esc(e.nodeName.replace("SENDTO", "").toLowerCase())}</span><code>${esc(e.getAttribute("XSLLAYOUT") || "(sem layout: XML bruto do orçamento)")}</code></div>`).join("")}</div>` : "") + aiBlock();
     bindAi(); return;
   }
   if (error) { st.className = "status err"; st.textContent = "Erro de estrutura"; box.innerHTML = HH + `<div class="errbox">${esc(error)}</div>` + aiBlock(); bindAi(); return; }
@@ -1630,7 +1644,7 @@ function setCollapsed(on) {
 /* ---------- Eventos ---------- */
 function bind() {
   document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => showTab(t.dataset.tab)));
-  $("#tree").addEventListener("click", e => { const x = e.target.closest("[data-close]"); if (x) { closeFile(+x.dataset.close); return; } const b = e.target.closest(".file"); if (!b) return; const f = state.files.find(x => x.id === +b.dataset.id); if (!f) return; f.ext === "xml" ? openXml(f) : openXsl(f); });
+  $("#tree").addEventListener("click", e => { const x = e.target.closest("[data-close]"); if (x) { closeFile(+x.dataset.close); return; } const b = e.target.closest(".file"); if (!b) return; const f = state.files.find(x => x.id === +b.dataset.id); if (!f) return; f.ext === "xml" ? openXmlOrConfig(f) : openXsl(f); });
   $("#fFilter").addEventListener("input", renderTree);
   $("#btnCollapse").addEventListener("click", () => setCollapsed(true));
   $("#btnExpand").addEventListener("click", () => { setCollapsed(false); $("#fFilter").focus(); });
@@ -1648,7 +1662,7 @@ function bind() {
     let last;
     for (const file of list) { const ext = (file.name.split(".").pop() || "").toLowerCase(); if (!/^(xslt?|xml|css|png|jpe?g|gif|bmp)$/.test(ext)) continue; last = addFile({ name: file.name, path: file.name, file, origin: "import" }); }
     renderTree(); fillXmlSelect();
-    if (last) { if (/xslt?/.test(last.ext)) openXsl(last); else if (last.ext === "xml") openXml(last); toast("Arquivos importados."); }
+    if (last) { if (/xslt?/.test(last.ext)) openXsl(last); else if (last.ext === "xml") openXmlOrConfig(last); toast("Arquivos importados."); }
   };
   $("#inFiles").addEventListener("change", e => { importFiles([...e.target.files]); e.target.value = ""; });
   const drop = $("#drop"), side = document.querySelector(".side");
@@ -3369,7 +3383,14 @@ function bindAudit() {
   $("#auList").addEventListener("click", e => { const b = e.target.closest("[data-aact]"); if (b) audAction(b.closest(".aurow").dataset.akey, b.dataset.aact); });
   $("#auFixAll").addEventListener("click", audFixAll);
   $("#auReport").addEventListener("click", audReport);
+  $("#btnPub").addEventListener("click", () => { if (!state.xsl) { toast("Abra um layout antes."); return; } openPubBox($("#pubBox"), "cur", state.xsl.name); });
+  $("#pgPub").addEventListener("click", () => openPubBox($("#pgPubBox"), "pg", null));
+  document.addEventListener("click", e => {
+    const go = e.target.closest("[data-pubgo]"); if (go) { const box = go.closest(".pop"); go.dataset.pubgo === "pg" ? publishPartners(box) : publishCurrent(box); return; }
+    const c = e.target.closest("[data-pubcancel]"); if (c) c.closest(".pop").hidden = true;
+  });
   $("#inspect").addEventListener("click", e => {
+    const sa = e.target.closest("[data-stadd]"); if (sa) { sendToAdd(sa.closest(".stform")); return; }
     const g = e.target.closest("[data-hgo]"); if (g) { goLine(+g.dataset.hgo); return; }
     const f = e.target.closest("[data-hfix]"); if (f) { fixCurrent(+f.dataset.hfix); return; }
     if (e.target.closest("[data-hfixall]")) fixCurrent("all");
@@ -3614,8 +3635,115 @@ function bindPartners() {
   });
 }
 
+/* ---------- Publicar no Promob (pasta do sistema mapeada) ---------- */
+function sysFolders() {
+  const by = new Map();
+  for (const f of state.files) if (f.origin === "sistema" && /^(xslt?|xml)$/.test(f.ext)) { const d = f.path.includes("/") ? f.path.slice(0, f.path.lastIndexOf("/")) : ""; by.set(d, (by.get(d) || 0) + 1); }
+  const rank = d => /budget\/layouts\/listing$/i.test(d) ? 0 : /layouts\/listing$/i.test(d) ? 1 : /sendto$/i.test(d) ? 3 : /layout/i.test(d) ? 2 : 4;
+  return [...by].sort((a, b) => rank(a[0]) - rank(b[0]) || b[1] - a[1] || a[0].localeCompare(b[0])).map(x => x[0]);
+}
+async function dirHandleFor(path) { let h = state.root; for (const seg of path.split("/").filter(Boolean)) h = await h.getDirectoryHandle(seg); return h; }
+async function writeBytes(h, bytes) { const w = await h.createWritable(); await w.write(bytes); await w.close(); }
+const textEnc = t => /^\s*<\?xml[^>]*encoding\s*=\s*["'](iso-8859-1|windows-1252|latin-?1)["']/i.test(t) ? "windows-1252" : "utf-8";
+// Grava um layout na pasta do sistema: se já existir, o original vai para .bak (uma vez) e para _historico_editorxsl.
+async function publishText(folder, name, text, overwrite) {
+  if (!state.root) throw new Error("Mapeie a pasta do sistema (Chrome ou Edge) para publicar direto no Promob.");
+  if (!(await ensurePerm(state.root))) throw new Error("Sem permissão de gravação na pasta do sistema.");
+  const dir = await dirHandleFor(folder);
+  let existing = null; try { existing = await dir.getFileHandle(name); } catch {}
+  let old = null;
+  if (existing) {
+    if (!overwrite) { const e = new Error(`${name} já existe nessa pasta. Marque "Substituir" para trocar (o original fica em .bak).`); e.code = "exists"; throw e; }
+    old = new Uint8Array(await (await existing.getFile()).arrayBuffer());
+    let bak = true; try { await dir.getFileHandle(name + ".bak"); } catch { bak = false; }
+    if (!bak) await writeBytes(await dir.getFileHandle(name + ".bak", { create: true }), old);
+    try { const hd = await dir.getDirectoryHandle("_historico_editorxsl", { create: true }); await writeBytes(await hd.getFileHandle(name.replace(/(\.(xslt?|xml))$/i, `_${stamp(Date.now())}$1`), { create: true }), old); } catch {}
+  }
+  const enc = textEnc(text), fh = existing || await dir.getFileHandle(name, { create: true });
+  await writeBytes(fh, encodeLike({ enc, bom: false }, text));
+  const path = (folder ? folder + "/" : "") + name;
+  let f = state.files.find(x => x.origin === "sistema" && x.path === path);
+  if (!f) f = addFile({ name, path, origin: "sistema" });
+  Object.assign(f, { handle: fh, parent: dir, text, enc, bom: false, dirty: false, backedUp: true, orig: old ? new TextDecoder(enc === "utf-8" ? "utf-8" : "windows-1252").decode(old).replace(/^\uFEFF/, "") : text });
+  return { f, replaced: !!existing, path };
+}
+function pubBoxHtml(id, name) {
+  const dirs = sysFolders();
+  return `<span>Publicar${name ? ` <b>${esc(name)}</b>` : ""} em</span><select class="sel" data-pubdir>${dirs.map(d => `<option value="${esc(d)}">${esc(state.sysName + (d ? "/" + d : ""))}</option>`).join("") || `<option value="">${esc(state.sysName)}</option>`}</select>
+    ${name != null ? `<input type="text" data-pubname value="${esc(name)}" aria-label="Nome do arquivo">` : ""}
+    <label class="ck"><input type="checkbox" data-pubover> Substituir se já existir (o original fica em .bak)</label>
+    <button class="btn small primary" type="button" data-pubgo="${id}">Publicar</button><button class="btn small ghost" type="button" data-pubcancel>Cancelar</button>`;
+}
+function openPubBox(box, id, name) {
+  if (!state.root) { toast("Para publicar direto no Promob, clique em Mapear pasta do sistema (Chrome ou Edge) e escolha a pasta do Promob. Sem isso, use Exportar."); return; }
+  box.innerHTML = pubBoxHtml(id, name); box.hidden = false;
+  if (name != null && state.xsl) { const same = state.files.find(x => x.origin === "sistema" && x.name.toLowerCase() === name.toLowerCase()); if (same) { const d = same.path.includes("/") ? same.path.slice(0, same.path.lastIndexOf("/")) : ""; box.querySelector("[data-pubdir]").value = d; } }
+}
+let pubArmed = 0;
+async function publishCurrent(box) {
+  const f = state.xsl; if (!f) return;
+  const name = box.querySelector("[data-pubname]").value.trim(), dir = box.querySelector("[data-pubdir]").value, over = box.querySelector("[data-pubover]").checked;
+  if (!/\.(xslt?|xml)$/i.test(name)) { toast("O nome precisa terminar em .xsl (ou .xml)."); return; }
+  const text = cm.getValue(), ac = auditCount(auditXsl(text, name, fileCtx(f)));
+  if (ac.erro && Date.now() - pubArmed > 10000) { pubArmed = Date.now(); toast(`Este arquivo tem ${ac.erro} erro(s) que impedem o Promob de abrir. Clique em Publicar de novo para gravar mesmo assim.`); return; }
+  pubArmed = 0;
+  try {
+    const r = await publishText(dir, name, text, over);
+    if (f !== r.f) { f.dirty = false; }
+    box.hidden = true; histAdd(r.f, "salvo", text); await openXsl(r.f);
+    toast(`Publicado em ${state.sysName}/${r.path}.${r.replaced ? " O arquivo anterior ficou em .bak e em _historico_editorxsl." : ""} Daqui em diante, Salvar grava direto nele.`);
+  } catch (e) { toast(e.message); }
+}
+async function publishPartners(box) {
+  const sel = PG.rows.filter(r => r.incluir); if (!sel.length) { toast("Marque ao menos um parceiro."); return; }
+  const dir = box.querySelector("[data-pubdir]").value, over = box.querySelector("[data-pubover]").checked;
+  let ok = 0, rep = 0; const falhas = [];
+  for (const r of sel) {
+    let text; try { text = pgGenerate(r); } catch (e) { falhas.push(`${r.arquivo}: ${e.message}`); continue; }
+    if (auditCount(auditXsl(text, r.arquivo, {})).erro) { falhas.push(`${r.arquivo}: tem erro na auditoria`); continue; }
+    try { const x = await publishText(dir, r.arquivo, text, over); ok++; if (x.replaced) rep++; } catch (e) { falhas.push(`${r.arquivo}: ${e.code === "exists" ? "já existe (marque Substituir)" : e.message}`); }
+  }
+  box.hidden = true; renderTree();
+  toast(`${ok} parceiro(s) publicado(s) em ${state.sysName}/${dir}${rep ? `, ${rep} substituído(s) com .bak` : ""}.${falhas.length ? ` Não publicados: ${falhas.slice(0, 3).join("; ")}${falhas.length > 3 ? "…" : ""}` : ""}`);
+}
+
+/* Enviar Para: incluir uma opção no sendTo.xml aberto */
+function sendToForm(doc) {
+  const opts = [...doc.getElementsByTagName("*")].filter(e => /^SENDTO(FILE|EMAIL|FTP|PACKAGE)$/.test(e.nodeName));
+  const cats = [...new Set(opts.flatMap(e => (e.getAttribute("CATEGORIES") || "").split(";").map(x => x.trim()).filter(c => c && !/^#/.test(c))))].sort();
+  const lays = [...new Set(state.files.filter(f => /^xslt?$/.test(f.ext) && (f.origin === "sistema" ? /sendto/i.test(f.path) : true)).map(f => f.name))].sort();
+  return `<details class="sec stform"><summary><b>Adicionar opção ao Enviar Para</b></summary><div class="stgrid">
+    <label class="pf"><span>Tipo</span><select data-st="tipo"><option value="FILE">Gravar arquivo</option><option value="EMAIL">Enviar por e-mail</option></select></label>
+    <label class="pf"><span>Nome no menu</span><input type="text" data-st="desc" placeholder="Ex.: Pedido para a fábrica (TXT)"></label>
+    <label class="pf"><span>Layout (XSL na pasta SendTo)</span><input type="text" data-st="lay" list="stLays" placeholder="Pedido_Fabrica.xsl"><datalist id="stLays">${lays.map(l => `<option value="${esc(l)}">`).join("")}</datalist></label>
+    <div class="two"><label class="pf"><span>Extensão</span><select data-st="ext"><option>.txt</option><option>.xml</option><option>.csv</option><option>.html</option></select></label>
+    <label class="pf"><span>Codificação</span><select data-st="enc"><option value="Default">Default (Windows)</option><option value="utf-8">utf-8</option><option value="ASCII">ASCII</option></select></label></div>
+    <label class="pf"><span>Nome do arquivo</span><input type="text" data-st="fn" value="#savefilename#"></label>
+    <div class="pf"><span>Categorias de orçamento em que a opção aparece</span><div class="stcats">${cats.map(c => `<label class="ck"><input type="checkbox" data-stcat value="${esc(c)}"> ${esc(c)}</label>`).join("") || '<span class="note">Nenhuma categoria nas opções atuais.</span>'}</div>
+      <input type="text" data-st="cats" placeholder="Outras categorias, separadas por ponto e vírgula"></div>
+    <button class="btn small primary" type="button" data-stadd>Inserir no sendTo.xml</button>
+    <p class="note" style="margin:0">A linha entra no editor; confira e clique em Salvar (o original fica em .bak).</p></div></details>`;
+}
+function sendToAdd(box) {
+  const v = k => (box.querySelector(`[data-st="${k}"]`) || {}).value || "";
+  const desc = v("desc").trim(), lay = v("lay").trim();
+  if (!desc) { toast("Dê um nome para a opção."); return; }
+  const cats = [...box.querySelectorAll("[data-stcat]:checked")].map(x => x.value).concat(v("cats").split(";").map(x => x.trim()).filter(Boolean));
+  if (!cats.length) { toast("Escolha ao menos uma categoria: é ela que faz a opção aparecer no orçamento."); return; }
+  const id = pgSlug(desc).toUpperCase().slice(0, 30) || "OPCAO", q = s => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  const layPath = lay ? (/[\\/%]/.test(lay) ? lay : `%PastaBudget%\\SendTo\\${lay}`) : "";
+  const common = `DESCRIPTION="${q(desc)}" XSLLAYOUT="${q(layPath)}" FILENAME="${q(v("fn") || "#savefilename#")}" SHOWSAVEDIALOG="Y" FILEPATH="c:\\" FILEEXTENSION="${q(v("ext"))}" DEFAULT="N" ENCODING="${q(v("enc"))}" ORDERBY="Nenhuma"`;
+  const line = v("tipo") === "EMAIL" ? `<SENDTOEMAIL ID="${id}" ${common} ASKVIEWFILE="N" CATEGORIES="${q(cats.join(";"))}" />` : `<SENDTOFILE ID="${id}" ${common} SENDCONTENTONLY="Y" CATEGORIES="${q(cats.join(";"))}" />`;
+  const text = cm.getValue(), k = text.lastIndexOf("</SENDTOCOLLECTION>");
+  if (k < 0) { toast("Não achei </SENDTOCOLLECTION> no arquivo."); return; }
+  const inds = [...text.slice(0, k).matchAll(/\n([ \t]*)<SENDTO(?:FILE|EMAIL|FTP|PACKAGE)\b/g)], ind = inds.length ? inds[inds.length - 1][1] : "  ";
+  const lineStart = text.lastIndexOf("\n", k - 1) + 1, before = text.slice(lineStart, k).trim() ? k : lineStart;
+  editorReplaceAll(text.slice(0, before) + ind + line + "\n" + text.slice(before));
+  toast(`Opção "${desc}" incluída. Confira e clique em Salvar.`);
+}
+
 /* Ganchos para os testes automáticos (web/tests). */
-window.EditorXSL = { audit: auditXsl, applyFixes, interpretXsl, generate, models: () => MODELS, builtin: () => BUILTIN, partnerInfo, partnerApply, canonDist };
+window.EditorXSL = { audit: auditXsl, applyFixes, interpretXsl, generate, models: () => MODELS, builtin: () => BUILTIN, partnerInfo, partnerApply, canonDist, mapFolder, publishText };
 
 /* ---------- Início ---------- */
 async function start() {
