@@ -65,6 +65,17 @@ details.grp[open]>summary::before{transform:rotate(90deg)}
 .file{display:flex;align-items:center;gap:7px;width:100%;text-align:left;border:0;background:transparent;padding:4px 6px 4px 18px;border-radius:5px;cursor:pointer;font-size:13px}
 .file:hover{background:var(--sunk)} .file.on{background:var(--accent-soft)}
 .file .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.frow2{display:flex;align-items:center;border-radius:5px}
+.frow2:hover{background:var(--sunk)}
+.frow2 .file{flex:1;min-width:0}
+.frow2 .file:hover{background:transparent}
+.frow2.on{background:var(--accent-soft)}
+.xclose{border:0;background:transparent;color:var(--muted);cursor:pointer;border-radius:4px;padding:2px 6px;font-size:12px;flex:none;opacity:.55;white-space:nowrap}
+.frow2:hover .xclose,.xclose:focus-visible,.xclose.warn{opacity:1}
+.xclose:hover{background:var(--line);color:var(--fg)}
+.xclose.warn{background:var(--err-soft);color:var(--err);font-weight:600}
+.side-acts{display:flex;gap:6px;flex-wrap:wrap}
+@media (hover:none){.xclose{opacity:1}}
 .chip{font-family:var(--mono);font-size:10.5px;padding:1px 5px;border-radius:4px;border:1px solid var(--line);color:var(--muted);flex:none}
 .chip.xsl{background:var(--accent-soft);color:var(--accent);border-color:transparent}
 .chip.xml{background:var(--wood-soft);color:var(--wood);border-color:transparent}
@@ -252,7 +263,8 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
   <div class="work">
     <aside class="side" aria-label="Arquivos do sistema">
       <div class="side-head">
-        <span class="label">Arquivos</span>
+        <div style="display:flex;align-items:center;gap:6px;justify-content:space-between"><span class="label">Arquivos</span>
+          <span class="side-acts"><button class="btn small" id="btnExportAll" type="button" title="Baixa todos os XSL alterados ou criados num .zip">Exportar tudo</button><button class="btn small ghost" id="btnCloseAll" type="button">Fechar todos</button></span></div>
         <input class="search" id="fFilter" type="search" placeholder="Filtrar por nome ou pasta">
         <span class="prog" id="prog"></span>
       </div>
@@ -278,6 +290,7 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
           <button class="btn small" id="bdRedo" type="button" title="Refazer (Ctrl+Y)">Refazer</button>
           <button class="btn small" id="bdNew" type="button">Novo layout</button>
           <button class="btn small" id="bdImport" type="button">Interpretar XSL aberto</button>
+          <button class="btn small" id="bdExport" type="button" title="Gera o XSL e salva no computador">Exportar XSL</button>
           <button class="btn small primary" id="bdGen" type="button">Gerar XSL</button>
         </div>
         <div class="pop" id="bdNewBox" hidden>
@@ -301,6 +314,7 @@ pre.gen{margin:0;max-height:260px;overflow:auto;background:var(--code-bg);border
           <button class="btn small" id="btnAI" type="button">Pedir à IA</button>
           <button class="btn small" id="btnSaveAs" type="button">Salvar como</button>
           <button class="btn small primary" id="btnSave" type="button">Salvar</button>
+          <button class="btn small" id="btnExport" type="button" title="Salvar uma cópia no computador">Exportar</button>
           <button class="btn small" id="btnCopy" type="button">Copiar código</button>
         </div>
         <div class="pop" id="saveAsBox" hidden>
@@ -711,8 +725,8 @@ function renderTree() {
   const order = [...groups.keys()].sort((a, b) => (a === "Exemplos") - (b === "Exemplos") || a.localeCompare(b));
   tree.innerHTML = order.map(g => `<details class="grp" ${q || groups.size < 8 || g.toLowerCase().includes("layout") ? "open" : ""}>
     <summary>${esc(g)}</summary>
-    ${groups.get(g).sort((a, b) => a.name.localeCompare(b.name)).map(f => `<button class="file${f === state.xsl || f === state.xml ? " on" : ""}" data-id="${f.id}" type="button" title="${esc(f.path)}">
-      <span class="chip ${f.ext === "xml" ? "xml" : "xsl"}">${f.ext === "xml" ? "XML" : "XSL"}</span><span class="nm">${esc(f.name)}</span>${f.dirty ? '<span class="dot" title="Alterado, não salvo"></span>' : ""}</button>`).join("")}
+    ${groups.get(g).sort((a, b) => a.name.localeCompare(b.name)).map(f => `<div class="frow2${f === state.xsl || f === state.xml ? " on" : ""}"><button class="file" data-id="${f.id}" type="button" title="${esc(f.path)}">
+      <span class="chip ${f.ext === "xml" ? "xml" : "xsl"}">${f.ext === "xml" ? "XML" : "XSL"}</span><span class="nm">${esc(f.name)}</span>${f.dirty ? '<span class="dot" title="Alterado, não salvo"></span>' : ""}</button><button class="xclose${f.closing ? " warn" : ""}" type="button" data-close="${f.id}" title="${f.dirty ? "Fechar sem salvar" : "Fechar"} ${esc(f.name)}" aria-label="Fechar ${esc(f.name)}">${f.closing ? "Descartar?" : "✕"}</button></div>`).join("")}
   </details>`).join("");
 }
 
@@ -824,6 +838,121 @@ function insertCode(code) {
 }
 
 /* ---------- Salvar ---------- */
+/* ---------- Exportar e fechar ---------- */
+let downloadsNs;
+async function getDownloads() {
+  if (downloadsNs !== undefined) return downloadsNs;
+  try { downloadsNs = window.claude && window.claude.use ? await window.claude.use("downloads") : null; } catch { downloadsNs = null; }
+  return downloadsNs;
+}
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function makeZip(entries) {
+  const enc = new TextEncoder(), parts = [], central = [];
+  let off = 0;
+  const d = new Date(), dt = ((d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)) & 0xFFFF, dd = (((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()) & 0xFFFF;
+  for (const e of entries) {
+    const name = enc.encode(e.name), data = e.bytes, crc = crc32(data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+    h.setUint16(10, dt, true); h.setUint16(12, dd, true); h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true);
+    h.setUint16(26, name.length, true); h.setUint16(28, 0, true);
+    parts.push(new Uint8Array(h.buffer), name, data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+    c.setUint16(12, dt, true); c.setUint16(14, dd, true); c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true);
+    c.setUint16(28, name.length, true); c.setUint32(42, off, true);
+    central.push(new Uint8Array(c.buffer), name);
+    off += 30 + name.length + data.length;
+  }
+  const cdSize = central.reduce((n, a) => n + a.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, entries.length, true); end.setUint16(10, entries.length, true); end.setUint32(12, cdSize, true); end.setUint32(16, off, true);
+  const all = [...parts, ...central, new Uint8Array(end.buffer)], out = new Uint8Array(all.reduce((n, a) => n + a.length, 0));
+  let p = 0; for (const a of all) { out.set(a, p); p += a.length; }
+  return out;
+}
+/* Salva arquivos no computador. Online (Claude): .zip pelo aviso de download. No navegador: janela Salvar como ou download. */
+async function exportFiles(entries, zipName) {
+  if (!entries.length) { toast("Nenhum arquivo para exportar."); return false; }
+  const dl = await getDownloads();
+  if (dl) {
+    try {
+      await dl.save({ filename: zipName, data: new Blob([makeZip(entries)]) });
+      toast(`Exportado ${zipName}. Descompacte e copie o .xsl para a pasta de layouts do Promob.`); return true;
+    } catch (e) {
+      if (e && e.code === "declined") toast("Exportação cancelada.");
+      else if (e && e.code === "rate_limited") toast("Já existe um pedido de download aberto. Responda a ele e tente de novo.");
+      else toast("Este visualizador não permite baixar arquivos. Use Copiar código, ou a versão completa no Chrome/Edge.");
+      return false;
+    }
+  }
+  if (entries.length === 1 && window.showSaveFilePicker) {
+    try {
+      const h = await window.showSaveFilePicker({ suggestedName: entries[0].name, id: "promob-export", types: [{ description: "Layout XSL", accept: { "application/xml": [".xsl", ".xslt", ".xml"] } }] });
+      const w = await h.createWritable(); await w.write(entries[0].bytes); await w.close();
+      toast(`Salvo em ${h.name}.`); return true;
+    } catch (e) { if (e && e.name === "AbortError") { toast("Exportação cancelada."); return false; } }
+  }
+  if (entries.length === 1) download(entries[0].name, entries[0].bytes);
+  else download(zipName, makeZip(entries));
+  toast("Arquivo enviado para a pasta de downloads."); return true;
+}
+async function exportCurrent() {
+  const f = state.xsl; if (!f) { toast("Abra um XSL antes de exportar."); return; }
+  f.text = cm.getValue();
+  const ok = await exportFiles([{ name: f.name, bytes: encodeLike(f, f.text) }], f.name.replace(/\.xslt?$/i, "") + ".zip");
+  if (ok && !f.handle) { f.dirty = false; renderTree(); }
+}
+async function exportAll() {
+  if (state.xsl) state.xsl.text = cm.getValue();
+  const xs = state.files.filter(f => /^xslt?$/.test(f.ext) && f.text != null);
+  let pick = xs.filter(f => f.dirty || f.orig == null || f.text !== f.orig);
+  if (!pick.length) pick = xs;
+  const used = new Set(), entries = pick.map(f => { let n = f.name; for (let k = 2; used.has(n.toLowerCase()); k++) n = f.name.replace(/(\.xslt?)$/i, `_${k}$1`); used.add(n.toLowerCase()); return { name: n, bytes: encodeLike(f, f.text) }; });
+  const ok = await exportFiles(entries, "layouts-promob.zip");
+  if (ok) { pick.forEach(f => { if (!f.handle) f.dirty = false; }); renderTree(); }
+}
+function clearEditor() {
+  state.xsl = null;
+  cm._loading = true; cm.setValue(""); cm._loading = false;
+  $("#edTitle").textContent = "Nenhum XSL aberto"; $("#edStatus").className = "status wait"; $("#edStatus").textContent = "—";
+  $("#pvTitle").textContent = "Visualização";
+  analyze();
+}
+function closeFile(id, force) {
+  const f = state.files.find(x => x.id === id); if (!f) return;
+  if (f === state.xsl) f.text = cm.getValue();
+  if (f.dirty && !force && !f.closing) {
+    f.closing = true; renderTree();
+    toast(`"${f.name}" tem alterações não salvas. Clique em Descartar? para fechar mesmo assim, ou salve/exporte antes.`);
+    setTimeout(() => { if (f.closing) { f.closing = false; renderTree(); } }, 5000);
+    return;
+  }
+  state.files = state.files.filter(x => x !== f);
+  state.assetCache.delete(f.id);
+  if (BD.out === f) BD.out = null;
+  if (state.xsl === f) { const next = state.files.find(x => /^xslt?$/.test(x.ext)); if (next) openXsl(next).then(() => showTab(lsGet("exsl.tab", "editor"))); else clearEditor(); }
+  if (state.xml === f) { state.xml = state.files.find(x => x.ext === "xml") || null; renderFound(); if (BD.model) renderCanvas(); }
+  fillXmlSelect(); renderTree();
+}
+let closeAllArmed = false;
+function closeAll() {
+  if (state.xsl) state.xsl.text = cm.getValue();
+  const dirty = state.files.filter(f => f.dirty);
+  if (dirty.length && !closeAllArmed) {
+    closeAllArmed = true; $("#btnCloseAll").textContent = "Descartar e fechar?"; $("#btnCloseAll").classList.add("warn");
+    toast(`${dirty.length} arquivo(s) com alterações não salvas. Use Exportar tudo antes, ou clique de novo para fechar sem salvar.`);
+    setTimeout(() => { closeAllArmed = false; $("#btnCloseAll").textContent = "Fechar todos"; $("#btnCloseAll").classList.remove("warn"); }, 6000);
+    return;
+  }
+  closeAllArmed = false; $("#btnCloseAll").textContent = "Fechar todos"; $("#btnCloseAll").classList.remove("warn");
+  state.files = []; state.xml = null; state.root = null; state.sysName = "Nenhum"; state.assetCache.clear(); BD.out = null;
+  $("#sysName").textContent = "nenhum"; prog("");
+  clearEditor(); fillXmlSelect(); renderFound(); renderTree(); if (BD.model) renderCanvas();
+  toast("Todos os arquivos foram fechados.");
+}
+
 function download(name, bytes) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([bytes], { type: "application/xml" })); a.download = name;
@@ -847,8 +976,8 @@ async function save() {
       f.dirty = false; renderTree(); toast(`Salvo em ${f.path}. O original está em ${f.name}.bak`); return;
     } catch (e) { toast("Não foi possível gravar na pasta: " + e.message); }
   }
-  download(f.name, bytes); f.dirty = false; renderTree();
-  toast("Arquivo enviado para download. Se nada baixou, use Copiar código.");
+  const ok = await exportFiles([{ name: f.name, bytes }], f.name.replace(/\.xslt?$/i, "") + ".zip");
+  if (ok) { f.dirty = false; renderTree(); }
 }
 async function saveAs(name) {
   const src = state.xsl; if (!src) return;
@@ -863,7 +992,8 @@ async function saveAs(name) {
       addFile(nf); src.text = src.orig ?? src.text; src.dirty = false; await openXsl(nf); toast(`Criado ${nf.path}`); return;
     } catch (e) { toast("Não foi possível criar na pasta: " + e.message); }
   }
-  addFile(nf); download(name, encodeLike(nf, text)); await openXsl(nf);
+  addFile(nf); await openXsl(nf); nf.dirty = true; renderTree();
+  if (await exportFiles([{ name, bytes: encodeLike(nf, text) }], name.replace(/\.xslt?$/i, "") + ".zip")) { nf.dirty = false; renderTree(); }
 }
 
 /* ---------- Visualizador ---------- */
@@ -1037,7 +1167,7 @@ function showTab(name) {
 /* ---------- Eventos ---------- */
 function bind() {
   document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => showTab(t.dataset.tab)));
-  $("#tree").addEventListener("click", e => { const b = e.target.closest(".file"); if (!b) return; const f = state.files.find(x => x.id === +b.dataset.id); if (!f) return; f.ext === "xml" ? openXml(f) : openXsl(f); });
+  $("#tree").addEventListener("click", e => { const x = e.target.closest("[data-close]"); if (x) { closeFile(+x.dataset.close); return; } const b = e.target.closest(".file"); if (!b) return; const f = state.files.find(x => x.id === +b.dataset.id); if (!f) return; f.ext === "xml" ? openXml(f) : openXsl(f); });
   $("#fFilter").addEventListener("input", renderTree);
   $("#btnMap").addEventListener("click", async () => {
     if (window.showDirectoryPicker) {
@@ -1093,7 +1223,19 @@ function bind() {
     lsSet("exsl.snippets", [...userSnips(), s]); ["#snTitle", "#snCat", "#snDesc", "#snCode"].forEach(k => { $(k).value = ""; });
     state.libCat = s.cat; renderLib(); toast("Salvo na biblioteca deste navegador. Use Exportar para guardar uma cópia.");
   });
-  $("#libExport").addEventListener("click", () => download("biblioteca-xsl-promob.json", new TextEncoder().encode(JSON.stringify(userSnips(), null, 2))));
+  $("#libExport").addEventListener("click", async () => {
+    const data = JSON.stringify(userSnips(), null, 2), dl = await getDownloads();
+    if (dl) { try { await dl.save({ filename: "biblioteca-xsl-promob.json", data }); toast("Biblioteca exportada."); } catch (e) { toast(e && e.code === "declined" ? "Exportação cancelada." : "Este visualizador não permite baixar arquivos."); } return; }
+    download("biblioteca-xsl-promob.json", new TextEncoder().encode(data));
+  });
+  $("#btnExport").addEventListener("click", exportCurrent);
+  $("#btnExportAll").addEventListener("click", exportAll);
+  $("#btnCloseAll").addEventListener("click", closeAll);
+  $("#bdExport").addEventListener("click", async () => {
+    const text = generate(BD.model, false), name = /\.xslt?$/i.test(BD.model.name) ? BD.model.name : BD.model.name + ".xsl";
+    await exportFiles([{ name, bytes: new TextEncoder().encode(text) }], name.replace(/\.xslt?$/i, "") + ".zip");
+  });
+  window.addEventListener("beforeunload", e => { if (state.files.some(f => f.dirty)) { e.preventDefault(); e.returnValue = ""; } });
   $("#libImport").addEventListener("change", async e => {
     const f = e.target.files[0]; e.target.value = ""; if (!f) return;
     try { const arr = JSON.parse(await f.text()); if (!Array.isArray(arr)) throw 0; lsSet("exsl.snippets", [...userSnips(), ...arr.filter(s => s && s.t && s.c)]); renderLib(); toast(`${arr.length} códigos importados.`); }
